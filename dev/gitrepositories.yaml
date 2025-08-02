@@ -1,0 +1,10 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: GitRepository
+metadata:
+  name: prospection-api-mcp
+  namespace: kaiohz
+spec:
+  interval: 2m
+  url: https://github.com/Kaiohz/prospectio-api-mcp.git
+  ref:
+    branch: main
