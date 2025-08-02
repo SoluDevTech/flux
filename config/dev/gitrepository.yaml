@@ -1,10 +1,10 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
-  name: k3s-repo
+  name: kaiohz-repo
   namespace: flux-system
 spec:
   interval: 1m
-  url: https://github.com/prospectio-ai/flux.git
+  url: https://github.com/Kaiohz/flux.git
   ref:
     branch: main

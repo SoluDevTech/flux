@@ -1,7 +1,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: kustomization-k3s
+  name: prospectio-kustomization
   namespace: flux-system
 spec:
   interval: 2m
@@ -10,7 +10,7 @@ spec:
   targetNamespace: kaiohz
   sourceRef:
     kind: GitRepository
-    name: k3s-repo
+    name: kaiohz-repo
   # If the helmreleases are in a directory use the parameter below
   path: "dev"
   #When the Git revision changes, the manifests are reconciled automatically. If previously applied objects are missing from the current revision, these objects are deleted from the cluster when spec.prune is enabled
