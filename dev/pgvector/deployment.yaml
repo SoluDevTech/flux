@@ -16,6 +16,11 @@ spec:
       labels:
         app: pgvector
     spec:
+      tolerations:
+        - key: "klipperlb-exclude"
+          value: "true"
+          effect: "NoSchedule"
+          operator: "Equal"
       containers:
         - name: pgvector
           image: pgvector/pgvector:0.8.0-pg17
