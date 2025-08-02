@@ -4,8 +4,7 @@ metadata:
   name: vault-ingress
   namespace: vault
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-    traefik.ingress.kubernetes.io/redirect-scheme: https
+    traefik.ingress.kubernetes.io/router.entrypoints: vault
 spec:
   rules:
     - host: vault.local
