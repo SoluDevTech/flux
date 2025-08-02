@@ -5,6 +5,8 @@ metadata:
   labels:
     app: pgvector
 spec:
+  nodeSelector:
+    light: "false"  
   replicas: 1
   selector:
     matchLabels:
