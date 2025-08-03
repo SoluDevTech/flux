@@ -23,7 +23,7 @@ spec:
           operator: "Equal"
       containers:
         - name: prospectio-api-mcp
-          image: kaiohz/prospectio:latest
+          image: kaiohz/soludev:latest
           ports:
             - containerPort: 7002
           envFrom:
