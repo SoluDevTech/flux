@@ -1,0 +1,343 @@
+# K3s Cluster Setup Documentation
+
+This documentation covers the complete setup of a K3s cluster with Flux for GitOps and Vault for secrets management.
+
+## Table of Contents
+- [K3s Installation](#k3s-installation)
+- [Control Plane Setup](#control-plane-setup)
+- [Worker Node Setup](#worker-node-setup)
+- [Mac Worker via Multipass](#mac-worker-via-multipass)
+- [Flux Installation](#flux-installation)
+- [Vault Installation](#vault-installation)
+- [Troubleshooting](#troubleshooting)
+
+## K3s Installation
+
+### Control Plane Setup
+
+#### 1. Basic Installation
+```bash
+curl -sfL https://get.k3s.io | sh -
+```
+
+#### 2. Troubleshooting cgroups v2 (Raspberry Pi OS)
+
+If you encounter the error "failed to find memory cgroup (v2)", follow these steps:
+
+**Enable cgroups v2:**
+1. Edit the boot configuration:
+```bash
+sudo nano /boot/firmware/cmdline.txt
+```
+
+2. Add the following parameters to the end of the existing line (everything must be on one line):
+```
+cgroup_enable=cpuset cgroup_enable=memory cgroup_memory=1
+```
+
+3. Reboot the Raspberry Pi:
+```bash
+sudo reboot
+```
+
+4. Restart K3s service:
+```bash
+sudo systemctl start k3s
+sudo systemctl status k3s
+```
+
+5. Verify the cluster is working:
+```bash
+sudo k3s kubectl get nodes
+```
+
+### Worker Node Setup
+
+#### 1. Get Control Plane Information
+
+On the control plane node, retrieve the token and IP:
+
+```bash
+# Get the node token
+sudo cat /var/lib/rancher/k3s/server/node-token
+
+# Get the control plane IP
+hostname -I
+```
+
+#### 2. Install K3s Agent (Worker)
+
+On the worker node, run:
+```bash
+curl -sfL https://get.k3s.io | K3S_URL=https://CONTROL_PLANE_IP:6443 K3S_TOKEN=YOUR_TOKEN sh -
+```
+
+Replace:
+- `CONTROL_PLANE_IP` with the actual IP of your control plane
+- `YOUR_TOKEN` with the token from the previous step
+
+#### 3. Verify Worker Installation
+
+```bash
+sudo systemctl status k3s-agent
+```
+
+### Mac Worker via Multipass
+
+For Mac systems, use Multipass to create a Ubuntu VM:
+
+#### 1. Create VM
+```bash
+multipass launch 22.04 --name k3s-worker-mac --cpus 6 --memory 5G --disk 80G
+```
+
+#### 2. Access VM and Install Worker
+```bash
+multipass shell k3s-worker-mac
+```
+
+Then follow the worker installation steps above within the VM.
+
+## Flux Installation
+
+### 1. Install Flux CLI
+
+**macOS:**
+```bash
+brew install fluxcd/tap/flux
+```
+
+**Linux:**
+```bash
+curl -s https://fluxcd.io/install.sh | sudo bash
+```
+
+### 2. Install Flux in Cluster
+
+```bash
+flux install
+```
+
+### 3. Verify Flux Installation
+
+After installation, you should see Flux components running:
+```bash
+kubectl get pods -A
+```
+
+Expected output should include:
+```
+NAMESPACE     NAME                                       READY   STATUS    RESTARTS   AGE
+flux-system   helm-controller-5c898f4887-568tw           1/1     Running   0          28s
+flux-system   kustomize-controller-7bcf986f97-67hfv      1/1     Running   0          28s
+flux-system   notification-controller-5f66f99d4d-s6qll   1/1     Running   0          28s
+flux-system   source-controller-54bc45dc6-7zcpk          1/1     Running   0          28s
+```
+
+## Vault Installation
+
+### 1. Add Helm Repository
+
+```bash
+helm repo add hashicorp https://helm.releases.hashicorp.com
+```
+
+### 2. Install Vault
+
+```bash
+helm install vault hashicorp/vault -n kaiohz -f values.yaml
+```
+
+Note: Make sure you have a `values.yaml` file configured for your Vault setup.
+
+### 3. Initialize and Unseal Vault
+
+#### Initialize Vault
+```bash
+kubectl exec -n kaiohz vault-0 -- vault operator init
+```
+
+This command will output unseal keys and a root token. **Save these securely!**
+
+#### Unseal Vault
+Use any 3 of the 5 unseal keys provided during initialization:
+
+```bash
+kubectl exec -n kaiohz vault-0 -- vault operator unseal '<key1>'
+kubectl exec -n kaiohz vault-0 -- vault operator unseal '<key2>'
+kubectl exec -n kaiohz vault-0 -- vault operator unseal '<key3>'
+```
+
+Replace `<key1>`, `<key2>`, and `<key3>` with actual unseal keys from the initialization step.
+
+## Flux GitOps Configuration
+
+After installing Flux, you need to configure GitRepository and Kustomization resources to enable GitOps workflows.
+
+### 1. Create GitRepository Configuration
+
+Create a GitRepository resource to tell Flux where to find your configuration:
+
+```yaml
+# config/dev/gitrepository.yaml
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: kaiohz-repo
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/Kaiohz/flux.git
+  ref:
+    branch: main
+```
+
+Apply the configuration:
+```bash
+kubectl apply -f config/dev/gitrepository.yaml
+```
+
+### 2. Create Kustomization Configuration
+
+Create a Kustomization resource to define how Flux should reconcile your manifests:
+
+```yaml
+# config/dev/kustomization.yaml
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: kaiohz-kustomization
+  namespace: flux-system
+spec:
+  interval: 2m
+  timeout: 90s
+  wait: false # set wait to true if you deploy resources like Deployment, ConfigMap without Helm, for HelmRelease set wait to false
+  targetNamespace: kaiohz
+  sourceRef:
+    kind: GitRepository
+    name: kaiohz-repo
+  # If the helmreleases are in a directory use the parameter below
+  path: "dev"
+  #When the Git revision changes, the manifests are reconciled automatically. If previously applied objects are missing from the current revision, these objects are deleted from the cluster when spec.prune is enabled
+  prune: true
+```
+
+Apply the configuration:
+```bash
+kubectl apply -f config/dev/kustomization.yaml
+```
+
+### 3. Additional GitRepository for External Projects
+
+You can also configure additional GitRepository resources for external projects:
+
+```yaml
+# dev/gitrepositories.yaml
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: prospection-api-mcp
+  namespace: kaiohz
+spec:
+  interval: 2m
+  url: https://github.com/Kaiohz/prospectio-api-mcp.git
+  ref:
+    branch: main
+```
+
+Apply the configuration:
+```bash
+kubectl apply -f dev/gitrepositories.yaml
+```
+
+### 4. Verify Flux GitOps Setup
+
+Check that Flux is monitoring your repositories:
+```bash
+# Check GitRepository resources
+kubectl get gitrepositories -A
+
+# Check Kustomization resources
+kubectl get kustomizations -A
+
+# Check Flux reconciliation status
+flux get sources git
+flux get kustomizations
+```
+
+### 5. Directory Structure for GitOps
+
+Your repository should be structured like this for optimal GitOps workflow:
+```
+flux/
+├── config/
+│   └── dev/
+│       ├── gitrepository.yaml    # Main repo configuration
+│       └── kustomization.yaml    # Main kustomization
+└── dev/
+    ├── gitrepositories.yaml      # Additional repos
+    ├── pgvector/                 # Application manifests
+    ├── prospectio-api-mcp/       # Application manifests
+    └── vault/                    # Vault configuration
+```
+
+### Configuration Options
+
+**GitRepository Parameters:**
+- `interval`: How often Flux checks for changes
+- `url`: Git repository URL (HTTPS or SSH)
+- `ref.branch`: Branch to monitor
+- `ref.tag`: Specific tag to use (alternative to branch)
+
+**Kustomization Parameters:**
+- `interval`: How often to reconcile manifests
+- `timeout`: Maximum time for reconciliation
+- `wait`: Whether to wait for resources to be ready
+- `targetNamespace`: Default namespace for resources
+- `path`: Directory in the repo containing manifests
+- `prune`: Remove resources not present in the current revision
+
+## Troubleshooting
+
+### Common Issues
+
+1. **cgroups v2 Error**: Follow the cgroups v2 setup steps in the Control Plane Setup section
+2. **Network Issues**: Ensure firewall allows traffic on port 6443
+3. **Token Issues**: Verify the token is copied correctly without extra spaces or characters
+
+### Useful Commands
+
+```bash
+# Check cluster status
+kubectl get nodes
+
+# Check all pods
+kubectl get pods -A
+
+# Check K3s service status
+sudo systemctl status k3s
+
+# Check K3s agent status (on worker nodes)
+sudo systemctl status k3s-agent
+
+# View K3s logs
+sudo journalctl -u k3s -f
+```
+
+## Architecture
+
+This setup creates:
+- A K3s cluster with control plane and worker nodes
+- Flux for GitOps deployment management
+- Vault for secrets management
+- Traefik as the default ingress controller
+- CoreDNS for cluster DNS
+- Local path provisioner for storage
+
+## Next Steps
+
+After completing this setup, you can:
+1. Configure Flux to watch your Git repository
+2. Set up Vault policies and authentication
+3. Deploy applications using GitOps workflows
+4. Configure ingress for external access to services
