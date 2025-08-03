@@ -8,6 +8,7 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [Worker Node Setup](#worker-node-setup)
 - [Mac Worker via Multipass](#mac-worker-via-multipass)
 - [Flux Installation](#flux-installation)
+- [Helm Installation](#helm-installation)
 - [Vault Installation](#vault-installation)
 - [Inference API Services](#inference-api-services)
 - [Troubleshooting](#troubleshooting)
@@ -133,6 +134,28 @@ flux-system   helm-controller-5c898f4887-568tw           1/1     Running   0    
 flux-system   kustomize-controller-7bcf986f97-67hfv      1/1     Running   0          28s
 flux-system   notification-controller-5f66f99d4d-s6qll   1/1     Running   0          28s
 flux-system   source-controller-54bc45dc6-7zcpk          1/1     Running   0          28s
+```
+
+## Helm Installation
+
+Helm is required for installing Vault and other applications in the cluster.
+
+### 1. Install Helm CLI
+
+**macOS:**
+```bash
+brew install helm
+```
+
+**Linux:**
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+### 2. Verify Helm Installation
+
+```bash
+helm version
 ```
 
 ## Vault Installation
