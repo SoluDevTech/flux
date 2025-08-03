@@ -253,11 +253,11 @@ kubectl apply -f dev/gitrepositories.yaml
 
 ## Inference API Services
 
-This section covers setting up services to access inference APIs running on external machines (Jetson and Mac) from within the K3s cluster.
+This section covers setting up services to access inference APIs running on external machines (Jetson) from within the K3s cluster.
 
 ### Overview
 
-The inference services allow pods in the cluster to access AI inference APIs running on external machines using standard Kubernetes service discovery. This enables applications to use inference endpoints via cluster-internal URLs like `http://mac-inference.default.svc.cluster.local`.
+The inference services allow pods in the cluster to access AI inference APIs running on external machines using standard Kubernetes service discovery. This enables applications to use inference endpoints via cluster-internal URLs.
 
 ### 1. Jetson Inference Service
 
@@ -291,8 +291,8 @@ For accessing the inference API running on a Mac:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mac-inference
-  namespace: default
+  name: ollama-inference-mac
+  namespace: kaiohz
 spec:
   type: ExternalName
   externalName: 192.168.1.10  # Replace with your Mac IP
@@ -302,7 +302,7 @@ spec:
 
 **Access from pods:**
 ```
-http://mac-inference.default.svc.cluster.local:11434
+http://ollama-inference-mac.kaiohz.svc.cluster.local:11434
 ```
 
 ### 3. Service Configuration Options
@@ -321,7 +321,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mac-inference-endpoints
-  namespace: default
+  namespace: kaiohz
 spec:
   ports:
     - port: 11434
@@ -332,7 +332,7 @@ apiVersion: v1
 kind: Endpoints
 metadata:
   name: mac-inference-endpoints
-  namespace: default
+  namespace: kaiohz
 subsets:
   - addresses:
       - ip: 192.168.1.10  # Mac IP
@@ -357,8 +357,8 @@ spec:
         - name: app
           image: my-app:latest
           env:
-            - name: INFERENCE_URL
-              value: "http://mac-inference.default.svc.cluster.local:11434"
+            - name: MAC_INFERENCE_URL
+              value: "http://ollama-inference-mac.kaiohz.svc.cluster.local:11434"
             - name: JETSON_INFERENCE_URL
               value: "http://ollama-inference-jetson.kaiohz.svc.cluster.local:11434"
 ```
@@ -382,7 +382,7 @@ spec:
         - |
           while true; do
             echo "Checking Mac inference..."
-            curl -f http://mac-inference.default.svc.cluster.local:11434/health || echo "Mac inference down"
+            curl -f http://ollama-inference-mac.kaiohz.svc.cluster.local:11434/health || echo "Mac inference down"
             echo "Checking Jetson inference..."
             curl -f http://ollama-inference-jetson.kaiohz.svc.cluster.local:11434/health || echo "Jetson inference down"
             sleep 30
@@ -426,7 +426,7 @@ curl http://ollama-inference-mac:11434
 curl http://ollama-inference-jetson:11434
 ```
 
-### 4. Verify Flux GitOps Setup
+### 9. Verify Flux GitOps Setup
 
 Check that Flux is monitoring your repositories:
 ```bash
@@ -441,7 +441,7 @@ flux get sources git
 flux get kustomizations
 ```
 
-### 5. Directory Structure for GitOps
+### 10. Directory Structure for GitOps
 
 Your repository should be structured like this for optimal GitOps workflow:
 ```
