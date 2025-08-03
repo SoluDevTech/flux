@@ -297,6 +297,74 @@ flux/
 - `path`: Directory in the repo containing manifests
 - `prune`: Remove resources not present in the current revision
 
+## Traefik CRD Installation
+
+### Prerequisites
+
+Before deploying IngressRouteTCP resources, ensure Traefik CRDs are installed in your cluster.
+
+### Option 1: Install CRDs manually
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.3.6/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml
+```
+
+### Option 2: Install CRDs via Helm Chart
+
+Add `installCRDs: true` to your Traefik HelmChart values:
+
+```yaml
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  chart: https://%{KUBERNETES_API}%/static/charts/traefik-34.2.1+up34.2.0.tgz
+  valuesContent: |-
+    installCRDs: true
+    additionalArguments:
+      - "--entrypoints.postgres.address=:5432/tcp"
+    ports:
+      postgres:
+        port: 5432
+        expose:
+          default: true
+        exposedPort: 5432
+        protocol: TCP
+    # ... rest of your configuration
+```
+
+### Verify CRDs Installation
+
+Check if Traefik CRDs are installed:
+
+```bash
+kubectl get crd | grep traefik
+```
+
+You should see output similar to:
+```
+ingressroutes.traefik.containo.us
+ingressroutetcps.traefik.containo.us
+ingressrouteudps.traefik.containo.us
+middlewares.traefik.containo.us
+middlewaretcps.traefik.containo.us
+serverstransports.traefik.containo.us
+tlsoptions.traefik.containo.us
+tlsstores.traefik.containo.us
+traefikservices.traefik.containo.us
+```
+
+### CRD Troubleshooting
+
+If you get the error "no matches for kind 'IngressRouteTCP'", it means the CRDs are not installed. Follow one of the installation methods above.
+
+Common issues:
+- **CRDs not found**: Ensure Traefik is deployed with `installCRDs: true` or install manually
+- **Version mismatch**: Make sure the CRD version matches your Traefik version
+- **Permissions**: Ensure you have cluster-admin permissions to install CRDs
+
 ## Troubleshooting
 
 ### Common Issues
