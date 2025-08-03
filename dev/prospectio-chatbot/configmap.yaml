@@ -6,5 +6,5 @@ data:
   CHAINLIT_AUTH_SECRET: secret
   CHAINLIT_COOKIE_SAMESITE: none
   OLLAMA_BASE_URL: "http://ollama-inference-mac:11434"
-  POSTGRE_CONNECTION_STRING: "postgresql+psycopg://prospectio:prospectio@prospectio-chatbot-pgvector:5432/prospectio"
+  POSTGRE_CONNECTION_STRING: "postgresql+psycopg://prospectio:prospectio@pgvector:5432/prospectio"
 
