@@ -6,7 +6,7 @@ spec:
   entryPoints:
     - postgres
   routes:
-    - match: HostSNI(`pgvector.local`)
+    - match: HostSNI(`*`)
       services:
         - name: pgvector
           port: 5432
