@@ -9,7 +9,7 @@ spec:
   selector:
     app: prospectio-api-mcp
   ports:
-    - port: 8000
-      targetPort: 8000
+    - port: 7002
+      targetPort: 7002
       protocol: TCP
       name: http
