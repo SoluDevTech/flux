@@ -9,6 +9,7 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [Mac Worker via Multipass](#mac-worker-via-multipass)
 - [Flux Installation](#flux-installation)
 - [Vault Installation](#vault-installation)
+- [Inference API Services](#inference-api-services)
 - [Troubleshooting](#troubleshooting)
 
 ## K3s Installation
@@ -248,6 +249,181 @@ spec:
 Apply the configuration:
 ```bash
 kubectl apply -f dev/gitrepositories.yaml
+```
+
+## Inference API Services
+
+This section covers setting up services to access inference APIs running on external machines (Jetson and Mac) from within the K3s cluster.
+
+### Overview
+
+The inference services allow pods in the cluster to access AI inference APIs running on external machines using standard Kubernetes service discovery. This enables applications to use inference endpoints via cluster-internal URLs like `http://mac-inference.default.svc.cluster.local`.
+
+### 1. Jetson Inference Service
+
+For accessing the Ollama inference API running on a Jetson device:
+
+```yaml
+# dev/ollama-inference-jetson.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-inference-jetson
+  namespace: kaiohz
+spec:
+  type: ExternalName
+  externalName: 192.168.1.6  # Replace with your Jetson IP
+  ports:
+    - port: 11434
+```
+
+**Access from pods:**
+```
+http://ollama-inference-jetson.kaiohz.svc.cluster.local:11434
+```
+
+### 2. Mac Inference Service
+
+For accessing the inference API running on a Mac:
+
+```yaml
+# dev/ollama-inference-mac.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mac-inference
+  namespace: default
+spec:
+  type: ExternalName
+  externalName: 192.168.1.10  # Replace with your Mac IP
+  ports:
+    - port: 11434
+```
+
+**Access from pods:**
+```
+http://mac-inference.default.svc.cluster.local:11434
+```
+
+### 3. Service Configuration Options
+
+**ExternalName Service:**
+- `type: ExternalName`: Creates a CNAME record pointing to the external host
+- `externalName`: IP address or hostname of the external service
+- `ports`: Port mapping for the service
+
+**Alternative: Endpoint-based Service**
+
+For more control, you can create a service with explicit endpoints:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mac-inference-endpoints
+  namespace: default
+spec:
+  ports:
+    - port: 11434
+      targetPort: 11434
+      protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: mac-inference-endpoints
+  namespace: default
+subsets:
+  - addresses:
+      - ip: 192.168.1.10  # Mac IP
+    ports:
+      - port: 11434
+```
+
+### 4. Usage in Applications
+
+In your application pods, you can now access the inference APIs using cluster-internal URLs:
+
+```yaml
+# Example deployment using the inference service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: my-app:latest
+          env:
+            - name: INFERENCE_URL
+              value: "http://mac-inference.default.svc.cluster.local:11434"
+            - name: JETSON_INFERENCE_URL
+              value: "http://ollama-inference-jetson.kaiohz.svc.cluster.local:11434"
+```
+
+### 5. Health Checks and Monitoring
+
+You can add health checks to monitor the external services:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: inference-healthcheck
+spec:
+  containers:
+    - name: healthcheck
+      image: curlimages/curl
+      command:
+        - /bin/sh
+        - -c
+        - |
+          while true; do
+            echo "Checking Mac inference..."
+            curl -f http://mac-inference.default.svc.cluster.local:11434/health || echo "Mac inference down"
+            echo "Checking Jetson inference..."
+            curl -f http://ollama-inference-jetson.kaiohz.svc.cluster.local:11434/health || echo "Jetson inference down"
+            sleep 30
+          done
+```
+
+### 6. Network Requirements
+
+Ensure that:
+1. The external machines (Mac/Jetson) are accessible from the K3s cluster nodes
+2. Firewall rules allow traffic on the inference API ports (11434)
+3. The inference services are running and bound to the correct network interfaces
+
+### 7. Apply the Services
+
+Deploy the inference services to your cluster:
+
+```bash
+# Apply Jetson service
+kubectl apply -f dev/ollama-inference-jetson.yaml
+
+# Apply Mac service
+kubectl apply -f dev/ollama-inference-mac.yaml
+
+# Verify services are created
+kubectl get services -A | grep inference
+```
+
+### 8. Testing Connectivity
+
+Test the services from within the cluster:
+
+```bash
+# Create a test pod
+kubectl run test-pod --image=curlimages/curl --rm -it -- /bin/sh
+
+# Test Mac inference service
+curl http://mac-inference.default.svc.cluster.local:11434/api/version
+
+# Test Jetson inference service
+curl http://ollama-inference-jetson.kaiohz.svc.cluster.local:11434/api/version
 ```
 
 ### 4. Verify Flux GitOps Setup
