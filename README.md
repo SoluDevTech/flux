@@ -420,10 +420,10 @@ Test the services from within the cluster:
 kubectl run test-pod --image=curlimages/curl --rm -it -- /bin/sh
 
 # Test Mac inference service
-curl http://mac-inference.default.svc.cluster.local:11434/api/version
+curl http://ollama-inference-mac:11434
 
 # Test Jetson inference service
-curl http://ollama-inference-jetson.kaiohz.svc.cluster.local:11434/api/version
+curl http://ollama-inference-jetson:11434
 ```
 
 ### 4. Verify Flux GitOps Setup
