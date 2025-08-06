@@ -30,7 +30,7 @@ spec:
             - configMapRef:
                 name: prospectio-api-mcp-config
             - secretRef:
-                name: prospectio-api-mcp-secrets
+                name: prospectio-api-mcp-secret
           livenessProbe:
             httpGet:
               path: /docs
