@@ -16,7 +16,6 @@ spec:
       labels:
         app: prospectio-chatbot
     spec:
-      serviceAccountName: external-secrets-sa
       tolerations:
         - key: "klipperlb-exclude"
           value: "true"
