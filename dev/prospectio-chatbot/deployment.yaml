@@ -30,7 +30,7 @@ spec:
             - configMapRef:
                 name: prospectio-chatbot-config
             - secretRef:
-                name: prospectio-chatbot-secrets
+                name: prospectio-chatbot-secret
           livenessProbe:
             httpGet:
               path: /
