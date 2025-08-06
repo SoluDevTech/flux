@@ -9,7 +9,7 @@ data:
   JSEARCH_API_URL: "https://jsearch.p.rapidapi.com"
   ACTIVE_JOBS_DB_URL: "https://active-jobs-db.p.rapidapi.com"
   DATABASE_URL: "postgresql+asyncpg://prospectio:prospectio@pgvector:5432/prospectio"
-  OLLAMA_BASE_URL: "http://ollama-inference-mac:11434"
+  OLLAMA_BASE_URL: "http://ollama-inference-jetson:11434"
   MODEL: "Ollama/qwen2.5:3b"
   TEMPERATURE: "0.0"
   CONCURRENT_CALLS: "5"
