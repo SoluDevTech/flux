@@ -5,6 +5,7 @@ metadata:
   labels:
     app: prospectio-chatbot
 spec:
+  serviceAccountName: external-secrets-sa
   nodeSelector:
     light: "false"
   replicas: 1
