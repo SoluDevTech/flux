@@ -564,6 +564,456 @@ Common issues:
 - **Version mismatch**: Make sure the CRD version matches your Traefik version
 - **Permissions**: Ensure you have cluster-admin permissions to install CRDs
 
+## Synchronisation des secrets Vault vers K3s
+
+Cette section explique comment synchroniser automatiquement les secrets stockés dans Vault vers les secrets Kubernetes en utilisant External Secrets Operator (ESO).
+
+### 1. Installation d'External Secrets Operator
+
+#### Via Helm (recommandé)
+
+```bash
+# Ajouter le repo
+helm repo add external-secrets https://charts.external-secrets.io
+helm repo update
+
+# Installer ESO
+helm install external-secrets external-secrets/external-secrets \
+    -n external-secrets-system \
+    --create-namespace
+
+# Vérifier l'installation
+kubectl get pods -n external-secrets-system
+```
+
+#### Via manifests YAML (alternative)
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml
+kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/charts/external-secrets/templates/deployment.yaml
+```
+
+### 2. Configuration du SecretStore
+
+#### Créer le SecretStore
+
+```yaml
+# vault-secret-store.yaml
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStore
+metadata:
+  name: vault-backend
+  namespace: kaiohz
+spec:
+  provider:
+    vault:
+      server: "http://vault.kaiohz.svc.cluster.local:8200"
+      path: "secret"          # Chemin de votre KV engine
+      version: "v2"           # Version du KV engine (v1 ou v2)
+      auth:
+        kubernetes:
+          mountPath: "kubernetes"
+          role: "external-secrets-role"
+          serviceAccountRef:
+            name: "external-secrets-sa"
+```
+
+```bash
+# Appliquer la configuration
+kubectl apply -f vault-secret-store.yaml
+
+# Vérifier le SecretStore
+kubectl get secretstore vault-backend -n kaiohz
+kubectl describe secretstore vault-backend -n kaiohz
+```
+
+### 3. Créer des secrets dans Vault (exemples)
+
+#### Via l'UI Vault
+- Secrets > secret/ (ou votre engine)
+- Create secret
+
+Exemples de structure :
+```
+# Secrets pour une application
+Path: myapp/database
+- username: mydbuser
+- password: supersecret123
+- host: db.example.com
+- port: 5432
+
+# Secrets pour l'API
+Path: myapp/api
+- key: abc123xyz
+- secret: def456uvw
+- endpoint: https://api.example.com
+
+# Secrets pour les certificats
+Path: myapp/tls
+- cert: -----BEGIN CERTIFICATE-----...
+- key: -----BEGIN PRIVATE KEY-----...
+```
+
+#### Via CLI Vault
+
+```bash
+# Secrets de base de données
+vault kv put secret/myapp/database \
+    username=mydbuser \
+    password=supersecret123 \
+    host=db.example.com \
+    port=5432
+
+# Secrets d'API
+vault kv put secret/myapp/api \
+    key=abc123xyz \
+    secret=def456uvw \
+    endpoint=https://api.example.com
+
+# Configuration générale
+vault kv put secret/myapp/config \
+    env=production \
+    debug=false \
+    log_level=info
+```
+
+### 4. Créer des ExternalSecrets
+
+#### ExternalSecret basique - Secrets individuels
+
+```yaml
+# myapp-database-secret.yaml
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: myapp-database
+  namespace: kaiohz
+spec:
+  refreshInterval: 60s  # Synchronisation toutes les minutes
+  secretStoreRef:
+    name: vault-backend
+    kind: SecretStore
+  target:
+    name: myapp-db-secret    # Nom du secret K8s qui sera créé
+    creationPolicy: Owner    # ESO gère le secret
+    type: Opaque            # Type de secret K8s
+  data:
+  - secretKey: DB_USERNAME        # Clé dans le secret K8s
+    remoteRef:
+      key: myapp/database        # Chemin dans Vault
+      property: username         # Propriété spécifique
+  - secretKey: DB_PASSWORD
+    remoteRef:
+      key: myapp/database
+      property: password
+  - secretKey: DB_HOST
+    remoteRef:
+      key: myapp/database
+      property: host
+  - secretKey: DB_PORT
+    remoteRef:
+      key: myapp/database
+      property: port
+```
+
+#### ExternalSecret - Synchronisation complète d'un secret
+
+```yaml
+# myapp-api-secret.yaml
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: myapp-api
+  namespace: kaiohz
+spec:
+  refreshInterval: 30s
+  secretStoreRef:
+    name: vault-backend
+    kind: SecretStore
+  target:
+    name: myapp-api-secret
+    creationPolicy: Owner
+  dataFrom:
+  - extract:
+      key: myapp/api  # Récupère TOUTES les clés de ce secret Vault
+```
+
+#### ExternalSecret - Secret TLS
+
+```yaml
+# myapp-tls-secret.yaml
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: myapp-tls
+  namespace: kaiohz
+spec:
+  refreshInterval: 300s  # 5 minutes pour les certificats
+  secretStoreRef:
+    name: vault-backend
+    kind: SecretStore
+  target:
+    name: myapp-tls-secret
+    creationPolicy: Owner
+    type: kubernetes.io/tls  # Type spécial pour TLS
+  data:
+  - secretKey: tls.crt
+    remoteRef:
+      key: myapp/tls
+      property: cert
+  - secretKey: tls.key
+    remoteRef:
+      key: myapp/tls
+      property: key
+```
+
+### 5. Appliquer les ExternalSecrets
+
+```bash
+# Appliquer tous les ExternalSecrets
+kubectl apply -f myapp-database-secret.yaml
+kubectl apply -f myapp-api-secret.yaml
+kubectl apply -f myapp-tls-secret.yaml
+
+# Vérifier le statut
+kubectl get externalsecrets -n kaiohz
+
+# Voir les détails (important pour débugger)
+kubectl describe externalsecret myapp-database -n kaiohz
+```
+
+### 6. Vérifier que les secrets K8s sont créés
+
+```bash
+# Lister les secrets créés
+kubectl get secrets -n kaiohz | grep myapp
+
+# Voir le contenu d'un secret (base64)
+kubectl get secret myapp-db-secret -n kaiohz -o yaml
+
+# Décoder un secret pour vérifier
+kubectl get secret myapp-db-secret -n kaiohz -o jsonpath='{.data.DB_USERNAME}' | base64 -d
+```
+
+### 7. Utiliser les secrets dans vos applications
+
+#### Dans un Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  namespace: kaiohz
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: app
+        image: myapp:latest
+        env:
+        # Variables d'environnement depuis les secrets
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: myapp-db-secret
+              key: DB_USERNAME
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: myapp-db-secret
+              key: DB_PASSWORD
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: myapp-api-secret
+              key: key
+        # Volume pour les certificats TLS
+        volumeMounts:
+        - name: tls-certs
+          mountPath: /etc/ssl/certs/app
+          readOnly: true
+      volumes:
+      - name: tls-certs
+        secret:
+          secretName: myapp-tls-secret
+```
+
+#### Variables d'environnement depuis un secret entier
+
+```yaml
+        envFrom:
+        - secretRef:
+            name: myapp-api-secret  # Toutes les clés deviennent des variables d'env
+```
+
+### 8. ExternalSecret avec templating avancé
+
+#### Exemple avec transformation
+
+```yaml
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: myapp-config-advanced
+  namespace: kaiohz
+spec:
+  refreshInterval: 120s
+  secretStoreRef:
+    name: vault-backend
+    kind: SecretStore
+  target:
+    name: myapp-config-secret
+    creationPolicy: Owner
+    template:
+      type: Opaque
+      data:
+        # Template avec transformation
+        database-url: "postgresql://{{ .username }}:{{ .password }}@{{ .host }}:{{ .port }}/myapp"
+        api-config: |
+          {
+            "endpoint": "{{ .endpoint }}",
+            "key": "{{ .key }}",
+            "secret": "{{ .secret }}"
+          }
+  data:
+  - secretKey: username
+    remoteRef:
+      key: myapp/database
+      property: username
+  - secretKey: password
+    remoteRef:
+      key: myapp/database
+      property: password
+  - secretKey: host
+    remoteRef:
+      key: myapp/database
+      property: host
+  - secretKey: port
+    remoteRef:
+      key: myapp/database
+      property: port
+  - secretKey: endpoint
+    remoteRef:
+      key: myapp/api
+      property: endpoint
+  - secretKey: key
+    remoteRef:
+      key: myapp/api
+      property: key
+  - secretKey: secret
+    remoteRef:
+      key: myapp/api
+      property: secret
+```
+
+### 9. Monitoring et dépannage
+
+#### Commandes de diagnostic
+
+```bash
+# Status des ExternalSecrets
+kubectl get externalsecrets -n kaiohz -o wide
+
+# Détails d'un ExternalSecret (pour voir les erreurs)
+kubectl describe externalsecret myapp-database -n kaiohz
+
+# Events liés aux ExternalSecrets
+kubectl get events -n kaiohz --field-selector involvedObject.kind=ExternalSecret
+
+# Logs de l'operator External Secrets
+kubectl logs -n external-secrets-system deployment/external-secrets -f
+
+# Forcer une synchronisation
+kubectl annotate externalsecret myapp-database -n kaiohz force-sync=$(date +%s)
+```
+
+#### Indicateurs de santé
+
+```bash
+# Script de vérification
+#!/bin/bash
+NAMESPACE="kaiohz"
+
+echo "=== Status des ExternalSecrets ==="
+kubectl get externalsecrets -n $NAMESPACE -o custom-columns=NAME:.metadata.name,READY:.status.conditions[0].status,AGE:.metadata.creationTimestamp
+
+echo -e "\n=== Secrets créés ==="
+kubectl get secrets -n $NAMESPACE | grep -v "token\|dockercfg"
+
+echo -e "\n=== Dernière synchronisation ==="
+kubectl get externalsecrets -n $NAMESPACE -o custom-columns=NAME:.metadata.name,LAST_SYNC:.status.syncedTime
+```
+
+### 10. ClusterSecretStore (pour plusieurs namespaces)
+
+Si vous voulez utiliser le même Vault pour plusieurs namespaces :
+
+```yaml
+# cluster-vault-secret-store.yaml
+apiVersion: external-secrets.io/v1beta1
+kind: ClusterSecretStore
+metadata:
+  name: vault-cluster-backend
+spec:
+  provider:
+    vault:
+      server: "http://vault.kaiohz.svc.cluster.local:8200"
+      path: "secret"
+      version: "v2"
+      auth:
+        kubernetes:
+          mountPath: "kubernetes"
+          role: "external-secrets-role"
+          serviceAccountRef:
+            name: "external-secrets-sa"
+            namespace: "kaiohz"
+```
+
+Puis dans vos ExternalSecrets :
+
+```yaml
+  secretStoreRef:
+    name: vault-cluster-backend
+    kind: ClusterSecretStore  # ← Changement ici
+```
+
+### 11. Bonnes pratiques
+
+#### Organisation des secrets dans Vault
+
+```
+secret/
+├── common/              # Secrets partagés
+│   ├── database/        # DB commune
+│   └── monitoring/      # Métriques
+├── apps/
+│   ├── myapp/          # Secrets spécifiques à myapp
+│   │   ├── database/
+│   │   ├── api/
+│   │   └── tls/
+│   └── otherapp/       # Autre application
+└── environments/
+    ├── dev/
+    ├── staging/
+    └── prod/
+```
+
+#### Sécurité
+
+- Utilisez des `refreshInterval` appropriés (pas trop fréquents)
+- Limitez les permissions Vault par application
+- Surveillez les logs pour détecter les accès
+- Utilisez des politiques Vault granulaires
+- Rotez régulièrement les secrets sensibles
+
 ## Troubleshooting
 
 ### Common Issues
