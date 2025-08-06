@@ -194,6 +194,73 @@ kubectl exec -n kaiohz vault-0 -- vault operator unseal '<key3>'
 
 Replace `<key1>`, `<key2>`, and `<key3>` with actual unseal keys from the initialization step.
 
+### 4. Enable Kubernetes Authentication
+
+After unsealing Vault, you need to enable and configure Kubernetes authentication to allow pods to authenticate with Vault.
+
+#### Enable Kubernetes Auth Method
+```bash
+kubectl exec -n kaiohz vault-0 -- vault auth enable kubernetes
+```
+
+#### Get Kubernetes Certificate
+```bash
+kubectl get configmap kube-root-ca.crt -o jsonpath='{.data.ca.crt}'
+```
+
+#### Create Service Account for Vault Authentication
+```bash
+# Create service account
+kubectl create serviceaccount vault-auth
+
+# Create cluster role binding
+kubectl create clusterrolebinding vault-auth \
+  --clusterrole=system:auth-delegator \
+  --serviceaccount=default:vault-auth
+
+# Generate token for the service account
+kubectl create token vault-auth
+```
+
+#### Configure Kubernetes Auth in Vault
+```bash
+# Get the Kubernetes host URL (usually the API server)
+K8S_HOST=$(kubectl config view --raw --minify --flatten -o jsonpath='{.clusters[].cluster.server}')
+
+# Get the service account token
+SA_TOKEN=$(kubectl create token vault-auth)
+
+# Get the CA certificate
+K8S_CA_CERT=$(kubectl get configmap kube-root-ca.crt -o jsonpath='{.data.ca\.crt}')
+
+# Configure the Kubernetes auth method
+kubectl exec -n kaiohz vault-0 -- vault write auth/kubernetes/config \
+  token_reviewer_jwt="$SA_TOKEN" \
+  kubernetes_host="$K8S_HOST" \
+  kubernetes_ca_cert="$K8S_CA_CERT"
+```
+
+#### Create a Role for External Secrets
+```bash
+kubectl exec -n kaiohz vault-0 -- vault write auth/kubernetes/role/external-secrets-role \
+  bound_service_account_names=external-secrets-sa \
+  bound_service_account_namespaces=kaiohz \
+  policies=external-secrets-policy \
+  ttl=24h
+```
+
+#### Create Policy for External Secrets
+```bash
+kubectl exec -n kaiohz vault-0 -- vault policy write external-secrets-policy - <<EOF
+path "secret/data/*" {
+  capabilities = ["read", "list"]
+}
+path "secret/metadata/*" {
+  capabilities = ["read", "list"]
+}
+EOF
+```
+
 ## Flux GitOps Configuration
 
 After installing Flux, you need to configure GitRepository and Kustomization resources to enable GitOps workflows.
@@ -853,166 +920,6 @@ spec:
         - secretRef:
             name: myapp-api-secret  # Toutes les clés deviennent des variables d'env
 ```
-
-### 8. ExternalSecret avec templating avancé
-
-#### Exemple avec transformation
-
-```yaml
-apiVersion: external-secrets.io/v1beta1
-kind: ExternalSecret
-metadata:
-  name: myapp-config-advanced
-  namespace: kaiohz
-spec:
-  refreshInterval: 120s
-  secretStoreRef:
-    name: vault-backend
-    kind: SecretStore
-  target:
-    name: myapp-config-secret
-    creationPolicy: Owner
-    template:
-      type: Opaque
-      data:
-        # Template avec transformation
-        database-url: "postgresql://{{ .username }}:{{ .password }}@{{ .host }}:{{ .port }}/myapp"
-        api-config: |
-          {
-            "endpoint": "{{ .endpoint }}",
-            "key": "{{ .key }}",
-            "secret": "{{ .secret }}"
-          }
-  data:
-  - secretKey: username
-    remoteRef:
-      key: myapp/database
-      property: username
-  - secretKey: password
-    remoteRef:
-      key: myapp/database
-      property: password
-  - secretKey: host
-    remoteRef:
-      key: myapp/database
-      property: host
-  - secretKey: port
-    remoteRef:
-      key: myapp/database
-      property: port
-  - secretKey: endpoint
-    remoteRef:
-      key: myapp/api
-      property: endpoint
-  - secretKey: key
-    remoteRef:
-      key: myapp/api
-      property: key
-  - secretKey: secret
-    remoteRef:
-      key: myapp/api
-      property: secret
-```
-
-### 9. Monitoring et dépannage
-
-#### Commandes de diagnostic
-
-```bash
-# Status des ExternalSecrets
-kubectl get externalsecrets -n kaiohz -o wide
-
-# Détails d'un ExternalSecret (pour voir les erreurs)
-kubectl describe externalsecret myapp-database -n kaiohz
-
-# Events liés aux ExternalSecrets
-kubectl get events -n kaiohz --field-selector involvedObject.kind=ExternalSecret
-
-# Logs de l'operator External Secrets
-kubectl logs -n external-secrets-system deployment/external-secrets -f
-
-# Forcer une synchronisation
-kubectl annotate externalsecret myapp-database -n kaiohz force-sync=$(date +%s)
-```
-
-#### Indicateurs de santé
-
-```bash
-# Script de vérification
-#!/bin/bash
-NAMESPACE="kaiohz"
-
-echo "=== Status des ExternalSecrets ==="
-kubectl get externalsecrets -n $NAMESPACE -o custom-columns=NAME:.metadata.name,READY:.status.conditions[0].status,AGE:.metadata.creationTimestamp
-
-echo -e "\n=== Secrets créés ==="
-kubectl get secrets -n $NAMESPACE | grep -v "token\|dockercfg"
-
-echo -e "\n=== Dernière synchronisation ==="
-kubectl get externalsecrets -n $NAMESPACE -o custom-columns=NAME:.metadata.name,LAST_SYNC:.status.syncedTime
-```
-
-### 10. ClusterSecretStore (pour plusieurs namespaces)
-
-Si vous voulez utiliser le même Vault pour plusieurs namespaces :
-
-```yaml
-# cluster-vault-secret-store.yaml
-apiVersion: external-secrets.io/v1beta1
-kind: ClusterSecretStore
-metadata:
-  name: vault-cluster-backend
-spec:
-  provider:
-    vault:
-      server: "http://vault.kaiohz.svc.cluster.local:8200"
-      path: "secret"
-      version: "v2"
-      auth:
-        kubernetes:
-          mountPath: "kubernetes"
-          role: "external-secrets-role"
-          serviceAccountRef:
-            name: "external-secrets-sa"
-            namespace: "kaiohz"
-```
-
-Puis dans vos ExternalSecrets :
-
-```yaml
-  secretStoreRef:
-    name: vault-cluster-backend
-    kind: ClusterSecretStore  # ← Changement ici
-```
-
-### 11. Bonnes pratiques
-
-#### Organisation des secrets dans Vault
-
-```
-secret/
-├── common/              # Secrets partagés
-│   ├── database/        # DB commune
-│   └── monitoring/      # Métriques
-├── apps/
-│   ├── myapp/          # Secrets spécifiques à myapp
-│   │   ├── database/
-│   │   ├── api/
-│   │   └── tls/
-│   └── otherapp/       # Autre application
-└── environments/
-    ├── dev/
-    ├── staging/
-    └── prod/
-```
-
-#### Sécurité
-
-- Utilisez des `refreshInterval` appropriés (pas trop fréquents)
-- Limitez les permissions Vault par application
-- Surveillez les logs pour détecter les accès
-- Utilisez des politiques Vault granulaires
-- Rotez régulièrement les secrets sensibles
 
 ## Troubleshooting
 
