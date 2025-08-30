@@ -42,6 +42,13 @@ spec:
               command: ["pg_isready", "-U", "prospectio", "-d", "prospectio"]
             initialDelaySeconds: 5
             periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "1000m"
+            limits:
+              memory: "512Mi"
+              cpu: "1500m"
       volumes:
         - name: init-sql
           configMap:
