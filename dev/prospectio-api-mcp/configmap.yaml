@@ -9,10 +9,10 @@ data:
   JSEARCH_API_URL: "https://jsearch.p.rapidapi.com"
   ACTIVE_JOBS_DB_URL: "https://active-jobs-db.p.rapidapi.com"
   DATABASE_URL: "postgresql+asyncpg://prospectio:prospectio@pgvector:5432/prospectio"
-  OLLAMA_BASE_URL: "http://ollama-inference-jetson:11434"
-  MODEL: Google/gemini-2.0-flash
-  DECISION_MODEL: Google/gemini-2.0-flash
-  ENRICH_MODEL: Google/gemini-2.0-flash  
+  OLLAMA_BASE_URL: "http://ollama-inference-mac:11434"
+  MODEL: Ollama/qwen3:4b
+  DECISION_MODEL: Ollama/qwen3:4b
+  ENRICH_MODEL: Ollama/qwen3:8b
   TEMPERATURE: "0.0"
   CONCURRENT_CALLS: "5"
   CRAWL_VERBOSE: "False"
