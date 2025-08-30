@@ -6,3 +6,5 @@ data:
   CHAINLIT_AUTH_SECRET: secret
   CHAINLIT_COOKIE_SAMESITE: none
   OLLAMA_BASE_URL: "http://ollama-inference-mac:11434"
+  MODELS_LIST: '["OpenRouter/qwen/qwen3-14b:free", "meta-llama/llama-3.3-8b-instruct:free", "openai/gpt-oss-20b:free", "Google/gemini-2.0-flash", "Ollama/qwen3:8b", "Google/gemini-2.5-pro"]'
+
