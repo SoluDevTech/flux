@@ -10,9 +10,9 @@ data:
   ACTIVE_JOBS_DB_URL: "https://active-jobs-db.p.rapidapi.com"
   DATABASE_URL: "postgresql+asyncpg://prospectio:prospectio@pgvector:5432/prospectio"
   OLLAMA_BASE_URL: "http://ollama-inference-mac:11434"
-  MODEL: Ollama/qwen3:4b
-  DECISION_MODEL: Ollama/qwen3:4b
-  ENRICH_MODEL: Ollama/qwen3:8b
+  MODEL: OpenRouter/qwen/qwen3-14b:free
+  DECISION_MODEL: OpenRouter/qwen/qwen3-14b:free
+  ENRICH_MODEL: OpenRouter/qwen/qwen3-14b:free
   TEMPERATURE: "0.0"
   CONCURRENT_CALLS: "5"
   CRAWL_VERBOSE: "False"
