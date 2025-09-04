@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prospectio-front
+  labels:
+    app: prospectio-front
+spec:
+  nodeSelector:
+    light: "true"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prospectio-front
+  template:
+    metadata:
+      labels:
+        app: prospectio-front
+    spec:
+      tolerations:
+        - key: "klipperlb-exclude"
+          value: "true"
+          effect: "NoSchedule"
+          operator: "Equal"
+      containers:
+        - name: prospectio-front
+          image: kaiohz/prospectio-front:latest
+          ports:
+            - containerPort: 7002
+          envFrom:
+            - configMapRef:
+                name: prospectio-front-config
+            - secretRef:
+                name: prospectio-front-secret
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "500m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
