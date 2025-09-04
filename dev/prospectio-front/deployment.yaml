@@ -31,13 +31,13 @@ spec:
                 name: prospectio-front-config
           livenessProbe:
             httpGet:
-              path: /
+              path: /health
               port: 5173
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /
+              path: /health
               port: 5173
             initialDelaySeconds: 5
             periodSeconds: 5
