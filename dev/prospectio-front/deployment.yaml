@@ -29,8 +29,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: prospectio-front-config
-            - secretRef:
-                name: prospectio-front-secret
           livenessProbe:
             httpGet:
               path: /
