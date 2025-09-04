@@ -25,20 +25,20 @@ spec:
         - name: prospectio-front
           image: kaiohz/prospectio-front:latest
           ports:
-            - containerPort: 7002
+            - containerPort: 5173
           envFrom:
             - configMapRef:
                 name: prospectio-front-config
           livenessProbe:
             httpGet:
               path: /
-              port: 8000
+              port: 5173
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /
-              port: 8000
+              port: 5173
             initialDelaySeconds: 5
             periodSeconds: 5
           resources:
