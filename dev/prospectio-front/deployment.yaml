@@ -16,21 +16,6 @@ spec:
       labels:
         app: prospectio-front
     spec:
-      initContainers:
-      - name: env-replacer
-        image: busybox
-        command: ['sh', '-c', 'envsubst < /app/index.html > /shared/index.html && cp -r /app/* /shared/']
-        env:
-        - name: VITE_APP_RAG_CHATBOT_API_URL
-          valueFrom:
-            configMapKeyRef:
-              name: prospectio-front-config
-              key: VITE_APP_RAG_CHATBOT_API_URL
-        - name: VITE_APP_BACKEND_API_URL
-          valueFrom:
-            configMapKeyRef:
-              name: prospectio-front-config
-              key: VITE_APP_BACKEND_API_URL
       tolerations:
         - key: "klipperlb-exclude"
           value: "true"
