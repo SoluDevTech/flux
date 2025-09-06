@@ -4,6 +4,7 @@ metadata:
   name: prospectio-chatbot-config
 data:
   CHAINLIT_COOKIE_SAMESITE: none
+  ALLOWED_ORIGINS: '["http://prospectio.front.local"]'
   OLLAMA_BASE_URL: "http://ollama-inference-mac:11434"
   MODELS_LIST: '["OpenRouter/openai/gpt-4.1-nano", "OpenRouter/qwen/qwen3-30b-a3b-thinking-2507", "Ollama/qwen3:8b", "Google/gemini-2.5-pro"]'
   OPEN_ROUTER_API_URL: "https://openrouter.ai/api/v1"
