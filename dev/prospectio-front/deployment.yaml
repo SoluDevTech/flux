@@ -26,9 +26,10 @@ spec:
           image: kaiohz/prospectio-front:latest
           ports:
             - containerPort: 80
-          envFrom:
-            - configMapRef:
-                name: prospectio-front-config
+          volumeMounts:
+            - name: config-volume
+              mountPath: /usr/share/nginx/html/config.json
+              subPath: config.json
           livenessProbe:
             httpGet:
               path: /health
@@ -48,3 +49,7 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "1000m"
+      volumes:
+        - name: config-volume
+          configMap:
+            name: prospectio-front-config

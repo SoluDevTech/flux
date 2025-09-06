@@ -3,5 +3,8 @@ kind: ConfigMap
 metadata:
   name: prospectio-front-config
 data:
-  VITE_APP_RAG_CHATBOT_API_URL: https://prospectio.chatbot.local
-  VITE_APP_BACKEND_API_URL: http://prospectio-api-mcp:7002
+  config.json: |
+    {
+      "chatbotUrl": "https://prospectio.chatbot.local",
+      "backendUrl": "http://prospectio-api-mcp:7002"
+    }
