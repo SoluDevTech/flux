@@ -33,13 +33,13 @@ spec:
                 name: prospectio-chatbot-secret
           livenessProbe:
             httpGet:
-              path: /
+              path: /docs
               port: 8000
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /
+              path: /docs
               port: 8000
             initialDelaySeconds: 5
             periodSeconds: 5
