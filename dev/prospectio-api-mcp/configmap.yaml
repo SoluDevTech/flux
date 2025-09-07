@@ -12,7 +12,7 @@ data:
   OLLAMA_BASE_URL: "http://ollama-inference-mac:11434"
   MODEL: OpenRouter/openai/gpt-4.1-nano
   DECISION_MODEL: OpenRouter/openai/gpt-4.1-nano
-  ENRICH_MODEL: OpenRouter/openai/gpt-4.1-nano
+  ENRICH_MODEL: OpenRouter/google/gemini-2.5-flash-lite
   TEMPERATURE: "0.0"
   CONCURRENT_CALLS: "5"
   CRAWL_VERBOSE: "False"
