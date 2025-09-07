@@ -4,7 +4,7 @@ metadata:
   name: prospectio-api-mcp-config
 data:
   EXPOSE: "sse"
-  ALLOWED_ORIGINS: '["http://prospectio.front.local"]'
+  ALLOWED_ORIGINS: '["https://prospectio.front.local"]'
   MANTIKS_API_URL: "https://api.mantiks.com"
   JSEARCH_API_URL: "https://jsearch.p.rapidapi.com"
   ACTIVE_JOBS_DB_URL: "https://active-jobs-db.p.rapidapi.com"
