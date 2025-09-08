@@ -84,18 +84,18 @@ Replace:
 sudo systemctl status k3s-agent
 ```
 
-### Mac Worker via Multipass
+### Mac Worker via Colima
 
-For Mac systems, use Multipass to create a Ubuntu VM:
+For Mac systems, use Colima to create a Ubuntu VM:
 
 #### 1. Create VM
 ```bash
-multipass launch 22.04 --name k3s-worker-mac --cpus 6 --memory 5G --disk 80G
+colima start --cpu 4 --memory 4 --disk 30
 ```
 
 #### 2. Access VM and Install Worker
 ```bash
-multipass shell k3s-worker-mac
+colima ssh
 ```
 
 Then follow the worker installation steps above within the VM.
