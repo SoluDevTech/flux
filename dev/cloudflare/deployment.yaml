@@ -1,3 +1,4 @@
+# cloudflared-deployment-fixed.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -13,6 +14,20 @@ spec:
       labels:
         app: cloudflared
     spec:
+      # Configuration DNS avec serveurs externes
+      dnsPolicy: "None"
+      dnsConfig:
+        nameservers:
+        - "1.1.1.1"
+        - "8.8.8.8"
+        searches:
+        - kaiohz.svc.cluster.local
+        - svc.cluster.local
+        - cluster.local
+        options:
+        - name: ndots
+          value: "5"
+      
       containers:
       - name: cloudflared
         image: cloudflare/cloudflared:latest
@@ -29,6 +44,9 @@ spec:
             secretKeyRef:
               name: cloudflare
               key: token
+        # Forcer l'utilisation de DNS externes
+        - name: GODEBUG
+          value: "netdns=go"
         volumeMounts:
         - name: config
           mountPath: /etc/cloudflared
@@ -40,24 +58,10 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "100m"
-        livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - "ps aux | grep '[c]loudflared tunnel run' || exit 1"
-          initialDelaySeconds: 30
-          periodSeconds: 30
-        readinessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - "ps aux | grep '[c]loudflared tunnel run' || exit 1"
-          initialDelaySeconds: 10
-          periodSeconds: 10
+      
       volumes:
       - name: config
         configMap:
           name: cloudflared-config
+      
       restartPolicy: Always
