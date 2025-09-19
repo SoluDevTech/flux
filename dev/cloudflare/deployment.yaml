@@ -21,14 +21,8 @@ spec:
         - --config
         - /etc/cloudflared/config.yml
         - run
-        - --token
-        - $(TUNNEL_TOKEN)
-        env:
-        - name: TUNNEL_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: cloudflare
-              key: token
+        - --origincert
+        - /etc/cloudflared/cert.pem
         volumeMounts:
         - name: config
           mountPath: /etc/cloudflared
