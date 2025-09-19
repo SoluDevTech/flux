@@ -6,12 +6,11 @@ metadata:
 spec:
   interval: 2m
   timeout: 90s
-  wait: false # set wait to true if you deploy resources like Deployment, ConfigMap without Helm, for HelmRelease set wait to false
+  wait: true
   targetNamespace: kaiohz
   sourceRef:
     kind: GitRepository
     name: kaiohz-repo
-  # If the helmreleases are in a directory use the parameter below
   path: "dev"
   #When the Git revision changes, the manifests are reconciled automatically. If previously applied objects are missing from the current revision, these objects are deleted from the cluster when spec.prune is enabled
   prune: true
