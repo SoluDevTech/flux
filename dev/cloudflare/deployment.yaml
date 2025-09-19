@@ -27,6 +27,9 @@ spec:
         - name: config
           mountPath: /etc/cloudflared
           readOnly: true
+        - name: cloudflared-cert
+          mountPath: /etc/cloudflared
+          readOnly: true
         resources:
           requests:
             memory: "64Mi"
