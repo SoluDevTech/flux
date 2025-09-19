@@ -24,8 +24,6 @@ spec:
         - --token
         - $(TUNNEL_TOKEN)
         env:
-        - name: TUNNEL_DNS_UPSTREAM
-          value: "1.1.1.1,1.0.0.1"
         - name: TUNNEL_TOKEN
           valueFrom:
             secretKeyRef:
@@ -62,4 +60,7 @@ spec:
       - name: config
         configMap:
           name: cloudflared-config
+      - name: cloudflared-cert
+        secret:
+          secretName: cloudflare-external-secret
       restartPolicy: Always
