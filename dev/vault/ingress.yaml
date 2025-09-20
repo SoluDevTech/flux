@@ -15,6 +15,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: vault
+                name: openbao
                 port:
                   number: 8200

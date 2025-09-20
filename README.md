@@ -166,10 +166,10 @@ helm version
 helm repo add hashicorp https://helm.releases.hashicorp.com
 ```
 
-### 2. Install Vault
+### 2. Install OpenBao
 
 ```bash
-helm install vault hashicorp/vault -n kaiohz -f values.yaml
+helm install openbao openbao/openbao --namespace kaiohz -f values.yaml
 ```
 
 Note: Make sure you have a `values.yaml` file configured for your Vault setup.
@@ -178,7 +178,7 @@ Note: Make sure you have a `values.yaml` file configured for your Vault setup.
 
 #### Initialize Vault
 ```bash
-kubectl exec -n kaiohz vault-0 -- vault operator init
+kubectl exec -n kaiohz openbao-0 -- vault operator init
 ```
 
 This command will output unseal keys and a root token. **Save these securely!**
@@ -187,9 +187,9 @@ This command will output unseal keys and a root token. **Save these securely!**
 Use any 3 of the 5 unseal keys provided during initialization:
 
 ```bash
-kubectl exec -n kaiohz vault-0 -- vault operator unseal '<key1>'
-kubectl exec -n kaiohz vault-0 -- vault operator unseal '<key2>'
-kubectl exec -n kaiohz vault-0 -- vault operator unseal '<key3>'
+kubectl exec -n kaiohz openbao-0 -- vault operator unseal '<key1>'
+kubectl exec -n kaiohz openbao-0 -- vault operator unseal '<key2>'
+kubectl exec -n kaiohz openbao-0 -- vault operator unseal '<key3>'
 ```
 
 Replace `<key1>`, `<key2>`, and `<key3>` with actual unseal keys from the initialization step.
@@ -200,7 +200,7 @@ After unsealing Vault, you need to enable and configure Kubernetes authenticatio
 
 #### Enable Kubernetes Auth Method
 ```bash
-kubectl exec -n kaiohz vault-0 -- vault auth enable kubernetes
+kubectl exec -n kaiohz openbao-0 -- vault auth enable kubernetes
 ```
 
 #### Get Kubernetes Certificate
@@ -211,15 +211,15 @@ kubectl get configmap kube-root-ca.crt -o jsonpath='{.data.ca.crt}'
 #### Create Service Account for Vault Authentication
 ```bash
 # Create service account
-kubectl create serviceaccount vault-auth
+kubectl create serviceaccount openbao-auth
 
 # Create cluster role binding
-kubectl create clusterrolebinding vault-auth \
+kubectl create clusterrolebinding openbao-auth \
   --clusterrole=system:auth-delegator \
-  --serviceaccount=default:vault-auth
+  --serviceaccount=default:openbao-auth
 
 # Generate token for the service account
-kubectl create token vault-auth
+kubectl create token openbao-auth
 ```
 
 #### Configure Kubernetes Auth in Vault
@@ -234,7 +234,7 @@ SA_TOKEN=$(kubectl create token vault-auth)
 K8S_CA_CERT=$(kubectl get configmap kube-root-ca.crt -o jsonpath='{.data.ca\.crt}')
 
 # Configure the Kubernetes auth method
-kubectl exec -n kaiohz vault-0 -- vault write auth/kubernetes/config \
+kubectl exec -n kaiohz openbao-0 -- vault write auth/kubernetes/config \
   token_reviewer_jwt="$SA_TOKEN" \
   kubernetes_host="$K8S_HOST" \
   kubernetes_ca_cert="$K8S_CA_CERT"
@@ -242,7 +242,7 @@ kubectl exec -n kaiohz vault-0 -- vault write auth/kubernetes/config \
 
 #### Create a Role for External Secrets
 ```bash
-kubectl exec -n kaiohz vault-0 -- vault write auth/kubernetes/role/external-secrets-role \
+kubectl exec -n kaiohz openbao-0 -- vault write auth/kubernetes/role/external-secrets-role \
   bound_service_account_names=external-secrets-sa \
   bound_service_account_namespaces=kaiohz \
   policies=external-secrets-policy \
@@ -251,7 +251,7 @@ kubectl exec -n kaiohz vault-0 -- vault write auth/kubernetes/role/external-secr
 
 #### Create Policy for External Secrets
 ```bash
-kubectl exec -n kaiohz vault-0 -- vault policy write external-secrets-policy - <<EOF
+kubectl exec -n kaiohz openbao-0 -- vault policy write external-secrets-policy - <<EOF
 path "secret/data/*" {
   capabilities = ["read", "list"]
 }
