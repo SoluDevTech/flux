@@ -22,13 +22,13 @@ spec:
         - /etc/cloudflared/config.yml
         - run
         - --origincert
-        - /etc/cloudflared/cert.pem
+        - /etc/cloudflared-cert/cert.pem
         volumeMounts:
         - name: config
           mountPath: /etc/cloudflared
           readOnly: true
         - name: cloudflared-cert
-          mountPath: /etc/cloudflared
+          mountPath: /etc/cloudflared-cert
           readOnly: true
         resources:
           requests:
