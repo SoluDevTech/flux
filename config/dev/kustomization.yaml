@@ -6,7 +6,7 @@ metadata:
 spec:
   interval: 2m
   timeout: 90s
-  wait: true
+  wait: false # set wait to true if you deploy resources like Deployment, ConfigMap without Helm, for HelmRelease set wait to false
   targetNamespace: kaiohz
   sourceRef:
     kind: GitRepository
