@@ -200,23 +200,21 @@ After unsealing Vault, you need to enable and configure Kubernetes authenticatio
 
 #### Enable Kubernetes Auth Method
 ```bash
+export VAULT_TOKEN=<YOUR_TOKEN>
 kubectl exec -n kaiohz openbao-0 -- vault auth enable kubernetes
-```
-
-#### Get Kubernetes Certificate
-```bash
-kubectl get configmap kube-root-ca.crt -o jsonpath='{.data.ca.crt}'
 ```
 
 #### Create Service Account for Vault Authentication
 ```bash
 # Create service account
-kubectl create serviceaccount openbao-auth
+kubectl create serviceaccount openbao-auth -n kaiohz
 
 # Create cluster role binding
 kubectl create clusterrolebinding openbao-auth \
   --clusterrole=system:auth-delegator \
   --serviceaccount=default:openbao-auth
+
+kubectl create serviceaccount external-secrets-sa -n kaiohz
 
 # Generate token for the service account
 kubectl create token openbao-auth
@@ -228,7 +226,7 @@ kubectl create token openbao-auth
 K8S_HOST=$(kubectl config view --raw --minify --flatten -o jsonpath='{.clusters[].cluster.server}')
 
 # Get the service account token
-SA_TOKEN=$(kubectl create token vault-auth)
+SA_TOKEN=$(kubectl create token openbao-auth)
 
 # Get the CA certificate
 K8S_CA_CERT=$(kubectl get configmap kube-root-ca.crt -o jsonpath='{.data.ca\.crt}')
