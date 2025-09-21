@@ -212,12 +212,12 @@ kubectl create serviceaccount openbao-auth -n kaiohz
 # Create cluster role binding
 kubectl create clusterrolebinding openbao-auth \
   --clusterrole=system:auth-delegator \
-  --serviceaccount=default:openbao-auth
+  --serviceaccount=kaiohz:openbao-auth
 
 kubectl create serviceaccount external-secrets-sa -n kaiohz
 
 # Generate token for the service account
-kubectl create token openbao-auth
+kubectl create token openbao-auth -n kaiohz
 ```
 
 #### Configure Kubernetes Auth in Vault
@@ -226,16 +226,17 @@ kubectl create token openbao-auth
 K8S_HOST=$(kubectl config view --raw --minify --flatten -o jsonpath='{.clusters[].cluster.server}')
 
 # Get the service account token
-SA_TOKEN=$(kubectl create token openbao-auth)
+SA_TOKEN=$(kubectl create token openbao-auth -n kaiohz)
 
 # Get the CA certificate
 K8S_CA_CERT=$(kubectl get configmap kube-root-ca.crt -o jsonpath='{.data.ca\.crt}')
 
 # Configure the Kubernetes auth method
-kubectl exec -n kaiohz openbao-0 -- vault write auth/kubernetes/config \
+kubectl exec -n kaiohz openbao-0 -- bao write auth/kubernetes/config \
   token_reviewer_jwt="$SA_TOKEN" \
   kubernetes_host="$K8S_HOST" \
-  kubernetes_ca_cert="$K8S_CA_CERT"
+  kubernetes_ca_cert="$K8S_CA_CERT" \
+  disable_iss_validation=true
 ```
 
 #### Create a Role for External Secrets
