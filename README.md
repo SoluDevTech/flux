@@ -3,6 +3,7 @@
 This documentation covers the complete setup of a K3s cluster with Flux for GitOps and Vault for secrets management.
 
 ## Table of Contents
+- 
 - [K3s Installation](#k3s-installation)
 - [Control Plane Setup](#control-plane-setup)
 - [Worker Node Setup](#worker-node-setup)
@@ -12,6 +13,38 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [Vault Installation](#vault-installation)
 - [Inference API Services](#inference-api-services)
 - [Troubleshooting](#troubleshooting)
+
+## Mesh VPN for mac os workers 
+
+### (Optional) Install Headscale server and tailscale clients for mac os colima vm as a worker
+
+You need to headscale server on your choosen server
+
+```bash
+mkdir -p ./headscale/{config,lib,run}
+
+cd ./headscale
+
+docker run \
+  --name headscale \
+  --detach \
+  --volume "$(pwd)/config:/etc/headscale" \
+  --volume "$(pwd)/lib:/var/lib/headscale" \
+  --volume "$(pwd)/run:/var/run/headscale" \
+  --publish 0.0.0.0:8080:8080 \
+  --publish 0.0.0.0:9090:9090 \
+  docker.io/headscale/headscale:<VERSION> \
+  serve
+
+docker exec -it headscale \
+  headscale users create myfirstuser
+
+curl -fsSL https://tailscale.com/install.sh | sh
+
+sudo tailscale up --login-server=http://<IP_SERVER>:8080
+
+headscale nodes register --user USERNAME --key <GENERATED_KEY>
+```
 
 ## K3s Installation
 
@@ -72,6 +105,13 @@ hostname -I
 On the worker node, run:
 ```bash
 curl -sfL https://get.k3s.io | K3S_URL=https://CONTROL_PLANE_IP:6443 K3S_TOKEN=YOUR_TOKEN sh -
+```
+
+or 
+```bash
+curl -sfL https://get.k3s.io | K3S_URL=https://CONTROL_PLANE_IP:6443 \
+  K3S_TOKEN=YOUR_TOKEN \
+  sh -s - --node-ip=$(tailscale ip -4)
 ```
 
 Replace:
@@ -201,7 +241,8 @@ After unsealing Vault, you need to enable and configure Kubernetes authenticatio
 #### Enable Kubernetes Auth Method
 ```bash
 export VAULT_TOKEN=<YOUR_TOKEN>
-kubectl exec -n kaiohz openbao-0 -- bao auth enable kubernetes
+kubectl exec -n kaiohz openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \ 
+  bao auth enable kubernetes
 ```
 
 #### Create Service Account for Vault Authentication
@@ -232,7 +273,8 @@ SA_TOKEN=$(kubectl create token openbao-auth -n kaiohz)
 K8S_CA_CERT=$(kubectl get configmap kube-root-ca.crt -o jsonpath='{.data.ca\.crt}')
 
 # Configure the Kubernetes auth method
-kubectl exec -n kaiohz openbao-0 -- bao write auth/kubernetes/config \
+kubectl exec -n kaiohz openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
+  bao write auth/kubernetes/config \
   token_reviewer_jwt="$SA_TOKEN" \
   kubernetes_host="$K8S_HOST" \
   kubernetes_ca_cert="$K8S_CA_CERT" \
@@ -241,7 +283,8 @@ kubectl exec -n kaiohz openbao-0 -- bao write auth/kubernetes/config \
 
 #### Create a Role for External Secrets
 ```bash
-kubectl exec -n kaiohz openbao-0 -- bao write auth/kubernetes/role/external-secrets-role \
+kubectl exec -n kaiohz openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
+  bao write auth/kubernetes/role/external-secrets-role \
   bound_service_account_names=external-secrets-sa \
   bound_service_account_namespaces=kaiohz \
   policies=external-secrets-policy \
