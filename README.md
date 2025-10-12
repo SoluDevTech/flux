@@ -201,7 +201,7 @@ After unsealing Vault, you need to enable and configure Kubernetes authenticatio
 #### Enable Kubernetes Auth Method
 ```bash
 export VAULT_TOKEN=<YOUR_TOKEN>
-kubectl exec -n kaiohz openbao-0 -- vault auth enable kubernetes
+kubectl exec -n kaiohz openbao-0 -- bao auth enable kubernetes
 ```
 
 #### Create Service Account for Vault Authentication
@@ -217,7 +217,7 @@ kubectl create clusterrolebinding openbao-auth \
 kubectl create serviceaccount external-secrets-sa -n kaiohz
 
 # Generate token for the service account
-kubectl create token openbao-auth -n kaiohz
+kubectl create token openbao-auth -n kaiohz 
 ```
 
 #### Configure Kubernetes Auth in Vault
@@ -241,7 +241,7 @@ kubectl exec -n kaiohz openbao-0 -- bao write auth/kubernetes/config \
 
 #### Create a Role for External Secrets
 ```bash
-kubectl exec -n kaiohz openbao-0 -- vault write auth/kubernetes/role/external-secrets-role \
+kubectl exec -n kaiohz openbao-0 -- bao write auth/kubernetes/role/external-secrets-role \
   bound_service_account_names=external-secrets-sa \
   bound_service_account_namespaces=kaiohz \
   policies=external-secrets-policy \
@@ -250,7 +250,7 @@ kubectl exec -n kaiohz openbao-0 -- vault write auth/kubernetes/role/external-se
 
 #### Create Policy for External Secrets
 ```bash
-kubectl exec -n kaiohz openbao-0 -- vault policy write external-secrets-policy - <<EOF
+kubectl exec -n kaiohz openbao-0 -- bao policy write external-secrets-policy - <<EOF
 path "secret/data/*" {
   capabilities = ["read", "list"]
 }
