@@ -1,0 +1,6 @@
+server:
+  tolerations:
+    - key: klipperlb-exclude
+      value: "true"
+      effect: NoSchedule
+      operator: Equal

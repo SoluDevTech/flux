@@ -238,6 +238,15 @@ Replace `<key1>`, `<key2>`, and `<key3>` with actual unseal keys from the initia
 
 After unsealing Vault, you need to enable and configure Kubernetes authentication to allow pods to authenticate with Vault.
 
+#### Addexternal secrets CRD
+
+```bash
+helm repo add external-secrets https://charts.external-secrets.io
+helm repo update
+helm install external-secrets external-secrets/external-secrets \
+    -n external-secrets-system
+```
+
 #### Enable Kubernetes Auth Method
 ```bash
 export VAULT_TOKEN=<YOUR_TOKEN>
