@@ -8,7 +8,6 @@ data:
   MANTIKS_API_URL: "https://api.mantiks.com"
   JSEARCH_API_URL: "https://jsearch.p.rapidapi.com"
   ACTIVE_JOBS_DB_URL: "https://active-jobs-db.p.rapidapi.com"
-  DATABASE_URL: "postgresql+asyncpg://prospectio:prospectio@pgvector:5432/prospectio"
   OLLAMA_BASE_URL: "http://ollama-inference-mac:11434"
   MODEL: OpenRouter/openai/gpt-4.1-nano
   DECISION_MODEL: OpenRouter/openai/gpt-4.1-nano
