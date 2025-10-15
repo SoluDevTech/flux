@@ -284,9 +284,8 @@ K8S_CA_CERT=$(kubectl get configmap kube-root-ca.crt -o jsonpath='{.data.ca\.crt
 # Configure the Kubernetes auth method
 kubectl exec -n kaiohz openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
   bao write auth/kubernetes/config \
-  token_reviewer_jwt="$SA_TOKEN" \
-  kubernetes_host="$K8S_HOST" \
-  kubernetes_ca_cert="$K8S_CA_CERT" \
+  kubernetes_host="https://kubernetes.default.svc" \
+  kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
   disable_iss_validation=true
 ```
 
@@ -303,10 +302,10 @@ kubectl exec -n kaiohz openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
 #### Create Policy for External Secrets
 ```bash
 kubectl exec -n kaiohz openbao-0 -- bao policy write external-secrets-policy - <<EOF
-path "secret/data/*" {
+path "kv/data/*" {
   capabilities = ["read", "list"]
 }
-path "secret/metadata/*" {
+path "kv/metadata/*" {
   capabilities = ["read", "list"]
 }
 EOF
