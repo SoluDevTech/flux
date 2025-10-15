@@ -1,4 +1,8 @@
 server:
+  # Utiliser le service account avec permissions TokenReview
+  serviceAccount:
+    create: false
+    name: openbao
   tolerations:
     - key: klipperlb-exclude
       value: "true"
