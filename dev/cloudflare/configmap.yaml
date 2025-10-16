@@ -9,13 +9,13 @@ data:
     ingress:
       # Redirection vers le service Traefik directement
       - hostname: prospectio.fr
-        service: http://traefik.kube-system.svc.cluster.local:80
+        service: https://traefik.kube-system.svc.cluster.local:80
         originRequest:
           httpHostHeader: prospectio.fr
       
       # Sous-domaines (optionnel)
       - hostname: "*.prospectio.fr"
-        service: http://traefik.kube-system.svc.cluster.local:80
+        service: https://traefik.kube-system.svc.cluster.local:80
         originRequest:
           httpHostHeader: "*.prospectio.fr"
       
