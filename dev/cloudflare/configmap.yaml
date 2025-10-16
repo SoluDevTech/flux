@@ -17,10 +17,4 @@ data:
       - hostname: chatbot.prospectio.fr
         service: http://traefik.kube-system.svc.cluster.local:80
       
-      - hostname: www.prospectio.fr
-        service: http://traefik.kube-system.svc.cluster.local:80
-      
-      - hostname: "*.prospectio.fr"
-        service: http://traefik.kube-system.svc.cluster.local:80
-      
       - service: http_status:404
