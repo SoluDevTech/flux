@@ -6,7 +6,7 @@ metadata:
     app: prospectio-chatbot
 spec:
   nodeSelector:
-    light: "true"
+    node-type: standard
   replicas: 1
   selector:
     matchLabels:

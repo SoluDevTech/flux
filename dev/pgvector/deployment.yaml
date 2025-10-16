@@ -16,6 +16,8 @@ spec:
       labels:
         app: pgvector
     spec:
+      nodeSelector:
+        node-type: standard
       tolerations:
         - key: "klipperlb-exclude"
           value: "true"
