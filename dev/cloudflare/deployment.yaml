@@ -13,8 +13,6 @@ spec:
       labels:
         app: cloudflared
     spec:
-      nodeSelector:
-        type: standard
       tolerations:
         - key: "klipperlb-exclude"
           value: "true"
@@ -29,14 +27,16 @@ spec:
         - --protocol
         - http2
         - --config
-        - /etc/cloudflared/config.yml
+        - /etc/cloudflared/config.yml  
         - run
+        - --token
+        - $(TUNNEL_TOKEN)
         env:
         - name: TUNNEL_TOKEN
           valueFrom:
             secretKeyRef:
               name: cloudflare-secret
-              key: tunnel-token
+              key: TUNNEL_TOKEN
         volumeMounts:
         - name: config
           mountPath: /etc/cloudflared
@@ -48,8 +48,27 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "100m"
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "ps aux | grep '[c]loudflared tunnel run' || exit 1"
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "ps aux | grep '[c]loudflared tunnel run' || exit 1"
+          initialDelaySeconds: 10
+          periodSeconds: 10
       volumes:
       - name: config
         configMap:
           name: cloudflared-config
+      - name: cloudflared-cert
+        secret:
+          secretName: cloudflare-secret
       restartPolicy: Always
