@@ -6,7 +6,7 @@ metadata:
     app: pgvector
 spec:
   nodeSelector:
-    light: "true"  
+    type: standard 
   replicas: 1
   selector:
     matchLabels:
@@ -16,8 +16,6 @@ spec:
       labels:
         app: pgvector
     spec:
-      nodeSelector:
-        type: standard
       tolerations:
         - key: "klipperlb-exclude"
           value: "true"
