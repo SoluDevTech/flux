@@ -9,4 +9,4 @@ server:
       effect: NoSchedule
       operator: Equal
   nodeSelector:
-    node-type: standard
+    type: standard
