@@ -5,6 +5,6 @@ metadata:
 data:
   config.json: |
     {
-      "chatbotUrl": "https://prospectio.chatbot.local",
-      "backendUrl": "https://prospectio.api-mcp.local"
+      "chatbotUrl": "https://chatbot.prospectio.fr",
+      "backendUrl": "https://api-mcp.prospectio.fr"
     }

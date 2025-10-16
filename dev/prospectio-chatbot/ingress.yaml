@@ -7,7 +7,7 @@ metadata:
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
   rules:
-    - host: prospectio.chatbot.local
+    - host: chatbot.prospectio.fr
       http:
         paths:
           - path: /
