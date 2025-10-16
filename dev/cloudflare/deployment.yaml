@@ -49,21 +49,21 @@ spec:
             memory: "128Mi"
             cpu: "100m"
         livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - "ps aux | grep '[c]loudflared tunnel run' || exit 1"
+          httpGet:
+            path: /ready
+            port: 2000
           initialDelaySeconds: 30
           periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - "ps aux | grep '[c]loudflared tunnel run' || exit 1"
+          httpGet:
+            path: /ready
+            port: 2000
           initialDelaySeconds: 10
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
       volumes:
       - name: config
         configMap:
