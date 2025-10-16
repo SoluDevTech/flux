@@ -1,23 +1,23 @@
-# apiVersion: v1
-# kind: ConfigMap
-# metadata:
-#   name: cloudflared-config
-#   namespace: kaiohz
-# data:
-#   config.yml: |
-#     tunnel: 36354e32-1c2f-4efa-bcb7-ec014977e61e
-#     ingress:
-#       # Redirection vers le service Traefik directement
-#       - hostname: prospectio.fr
-#         service: http://traefik.kube-system.svc.cluster.local:80
-#         originRequest:
-#           httpHostHeader: prospectio.fr
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-config
+  namespace: kaiohz
+data:
+  config.yml: |
+    tunnel: 36354e32-1c2f-4efa-bcb7-ec014977e61e
+    ingress:
+      # Redirection vers le service Traefik directement
+      - hostname: prospectio.fr
+        service: http://traefik.kube-system.svc.cluster.local:80
+        originRequest:
+          httpHostHeader: prospectio.fr
       
-#       # Sous-domaines (optionnel)
-#       - hostname: "*.prospectio.fr"
-#         service: http://traefik.kube-system.svc.cluster.local:80
-#         originRequest:
-#           httpHostHeader: "*.prospectio.fr"
+      # Sous-domaines (optionnel)
+      - hostname: "*.prospectio.fr"
+        service: http://traefik.kube-system.svc.cluster.local:80
+        originRequest:
+          httpHostHeader: "*.prospectio.fr"
       
-#       # Catch-all obligatoire
-#       - service: http_status:404
+      # Catch-all obligatoire
+      - service: http_status:404
