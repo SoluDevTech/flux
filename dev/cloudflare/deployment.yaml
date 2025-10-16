@@ -68,7 +68,4 @@ spec:
       - name: config
         configMap:
           name: cloudflared-config
-      - name: cloudflared-cert
-        secret:
-          secretName: cloudflare-secret
       restartPolicy: Always
