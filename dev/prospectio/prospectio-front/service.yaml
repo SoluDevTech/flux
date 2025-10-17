@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prospectio-front
+  namespace: prospectio
+  labels:
+    app: prospectio-front
+spec:
+  type: ClusterIP
+  selector:
+    app: prospectio-front
+  ports:
+    - port: 5173
+      targetPort: 80
+      protocol: TCP
+      name: http

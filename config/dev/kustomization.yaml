@@ -1,7 +1,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: kaiohz-kustomization
+  name: soludev-kustomization
   namespace: flux-system
 spec:
   interval: 2m
@@ -11,9 +11,26 @@ spec:
   sourceRef:
     kind: GitRepository
     name: kaiohz-repo
-  path: "dev"
+  path: "dev/soludev"
   #When the Git revision changes, the manifests are reconciled automatically. If previously applied objects are missing from the current revision, these objects are deleted from the cluster when spec.prune is enabled
   prune: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: prospectio-kustomization
+  namespace: flux-system
+spec:
+  interval: 2m
+  timeout: 90s
+  wait: true
+  targetNamespace: prospectio
+  sourceRef:
+    kind: GitRepository
+    name: kaiohz-repo
+  path: "dev/prospectio"
+  #When the Git revision changes, the manifests are reconciled automatically. If previously applied objects are missing from the current revision, these objects are deleted from the cluster when spec.prune is enabled
+  prune: true 
 
 
 

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prospectio-front-config
+  namespace: prospectio
+data:
+  config.json: |
+    {
+      "chatbotUrl": "https://chatbot.prospectio.fr",
+      "backendUrl": "https://api-mcp.prospectio.fr"
+    }
