@@ -8,7 +8,7 @@ metadata:
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
   rules:
-    - host: api-mcp.prospectio.fr
+    - host: dev-api-mcp.prospectio.fr
       http:
         paths:
           - path: /
