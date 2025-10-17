@@ -209,7 +209,7 @@ helm repo add hashicorp https://helm.releases.hashicorp.com
 ### 2. Install OpenBao
 
 ```bash
-helm install openbao openbao/openbao --namespace kaiohz -f values.yaml
+helm install openbao openbao/openbao --namespace soludev -f config/dev/openbao/values.yaml
 ```
 
 Note: Make sure you have a `values.yaml` file configured for your Vault setup.
