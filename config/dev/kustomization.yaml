@@ -7,7 +7,7 @@ spec:
   interval: 2m
   timeout: 90s
   wait: true
-  targetNamespace: kaiohz
+  targetNamespace: soludev
   sourceRef:
     kind: GitRepository
     name: kaiohz-repo

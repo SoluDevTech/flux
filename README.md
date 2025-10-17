@@ -218,7 +218,7 @@ Note: Make sure you have a `values.yaml` file configured for your Vault setup.
 
 #### Initialize Vault
 ```bash
-kubectl exec -n kaiohz openbao-0 -- vault operator init
+kubectl exec -n soludev openbao-0 -- vault operator init
 ```
 
 This command will output unseal keys and a root token. **Save these securely!**
@@ -227,9 +227,9 @@ This command will output unseal keys and a root token. **Save these securely!**
 Use any 3 of the 5 unseal keys provided during initialization:
 
 ```bash
-kubectl exec -n kaiohz openbao-0 -- vault operator unseal '<key1>'
-kubectl exec -n kaiohz openbao-0 -- vault operator unseal '<key2>'
-kubectl exec -n kaiohz openbao-0 -- vault operator unseal '<key3>'
+kubectl exec -n soludev openbao-0 -- vault operator unseal '<key1>'
+kubectl exec -n soludev openbao-0 -- vault operator unseal '<key2>'
+kubectl exec -n soludev openbao-0 -- vault operator unseal '<key3>'
 ```
 
 Replace `<key1>`, `<key2>`, and `<key3>` with actual unseal keys from the initialization step.
@@ -250,24 +250,25 @@ helm install external-secrets external-secrets/external-secrets \
 #### Enable Kubernetes Auth Method
 ```bash
 export VAULT_TOKEN=<YOUR_TOKEN>
-kubectl exec -n kaiohz openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \ 
+kubectl exec -n soludev openbao-0 -- \
+  env VAULT_TOKEN="$VAULT_TOKEN" \
   bao auth enable kubernetes
 ```
 
 #### Create Service Account for Vault Authentication
 ```bash
 # Create service account
-kubectl create serviceaccount openbao-auth -n kaiohz
+kubectl create serviceaccount openbao-auth -n soludev
 
 # Create cluster role binding
 kubectl create clusterrolebinding openbao-auth \
   --clusterrole=system:auth-delegator \
-  --serviceaccount=kaiohz:openbao-auth
+  --serviceaccount=soludev:openbao-auth
 
-kubectl create serviceaccount external-secrets-sa -n kaiohz
+kubectl create serviceaccount external-secrets-sa -n soludev
 
 # Generate token for the service account
-kubectl create token openbao-auth -n kaiohz 
+kubectl create token openbao-auth -n soludev 
 ```
 
 #### Configure Kubernetes Auth in Vault
@@ -282,7 +283,7 @@ SA_TOKEN=$(kubectl create token openbao-auth -n kaiohz)
 K8S_CA_CERT=$(kubectl get configmap kube-root-ca.crt -o jsonpath='{.data.ca\.crt}')
 
 # Configure the Kubernetes auth method
-kubectl exec -n kaiohz openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
+kubectl exec -n soludev openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
   bao write auth/kubernetes/config \
   kubernetes_host="https://kubernetes.default.svc" \
   kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
@@ -291,24 +292,22 @@ kubectl exec -n kaiohz openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
 
 #### Create a Role for External Secrets
 ```bash
-kubectl exec -n kaiohz openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
+kubectl exec -n soludev openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
   bao write auth/kubernetes/role/external-secrets-role \
   bound_service_account_names=external-secrets-sa \
-  bound_service_account_namespaces=kaiohz \
+  bound_service_account_namespaces=soludev \
   policies=external-secrets-policy \
   ttl=24h
 ```
 
 #### Create Policy for External Secrets
 ```bash
-kubectl exec -n kaiohz openbao-0 -- bao policy write external-secrets-policy - <<EOF
-path "kv/data/*" {
-  capabilities = ["read", "list"]
+kubectl exec -n soludev openbao-0 -- sh -c "echo 'path \"kv/data/*\" {
+  capabilities = [\"read\", \"list\"]
 }
-path "kv/metadata/*" {
-  capabilities = ["read", "list"]
-}
-EOF
+path \"kv/metadata/*\" {
+  capabilities = [\"read\", \"list\"]
+}' | env VAULT_TOKEN=\"$VAULT_TOKEN\" bao policy write external-secrets-policy -"
 ```
 
 ## Flux GitOps Configuration
