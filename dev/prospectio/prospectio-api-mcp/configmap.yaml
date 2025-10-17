@@ -5,7 +5,7 @@ metadata:
   namespace: prospectio
 data:
   EXPOSE: "sse"
-  ALLOWED_ORIGINS: '["https://prospectio.front.local","https://prospectio.fr"]'
+  ALLOWED_ORIGINS: '["https://prospectio.front.local","https://dev.prospectio.fr"]'
   MANTIKS_API_URL: "https://api.mantiks.com"
   JSEARCH_API_URL: "https://jsearch.p.rapidapi.com"
   ACTIVE_JOBS_DB_URL: "https://active-jobs-db.p.rapidapi.com"
