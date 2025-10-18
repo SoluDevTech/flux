@@ -18,13 +18,3 @@ spec:
                 name: logto
                 port:
                   number: 3002
-    - host: dev-logto-admin.soludev.tech
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: logto
-                port:
-                  number: 3001
