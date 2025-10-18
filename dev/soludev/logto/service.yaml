@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: logto
-  namespace: prospectio
+  namespace: soludev
   labels:
     app: logto
 spec:
