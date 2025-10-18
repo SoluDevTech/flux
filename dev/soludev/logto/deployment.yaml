@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: logto
-  namespace: soudev
+  namespace: soludev
   labels:
     app: logto
 spec:
