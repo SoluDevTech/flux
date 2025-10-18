@@ -4,6 +4,6 @@ metadata:
   name: logto-config
   namespace: soludev
 data:
-  TRUST_PROXY_HEADER: "1"
+  TRUST_PROXY_HEADER: "0"
   ENDPOINT: "https://dev-logto.soludev.tech"
   ADMIN_ENDPOINT: "https://dev-logto-admin.soludev.tech"
