@@ -13,5 +13,8 @@ data:
 
       - hostname: dev-logto.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
+
+      - hostname: dev-logto-admin.soludev.tech
+        service: http://traefik.kube-system.svc.cluster.local:80
       
       - service: http_status:404
