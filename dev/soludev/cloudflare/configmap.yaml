@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-config
+  namespace: soludev
+data:
+  config.yml: |
+    tunnel: a67e25e7-bae5-4a2d-a46e-fc05d0c1f84e
+    
+    ingress:
+      - hostname: dev-bao.soludev.tech
+        service: http://traefik.kube-system.svc.cluster.local:80
+      
+      - service: http_status:404
