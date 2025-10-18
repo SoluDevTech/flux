@@ -7,4 +7,3 @@ data:
   TRUST_PROXY_HEADER: "1"
   ENDPOINT: "https://dev-logto.soludev.tech"
   ADMIN_ENDPOINT: "https://dev-logto-admin.soludev.tech"
-  NODE_ENV: "test"
