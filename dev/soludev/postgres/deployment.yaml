@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pgvector
-  namespace: prospectio
+  name: postgres
+  namespace: soludev
   labels:
-    app: pgvector
+    app: postgres
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: pgvector
+      app: postgres
   template:
     metadata:
       labels:
-        app: pgvector
+        app: postgres
     spec:
       nodeSelector:
         type: standard
@@ -23,17 +23,13 @@ spec:
           effect: "NoSchedule"
           operator: "Equal"
       containers:
-        - name: pgvector
-          image: pgvector/pgvector:0.8.0-pg17
+        - name: postgres
+          image: postgres/postgres:17-alpine
           ports:
             - containerPort: 5432
           envFrom:
             - secretRef:
-                name: pgvector-secret
-          volumeMounts:
-            - name: init-sql
-              mountPath: /docker-entrypoint-initdb.d/init.sql
-              subPath: init.sql
+                name: postgres-secret
           readinessProbe:
             exec:
               command: ["pg_isready", "-U", "prospectio", "-d", "prospectio"]
@@ -46,7 +42,3 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "1000m"
-      volumes:
-        - name: init-sql
-          configMap:
-            name: pgvector-init
