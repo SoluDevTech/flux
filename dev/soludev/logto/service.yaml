@@ -13,8 +13,6 @@ spec:
     - port: 3001
       targetPort: 3001
       protocol: TCP
-      name: http-main
     - port: 3002
       targetPort: 3002
       protocol: TCP
-      name: http-admin
