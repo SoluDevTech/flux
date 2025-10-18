@@ -11,10 +11,17 @@ spec:
     - host: dev-logto.soludev.tech
       http:
         paths:
-          - path: /
+          - path: /api
             pathType: Prefix
             backend:
               service:
                 name: logto
                 port:
-                  number: 3002
+                  name: http-main
+          - path: /admin
+            pathType: Prefix
+            backend:
+              service:
+                name: logto
+                port:
+                  name: http-admin
