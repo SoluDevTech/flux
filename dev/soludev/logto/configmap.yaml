@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logto-config
+  namespace: soludev
+data:
+  TRUST_PROXY_HEADER: "1"
