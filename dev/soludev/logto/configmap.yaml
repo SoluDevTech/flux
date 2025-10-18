@@ -5,6 +5,5 @@ metadata:
   namespace: soludev
 data:
   TRUST_PROXY_HEADER: "1"
-  ENDPOINT: "https://dev-logto.soludev.tech/api"
-  ADMIN_ENDPOINT: "https://dev-logto.soludev.tech/admin"
+  ENDPOINT: "https://dev-logto.soludev.tech"
   NODE_ENV: "test"
