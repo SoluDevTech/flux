@@ -28,6 +28,7 @@ spec:
           command: ["sh", "-c", "npm run cli db seed -- --swe && npm start"]
           ports:
             - containerPort: 3002
+            - containerPort: 3001
           envFrom:
             - configMapRef:
                 name: logto-config
