@@ -5,3 +5,4 @@ metadata:
   namespace: soludev
 data:
   TRUST_PROXY_HEADER: "1"
+  ENDPOINT_URL: "https://dev-logto.soludev.tech"
