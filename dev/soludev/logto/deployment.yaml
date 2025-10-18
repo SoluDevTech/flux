@@ -25,6 +25,7 @@ spec:
       containers:
         - name: logto
           image: svhd/logto:1.32
+          command: ["sh", "-c", "npm run cli db seed -- --swe && npm start"]
           ports:
             - containerPort: 3002
           envFrom:
