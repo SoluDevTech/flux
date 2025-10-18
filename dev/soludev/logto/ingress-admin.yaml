@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: logto-ingress
+  name: logto-ingress-admin
   namespace: soludev
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
