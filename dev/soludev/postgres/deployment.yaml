@@ -24,7 +24,7 @@ spec:
           operator: "Equal"
       containers:
         - name: postgres
-          image: postgres/postgres:17-alpine
+          image: postgres:17-alpine
           ports:
             - containerPort: 5432
           envFrom:
