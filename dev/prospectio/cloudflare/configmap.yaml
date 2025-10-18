@@ -8,9 +8,6 @@ data:
     tunnel: 36354e32-1c2f-4efa-bcb7-ec014977e61e
     
     ingress:
-      - hostname: prospectio.fr
-        service: http://traefik.kube-system.svc.cluster.local:80
-
       - hostname: dev-api-mcp.prospectio.fr
         service: http://traefik.kube-system.svc.cluster.local:80
       
@@ -18,6 +15,9 @@ data:
         service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: dev-chatbot.prospectio.fr
+        service: http://traefik.kube-system.svc.cluster.local:80
+
+      - hostname: prospectio.fr
         service: http://traefik.kube-system.svc.cluster.local:80
       
       - service: http_status:404
