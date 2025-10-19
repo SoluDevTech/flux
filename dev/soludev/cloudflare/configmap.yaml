@@ -9,23 +9,12 @@ data:
     
     ingress:
       - hostname: dev-bao.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
+        service: https://traefik.kube-system.svc.cluster.local:443
 
       - hostname: dev-logto.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
-        originRequest:
-          httpHostHeader: dev-logto.soludev.tech
-          # Ajoutez ces options pour préserver les headers
-          disableChunkedEncoding: false
-          http2Origin: false
-          noTLSVerify: true
 
       - hostname: dev-logto-admin.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
-        originRequest:
-          httpHostHeader: dev-logto-admin.soludev.tech
-          disableChunkedEncoding: false
-          http2Origin: false
-          noTLSVerify: true
       
       - service: http_status:404
