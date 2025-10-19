@@ -11,7 +11,7 @@ spec:
     - host: dev-logto.soludev.tech
       http:
         paths:
-          - path: /core
+          - path: /
             pathType: ImplementationSpecific
             backend:
               service:
