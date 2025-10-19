@@ -1,12 +1,12 @@
-# apiVersion: v1
-# kind: ConfigMap
-# metadata:
-#   name: logto-config
-#   namespace: soludev
-# data:
-#   TRUST_PROXY_HEADER: "true"
-#   ENDPOINT: "https://dev-logto.soludev.tech"
-#   PORT: "3001"
-#   ADMIN_ENDPOINT: "https://dev-logto-admin.soludev.tech"
-#   ADMIN_PORT: "3002"
-#   NODE_ENV: "production"
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logto-config
+  namespace: soludev
+data:
+  TRUST_PROXY_HEADER: "true"
+  ENDPOINT: "https://dev-logto.soludev.tech"
+  PORT: "3001"
+  ADMIN_ENDPOINT: "https://dev-logto-admin.soludev.tech"
+  ADMIN_PORT: "3002"
+  NODE_ENV: "production"
