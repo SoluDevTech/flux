@@ -6,4 +6,4 @@ metadata:
 data:
   TRUST_PROXY_HEADER: "true"
   ENDPOINT: "https://dev-logto.soludev.tech/core"
-  ADMIN_ENDPOINT: "https://dev-logto-admin.soludev.tech/admin"
+  ADMIN_ENDPOINT: "https://dev-logto.soludev.tech/admin"
