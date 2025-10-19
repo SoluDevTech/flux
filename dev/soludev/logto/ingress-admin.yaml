@@ -12,7 +12,7 @@ spec:
     - host: dev-logto-admin.soludev.tech
       http:
         paths:
-          - path: /console
+          - path: /admin
             pathType: Prefix
             backend:
               service:
