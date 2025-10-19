@@ -18,6 +18,7 @@ data:
           # Ajoutez ces options pour préserver les headers
           disableChunkedEncoding: false
           http2Origin: false
+          noTLSVerify: true
 
       - hostname: dev-logto-admin.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
@@ -25,5 +26,6 @@ data:
           httpHostHeader: dev-logto-admin.soludev.tech
           disableChunkedEncoding: false
           http2Origin: false
+          noTLSVerify: true
       
       - service: http_status:404
