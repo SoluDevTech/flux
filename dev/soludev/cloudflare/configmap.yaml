@@ -12,7 +12,7 @@ data:
         service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: dev-logto.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
+        service: https://traefik.kube-system.svc.cluster.local:80
         originRequest:
           httpHostHeader: dev-logto.soludev.tech
           # Ajoutez ces options pour préserver les headers
@@ -21,7 +21,7 @@ data:
           noTLSVerify: true
 
       - hostname: dev-logto-admin.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
+        service: https://traefik.kube-system.svc.cluster.local:80
         originRequest:
           httpHostHeader: dev-logto-admin.soludev.tech
           disableChunkedEncoding: false
