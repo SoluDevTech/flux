@@ -7,5 +7,9 @@ data:
   config.json: |
     {
       "chatbotUrl": "https://dev-chatbot.prospectio.fr",
-      "backendUrl": "https://dev-api-mcp.prospectio.fr"
+      "backendUrl": "https://dev-api-mcp.prospectio.fr",
+      "logtoUrl": "https://dev-logto.soludev.tech",
+      "logtoAppId": "60egs84a7vhw2u2zp7pg5",
+      "redirectUrl": "https://dev.prospectio.fr/callback",
+      "signOutUrl": "https://prospectio.fr"
     }
