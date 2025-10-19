@@ -24,7 +24,7 @@ spec:
           operator: "Equal"
       containers:
         - name: logto
-          image: svhd/logto:1.32
+          image: svhd/logto:1.31
           command: 
             - "sh"
             - "-c"
