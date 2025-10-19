@@ -13,8 +13,12 @@ data:
 
       - hostname: dev-logto.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
+        originRequest:
+          httpHostHeader: dev-logto.soludev.tech
 
       - hostname: dev-logto-admin.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
+        originRequest:
+          httpHostHeader: dev-logto-admin.soludev.tech
       
       - service: http_status:404
