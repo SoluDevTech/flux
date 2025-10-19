@@ -11,10 +11,6 @@ data:
       - hostname: dev-bao.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
-          httpHostHeader: dev-bao.soludev.tech
-          # Ajoutez ces options pour préserver les headers
-          disableChunkedEncoding: false
-          http2Origin: false
           noTLSVerify: true
 
       - hostname: dev-logto.soludev.tech
