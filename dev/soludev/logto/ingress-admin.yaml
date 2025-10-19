@@ -12,7 +12,7 @@ spec:
       http:
         paths:
           - path: /console
-            pathType: ImplementationSpecific
+            pathType: Prefix
             backend:
               service:
                 name: logto
