@@ -9,10 +9,10 @@ metadata:
     traefik.ingress.kubernetes.io/router.priority: "100"  # Priorité haute
 spec:
   rules:
-    - host: dev-logto.soludev.tech
+    - host: dev-logto-admin.soludev.tech
       http:
         paths:
-          - path: /console
+          - path: /
             pathType: Prefix
             backend:
               service:
