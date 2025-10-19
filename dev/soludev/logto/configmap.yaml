@@ -5,8 +5,8 @@ metadata:
   namespace: soludev
 data:
   TRUST_PROXY_HEADER: "true"
-  ENDPOINT: "https://dev-logto.local"
+  ENDPOINT: "https://dev-logto.soludev.tech"
   PORT: "3001"
-  ADMIN_ENDPOINT: "https://dev-logto-admin.local"
+  ADMIN_ENDPOINT: "https://dev-logto-admin.soludev.tech"
   ADMIN_PORT: "3002"
   NODE_ENV: "production"

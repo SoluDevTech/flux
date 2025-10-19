@@ -10,7 +10,7 @@ metadata:
     ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   rules:
-    - host: dev-logto.local
+    - host: dev-logto.soludev.tech
       http:
         paths:
           - path: /
