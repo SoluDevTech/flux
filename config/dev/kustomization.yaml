@@ -35,13 +35,13 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: prospectio-kustomization
+  name: pickpro-kustomization
   namespace: flux-system
 spec:
   interval: 2m
   timeout: 90s
   wait: true
-  targetNamespace: prospectio
+  targetNamespace: pickpro
   sourceRef:
     kind: GitRepository
     name: kaiohz-repo
