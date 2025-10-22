@@ -25,6 +25,10 @@ spec:
           image: kaiohz/pickpro:pickpro-front-latest
           ports:
             - containerPort: 80
+          volumeMounts:
+            - name: config-volume
+              mountPath: /usr/share/nginx/html/config.json
+              subPath: config.json
           livenessProbe:
             httpGet:
               path: /health
@@ -44,5 +48,9 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "1000m"
+      volumes:
+        - name: config-volume
+          configMap:
+            name: pickpro-front-config
       imagePullSecrets:
         - name: pickpro-docker-secret
