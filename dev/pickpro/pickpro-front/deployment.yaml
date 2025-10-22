@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pickpro-front
+  namespace: pickpro
+  labels:
+    app: pickpro-front
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pickpro-front
+  template:
+    metadata:
+      labels:
+        app: pickpro-front
+    spec:
+      tolerations:
+        - key: "klipperlb-exclude"
+          value: "true"
+          effect: "NoSchedule"
+          operator: "Equal"
+      containers:
+        - name: pickpro-front
+          image: kaiohz/pickpro:pickpro-front-latest
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "500m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
