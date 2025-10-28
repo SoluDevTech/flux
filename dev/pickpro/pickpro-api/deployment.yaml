@@ -24,9 +24,9 @@ spec:
           operator: "Equal"
       containers:
         - name: pickpro-api
-          image: kaiohz/pickpro:pickpro-back-latest
+          image: kaiohz/pickpro:pickpro-back-872c0e9eacab8c5b8b836afde707a1ba98ceef3b
           ports:
-            - containerPort: 7002
+            - containerPort: 8000
           envFrom:
             - configMapRef:
                 name: pickpro-api-config
@@ -35,7 +35,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /pickpro/rest/v1/health
-              port: 7002
+              port: 8000
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
@@ -51,3 +51,5 @@ spec:
             limits:
               memory: "2048Mi"
               cpu: "1500m"
+      imagePullSecrets:
+        - name: pickpro-docker-secret
