@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pickpro-api
+  namespace: pickpro
+  labels:
+    app: pickpro-api
+spec:
+  type: ClusterIP
+  selector:
+    app: pickpro-api
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http

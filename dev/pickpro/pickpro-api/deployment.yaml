@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pickpro-api
+  namespace: pickpro
+  labels:
+    app: pickpro-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pickpro-api
+  template:
+    metadata:
+      labels:
+        app: pickpro-api
+    spec:
+      nodeSelector:
+        type: standard
+      tolerations:
+        - key: "klipperlb-exclude"
+          value: "true"
+          effect: "NoSchedule"
+          operator: "Equal"
+      containers:
+        - name: pickpro-api
+          image: kaiohz/pickpro:pickpro-back-latest
+          ports:
+            - containerPort: 7002
+          envFrom:
+            - configMapRef:
+                name: pickpro-api-config
+            - secretRef:
+                name: pickpro-api-secret
+          livenessProbe:
+            httpGet:
+              path: /pickpro/rest/v1/health
+              port: 7002
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /pickpro/rest/v1/health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "1024Mi"
+              cpu: "1000m"
+            limits:
+              memory: "2048Mi"
+              cpu: "1500m"
