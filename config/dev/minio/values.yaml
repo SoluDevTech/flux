@@ -1,0 +1,43 @@
+# minio-values.yaml
+mode: standalone
+replicas: 1
+
+rootUser: minioadmin
+rootPassword: minioadmin
+
+# Stockage
+persistence:
+  enabled: true
+  storageClass: local-path
+  size: 10Gi
+
+# Ressources
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 250m
+
+service:
+  type: ClusterIP
+  port: 9000
+
+consoleService:
+  type: ClusterIP
+  port: 9001
+
+# Créer automatiquement le bucket CVs
+buckets:
+  - name: cvs
+    policy: none
+    purge: false
+
+# AFFINITY : forcer MinIO sur un nœud spécifique
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - colima 
