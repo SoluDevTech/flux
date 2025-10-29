@@ -10,4 +10,5 @@ data:
         "logtoAppId": "tweuy0jyrx1n7iolxe863",
         "redirectUrl": "https://pickpro.soludev.tech/callback",
         "signOutUrl": "https://pickpro.soludev.tech/"
+        "backendUrl": "https://pickpro-api.soludev.tech"
     }
