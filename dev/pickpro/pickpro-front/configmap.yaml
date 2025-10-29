@@ -9,6 +9,6 @@ data:
         "logtoUrl": "https://dev-logto.soludev.tech",
         "logtoAppId": "tweuy0jyrx1n7iolxe863",
         "redirectUrl": "https://pickpro.soludev.tech/callback",
-        "signOutUrl": "https://pickpro.soludev.tech/"
+        "signOutUrl": "https://pickpro.soludev.tech/",
         "backendUrl": "https://pickpro-api.soludev.tech"
     }
