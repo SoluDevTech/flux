@@ -4,7 +4,7 @@ metadata:
   name: pickpro-api-config
   namespace: pickpro
 data:
-  ALLOWED_ORIGINS: '["http://localhost:8080"]'
+  ALLOWED_ORIGINS: '["https://pickpro.soludev.tech"]'
   CHAT_MODEL: anthropic/claude-haiku-4.5
   TITLE_MODEL: anthropic/claude-haiku-4.5
   TEMPERATURE: "0.0"
