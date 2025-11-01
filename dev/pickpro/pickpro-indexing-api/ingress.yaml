@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: pickpro-api-ingress
+  name: pickpro-indexing-api-ingress
   namespace: pickpro
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
