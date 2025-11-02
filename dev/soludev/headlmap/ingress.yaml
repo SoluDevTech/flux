@@ -17,4 +17,4 @@ spec:
               service:
                 name: my-headlamp
                 port:
-                  number: 4466
+                  number: 80
