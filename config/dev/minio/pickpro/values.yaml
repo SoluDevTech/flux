@@ -1,4 +1,7 @@
 # minio-values.yaml
+# Namespace configuration
+namespaceOverride: pickpro
+
 mode: standalone
 replicas: 1
 
@@ -8,7 +11,7 @@ rootPassword: minioadmin
 # Stockage
 persistence:
   enabled: true
-  storageClass: nfs-cluster-global
+  storageClass: nfs-pickpro-minio
   size: 5Gi
 
 # Ressources

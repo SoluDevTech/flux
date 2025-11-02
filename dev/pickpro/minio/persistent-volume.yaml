@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-pickpro-minio
+  namespace: pickpro
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-pickpro-minio
+  nfs:
+    server: 100.64.0.4
+    path: /home/lima.linux/k3s-storage/pickpro/minio
+  mountOptions:
+    - nfsvers=4.1
+    - hard
+    - timeo=600
+    - retrans=2
