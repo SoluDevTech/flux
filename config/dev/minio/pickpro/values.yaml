@@ -13,6 +13,7 @@ persistence:
   enabled: true
   existingClaim: minio
   storageClass: nfs-pickpro-minio
+  accessMode: ReadWriteMany
   size: 5Gi
 
 # Ressources
