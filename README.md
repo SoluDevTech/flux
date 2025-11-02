@@ -11,6 +11,7 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [Flux Installation](#flux-installation)
 - [Helm Installation](#helm-installation)
 - [Vault Installation](#vault-installation)
+- [MinIO Installation](#minio-installation)
 - [Inference API Services](#inference-api-services)
 - [Troubleshooting](#troubleshooting)
 
@@ -1010,6 +1011,267 @@ telnet <IP_HEADSCALE_COLIMA> 2049
 
 # Ou avec nmap si installé
 nmap -p 2049 <IP_HEADSCALE_COLIMA>
+
+
+## MinIO Installation
+
+MinIO is a high-performance, S3-compatible object storage service. This section covers deploying MinIO in your K3s cluster using Helm.
+
+### 1. Add MinIO Helm Repository
+
+```bash
+helm repo add minio https://charts.min.io/
+helm repo update
+```
+
+### 2. Create MinIO Namespace
+
+```bash
+kubectl create namespace minio
+```
+
+### 3. Configure MinIO Values
+
+Create or update your `config/dev/minio/values.yaml` file with the following configuration:
+
+```yaml
+# MinIO Helm values
+mode: standalone
+replicas: 1
+
+# Root credentials (change these in production!)
+rootUser: minioadmin
+rootPassword: minioadmin
+
+# Storage configuration
+persistence:
+  enabled: true
+  storageClass: nfs-cluster-global  # Use your storage class
+  size: 50Gi                        # Adjust based on your PV capacity
+
+# Resource limits
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 250m
+  limits:
+    memory: 1Gi
+    cpu: 500m
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 9000
+
+consoleService:
+  type: ClusterIP
+  port: 9001
+
+# Auto-create buckets
+buckets:
+  - name: documents
+    policy: none
+  - name: uploads
+    policy: none
+```
+
+### 4. Install MinIO with Helm
+
+```bash
+helm install minio minio/minio \
+  -n minio \
+  -f config/dev/minio/values.yaml
+```
+
+### 5. Verify MinIO Installation
+
+```bash
+# Check if MinIO pod is running
+kubectl get pods -n minio
+
+# Check PVC binding
+kubectl get pvc -n minio
+
+# View MinIO service
+kubectl get svc -n minio
+```
+
+### 6. Access MinIO Console
+
+#### Port Forward (Development)
+
+```bash
+kubectl port-forward -n minio svc/minio 9001:9001
+```
+
+Then access the console at: `http://localhost:9001`
+
+#### Using Ingress (Production)
+
+Create an Ingress resource to expose MinIO API and Console:
+
+```yaml
+# dev/minio/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio-ingress
+  namespace: minio
+spec:
+  rules:
+    # MinIO Console
+    - host: minio-console.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio
+                port:
+                  number: 9001
+    # MinIO API
+    - host: minio-api.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio
+                port:
+                  number: 9000
+```
+
+Apply the ingress:
+```bash
+kubectl apply -f dev/minio/ingress.yaml
+```
+
+### 7. Create Access Keys
+
+After MinIO is running, create access keys for applications:
+
+```bash
+# Port forward to MinIO
+kubectl port-forward -n minio svc/minio 9001:9001 &
+
+# Access console at http://localhost:9001
+# Login with minioadmin/minioadmin
+# Create new access key under "Access Keys"
+```
+
+Or use MinIO CLI:
+
+```bash
+# Install MinIO CLI
+curl https://dl.min.io/client/mc/release/darwin-amd64/mc \
+  -o /usr/local/bin/mc
+chmod +x /usr/local/bin/mc
+
+# Configure MinIO alias
+mc config host add minio http://localhost:9000 minioadmin minioadmin
+
+# Create service account
+mc admin user svcacct add minio minioadmin
+```
+
+### 8. Use MinIO in Applications
+
+#### Store Credentials in Kubernetes Secret
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-credentials
+  namespace: default
+type: Opaque
+stringData:
+  MINIO_ROOT_USER: minioadmin
+  MINIO_ROOT_PASSWORD: minioadmin
+  MINIO_ENDPOINT: minio.minio.svc.cluster.local:9000
+  MINIO_USE_SSL: "false"
+```
+
+#### Use in Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-with-minio
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: myapp:latest
+          envFrom:
+            - secretRef:
+                name: minio-credentials
+          env:
+            - name: MINIO_BUCKET
+              value: "uploads"
+```
+
+### 9. Configure MinIO for Multiple Namespaces
+
+If you need MinIO access from multiple namespaces, create a PersistentVolumeClaim in each namespace:
+
+```yaml
+# Each namespace needs its own PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pvc
+  namespace: my-app-namespace
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-cluster-global
+  resources:
+    requests:
+      storage: 20Gi  # Size per namespace claim
+```
+
+### 10. MinIO Management Commands
+
+```bash
+# Check MinIO status
+kubectl get all -n minio
+
+# View MinIO logs
+kubectl logs -n minio -l app=minio -f
+
+# Scale MinIO (for HA setup, change mode to distributed)
+kubectl scale statefulset minio -n minio --replicas=3
+
+# Delete MinIO (data persists if using Retain policy)
+helm uninstall minio -n minio
+
+# Delete MinIO with data
+kubectl delete namespace minio
+```
+
+### 11. Troubleshooting MinIO
+
+**PVC not binding:**
+```bash
+kubectl describe pvc -n minio
+kubectl get pv
+```
+
+**Pod stuck in Pending:**
+```bash
+kubectl describe pod -n minio -l app=minio
+```
+
+**Connection issues from applications:**
+- Verify DNS resolution: `kubectl run -it --rm debug --image=busybox --restart=Never -- nslookup minio.minio.svc.cluster.local`
+- Check network policies and firewall rules
+- Verify credentials are correct
 
 ## Troubleshooting
 
