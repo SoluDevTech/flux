@@ -4,14 +4,14 @@ metadata:
   name: nfs-global-pv
 spec:
   capacity:
-    storage: 60Gi  # Ajustez selon vos besoins (vous avez 86 GB dans Colima)
+    storage: 5Gi
   accessModes:
-    - ReadWriteMany  # Plusieurs pods peuvent lire/écrire simultanément
-  persistentVolumeReclaimPolicy: Retain  # Les données persistent après suppression du PVC
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs-cluster-global
   nfs:
-    server: 100.64.0.4  # Remplacez par l'IP Headscale de votre VM Colima
-    path: /home/lima.linux/k3s-storage
+    server: 100.64.0.4
+    path: /home/lima.linux/k3s-storage/soludev/postgres
   mountOptions:
     - nfsvers=4.1
     - hard
