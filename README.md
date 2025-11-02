@@ -3,7 +3,7 @@
 This documentation covers the complete setup of a K3s cluster with Flux for GitOps and Vault for secrets management.
 
 ## Table of Contents
-- 
+- [Mesh VPN Installation](#mesh-vpn-installation)
 - [K3s Installation](#k3s-installation)
 - [Control Plane Setup](#control-plane-setup)
 - [Worker Node Setup](#worker-node-setup)
@@ -680,38 +680,39 @@ Common issues:
 - **Version mismatch**: Make sure the CRD version matches your Traefik version
 - **Permissions**: Ensure you have cluster-admin permissions to install CRDs
 
-## Synchronisation des secrets Vault vers K3s
 
-Cette section explique comment synchroniser automatiquement les secrets stockés dans Vault vers les secrets Kubernetes en utilisant External Secrets Operator (ESO).
+## Synchronizing Vault secrets to K3s
 
-### 1. Installation d'External Secrets Operator
+This section explains how to automatically synchronize secrets stored in Vault to Kubernetes secrets using External Secrets Operator (ESO).
 
-#### Via Helm (recommandé)
+### 1. Installing External Secrets Operator
+
+#### Via Helm (recommended)
 
 ```bash
-# Ajouter le repo
+# Add the repo
 helm repo add external-secrets https://charts.external-secrets.io
 helm repo update
 
-# Installer ESO
+# Install ESO
 helm install external-secrets external-secrets/external-secrets \
-    -n external-secrets-system \
-    --create-namespace
+  -n external-secrets-system \
+  --create-namespace
 
-# Vérifier l'installation
+# Verify installation
 kubectl get pods -n external-secrets-system
 ```
 
-#### Via manifests YAML (alternative)
+#### Via YAML manifests (alternative)
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml
 kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/charts/external-secrets/templates/deployment.yaml
 ```
 
-### 2. Configuration du SecretStore
+### 2. SecretStore Configuration
 
-#### Créer le SecretStore
+#### Create the SecretStore
 
 ```yaml
 # vault-secret-store.yaml
@@ -724,8 +725,8 @@ spec:
   provider:
     vault:
       server: "http://vault.kaiohz.svc.cluster.local:8200"
-      path: "secret"          # Chemin de votre KV engine
-      version: "v2"           # Version du KV engine (v1 ou v2)
+  path: "secret"          # Path to your KV engine
+  version: "v2"           # Version of the KV engine (v1 or v2)
       auth:
         kubernetes:
           mountPath: "kubernetes"
@@ -734,43 +735,44 @@ spec:
             name: "external-secrets-sa"
 ```
 
+
 ```bash
-# Appliquer la configuration
+# Apply the configuration
 kubectl apply -f vault-secret-store.yaml
 
-# Vérifier le SecretStore
+# Verify the SecretStore
 kubectl get secretstore vault-backend -n kaiohz
 kubectl describe secretstore vault-backend -n kaiohz
 ```
 
-### 3. Créer des secrets dans Vault (exemples)
+### 3. Create secrets in Vault (examples)
 
-#### Via l'UI Vault
-- Secrets > secret/ (ou votre engine)
+#### Via Vault UI
+- Secrets > secret/ (or your engine)
 - Create secret
 
-Exemples de structure :
+Example structures:
 ```
-# Secrets pour une application
+# Secrets for an application
 Path: myapp/database
 - username: mydbuser
 - password: supersecret123
 - host: db.example.com
 - port: 5432
 
-# Secrets pour l'API
+# Secrets for the API
 Path: myapp/api
 - key: abc123xyz
 - secret: def456uvw
 - endpoint: https://api.example.com
 
-# Secrets pour les certificats
+# Secrets for certificates
 Path: myapp/tls
 - cert: -----BEGIN CERTIFICATE-----...
 - key: -----BEGIN PRIVATE KEY-----...
 ```
 
-#### Via CLI Vault
+#### Via Vault CLI
 
 ```bash
 # Secrets de base de données
@@ -793,9 +795,10 @@ vault kv put secret/myapp/config \
     log_level=info
 ```
 
-### 4. Créer des ExternalSecrets
 
-#### ExternalSecret basique - Secrets individuels
+### 4. Create ExternalSecrets
+
+#### Basic ExternalSecret - Individual secrets
 
 ```yaml
 # myapp-database-secret.yaml
@@ -805,19 +808,19 @@ metadata:
   name: myapp-database
   namespace: kaiohz
 spec:
-  refreshInterval: 60s  # Synchronisation toutes les minutes
+  refreshInterval: 60s  # Synchronize every minute
   secretStoreRef:
     name: vault-backend
     kind: SecretStore
   target:
-    name: myapp-db-secret    # Nom du secret K8s qui sera créé
-    creationPolicy: Owner    # ESO gère le secret
-    type: Opaque            # Type de secret K8s
+    name: myapp-db-secret    # Name of the K8s secret to be created
+    creationPolicy: Owner    # ESO manages the secret
+    type: Opaque            # Type of K8s secret
   data:
-  - secretKey: DB_USERNAME        # Clé dans le secret K8s
+  - secretKey: DB_USERNAME        # Key in the K8s secret
     remoteRef:
-      key: myapp/database        # Chemin dans Vault
-      property: username         # Propriété spécifique
+      key: myapp/database        # Path in Vault
+      property: username         # Specific property
   - secretKey: DB_PASSWORD
     remoteRef:
       key: myapp/database
@@ -832,7 +835,8 @@ spec:
       property: port
 ```
 
-#### ExternalSecret - Synchronisation complète d'un secret
+
+#### ExternalSecret - Full secret synchronization
 
 ```yaml
 # myapp-api-secret.yaml
@@ -851,10 +855,11 @@ spec:
     creationPolicy: Owner
   dataFrom:
   - extract:
-      key: myapp/api  # Récupère TOUTES les clés de ce secret Vault
+    key: myapp/api  # Retrieves ALL keys from this Vault secret
 ```
 
-#### ExternalSecret - Secret TLS
+
+#### ExternalSecret - TLS Secret
 
 ```yaml
 # myapp-tls-secret.yaml
@@ -864,14 +869,14 @@ metadata:
   name: myapp-tls
   namespace: kaiohz
 spec:
-  refreshInterval: 300s  # 5 minutes pour les certificats
+  refreshInterval: 300s  # 5 minutes for certificates
   secretStoreRef:
     name: vault-backend
     kind: SecretStore
   target:
     name: myapp-tls-secret
     creationPolicy: Owner
-    type: kubernetes.io/tls  # Type spécial pour TLS
+  type: kubernetes.io/tls  # Special type for TLS
   data:
   - secretKey: tls.crt
     remoteRef:
@@ -883,37 +888,38 @@ spec:
       property: key
 ```
 
-### 5. Appliquer les ExternalSecrets
+
+### 5. Apply the ExternalSecrets
 
 ```bash
-# Appliquer tous les ExternalSecrets
+# Apply all ExternalSecrets
 kubectl apply -f myapp-database-secret.yaml
 kubectl apply -f myapp-api-secret.yaml
 kubectl apply -f myapp-tls-secret.yaml
 
-# Vérifier le statut
+# Check status
 kubectl get externalsecrets -n kaiohz
 
-# Voir les détails (important pour débugger)
+# View details (important for debugging)
 kubectl describe externalsecret myapp-database -n kaiohz
 ```
 
-### 6. Vérifier que les secrets K8s sont créés
+### 6. Verify that K8s secrets are created
 
 ```bash
-# Lister les secrets créés
+# List created secrets
 kubectl get secrets -n kaiohz | grep myapp
 
-# Voir le contenu d'un secret (base64)
+# View the content of a secret (base64)
 kubectl get secret myapp-db-secret -n kaiohz -o yaml
 
-# Décoder un secret pour vérifier
+# Decode a secret to verify
 kubectl get secret myapp-db-secret -n kaiohz -o jsonpath='{.data.DB_USERNAME}' | base64 -d
 ```
 
-### 7. Utiliser les secrets dans vos applications
+### 7. Use the secrets in your applications
 
-#### Dans un Deployment
+#### In a Deployment
 
 ```yaml
 apiVersion: apps/v1
@@ -935,7 +941,7 @@ spec:
       - name: app
         image: myapp:latest
         env:
-        # Variables d'environnement depuis les secrets
+        # Environment variables from secrets
         - name: DB_USERNAME
           valueFrom:
             secretKeyRef:
@@ -951,7 +957,7 @@ spec:
             secretKeyRef:
               name: myapp-api-secret
               key: key
-        # Volume pour les certificats TLS
+        # Volume for TLS certificates
         volumeMounts:
         - name: tls-certs
           mountPath: /etc/ssl/certs/app
@@ -962,13 +968,48 @@ spec:
           secretName: myapp-tls-secret
 ```
 
-#### Variables d'environnement depuis un secret entier
+
+#### Environment variables from an entire secret
 
 ```yaml
-        envFrom:
-        - secretRef:
-            name: myapp-api-secret  # Toutes les clés deviennent des variables d'env
+    envFrom:
+    - secretRef:
+      name: myapp-api-secret  # All keys become environment variables
 ```
+
+
+### 8. Configure NFS server inside Colima
+
+Run these commands inside the Colima VM:
+
+# Create storage directory
+sudo mkdir -p /var/lib/k3s-storage
+sudo chmod 777 /var/lib/k3s-storage
+
+# Install NFS server
+sudo apt update
+sudo apt install -y nfs-kernel-server
+
+# Configure NFS export for Headscale network
+echo "/var/lib/k3s-storage 100.64.0.0/10(rw,sync,no_subtree_check,no_root_squash,insecure)" | sudo tee -a /etc/exports
+
+# Apply and start
+sudo exportfs -ra
+sudo systemctl enable nfs-kernel-server
+sudo systemctl restart nfs-kernel-server
+
+# Verify
+showmount -e localhost
+
+Test port NFS (2049)
+bash# Avec netcat
+nc -zv <IP_HEADSCALE_COLIMA> 2049
+
+# Ou avec telnet
+telnet <IP_HEADSCALE_COLIMA> 2049
+
+# Ou avec nmap si installé
+nmap -p 2049 <IP_HEADSCALE_COLIMA>
 
 ## Troubleshooting
 

@@ -22,6 +22,10 @@ spec:
           value: "true"
           effect: "NoSchedule"
           operator: "Equal"
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: soludev-pgvector-pvc
       containers:
         - name: postgres
           image: postgres:17-alpine
@@ -42,3 +46,6 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "1000m"
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data

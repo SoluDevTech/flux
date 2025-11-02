@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-global-pv
+spec:
+  capacity:
+    storage: 60Gi  # Ajustez selon vos besoins (vous avez 86 GB dans Colima)
+  accessModes:
+    - ReadWriteMany  # Plusieurs pods peuvent lire/écrire simultanément
+  persistentVolumeReclaimPolicy: Retain  # Les données persistent après suppression du PVC
+  storageClassName: nfs-cluster-global
+  nfs:
+    server: 100.64.0.4  # Remplacez par l'IP Headscale de votre VM Colima
+    path: /k3s-storage
+  mountOptions:
+    - nfsvers=4.1
+    - hard
+    - timeo=600
+    - retrans=2

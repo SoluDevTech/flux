@@ -8,8 +8,8 @@ rootPassword: minioadmin
 # Stockage
 persistence:
   enabled: true
-  storageClass: local-path
-  size: 10Gi
+  storageClass: nfs-cluster-global
+  size: 5Gi
 
 # Ressources
 resources:
@@ -29,15 +29,3 @@ consoleService:
 buckets:
   - name: cvs
     policy: none
-    purge: false
-
-# AFFINITY : forcer MinIO sur un nœud spécifique
-affinity:
-  nodeAffinity:
-    requiredDuringSchedulingIgnoredDuringExecution:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - colima 
