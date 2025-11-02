@@ -11,7 +11,7 @@ data:
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
   PYTHONPATH: ./pickpro_indexing_api
   MAX_WORKERS: "5"
-  MINIO_HOST: minio.soludev.svc.cluster.local:9000
+  MINIO_HOST: minio.pickpro.svc.cluster.local:9000
 
 
 
