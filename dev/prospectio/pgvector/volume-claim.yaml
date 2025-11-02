@@ -1,12 +1,12 @@
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   name: prospectio-pgvector-pvc
-#   namespace: prospectio
-# spec:
-#   accessModes:
-#     - ReadWriteMany
-#   storageClassName: nfs-cluster-global
-#   resources:
-#     requests:
-#       storage: 5Gi
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prospectio-pgvector-pvc
+  namespace: prospectio
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-cluster-global
+  resources:
+    requests:
+      storage: 5Gi
