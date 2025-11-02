@@ -5,7 +5,7 @@ metadata:
   namespace: pickpro
 data:
   ALLOWED_ORIGINS: '["https://pickpro.soludev.tech"]'
-  INDEXING_MODEL: anthropic/claude-3-haiku
+  INDEXING_MODEL: anthropic/claude-haiku-4.5
   EMBEDDING_CLIENT: openai/text-embedding-3-large
   TEMPERATURE: "0.0"
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
