@@ -26,7 +26,7 @@ spec:
         - name: init-sql
           configMap:
             name: pgvector-init
-        - name: postgres-data
+        - name: pgvector-data
           persistentVolumeClaim:
             claimName: prospectio-pgvector-pvc 
       containers:
@@ -41,7 +41,7 @@ spec:
             - name: init-sql
               mountPath: /docker-entrypoint-initdb.d/init.sql
               subPath: init.sql
-            - name: postgres-data
+            - name: pgvector-data
               mountPath: /var/lib/postgresql/data
           readinessProbe:
             exec:
