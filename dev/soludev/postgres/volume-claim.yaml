@@ -1,12 +1,12 @@
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: soludev-pgvector-pvc
-  namespace: soludev
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: nfs-cluster-global
-  resources:
-    requests:
-      storage: 5Gi
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: soludev-pgvector-pvc
+#   namespace: soludev
+# spec:
+#   accessModes:
+#     - ReadWriteMany
+#   storageClassName: nfs-cluster-global
+#   resources:
+#     requests:
+#       storage: 5Gi
