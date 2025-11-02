@@ -11,7 +11,7 @@ spec:
   storageClassName: nfs-cluster-global
   nfs:
     server: 100.64.0.4  # Remplacez par l'IP Headscale de votre VM Colima
-    path: /k3s-storage
+    path: /home/lima.linux/k3s-storage
   mountOptions:
     - nfsvers=4.1
     - hard
