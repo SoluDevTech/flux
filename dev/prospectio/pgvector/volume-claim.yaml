@@ -9,4 +9,4 @@ spec:
   storageClassName: nfs-prospectio-pgvector
   resources:
     requests:
-      storage: 5Gid
+      storage: 5Gi
