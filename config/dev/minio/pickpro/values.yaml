@@ -11,6 +11,7 @@ rootPassword: minioadmin
 # Stockage
 persistence:
   enabled: true
+  existingClaim: minio
   storageClass: nfs-pickpro-minio
   size: 5Gi
 
