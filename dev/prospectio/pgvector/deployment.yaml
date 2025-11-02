@@ -1,57 +1,57 @@
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   name: pgvector
-#   namespace: prospectio
-#   labels:
-#     app: pgvector
-# spec:
-#   replicas: 1
-#   selector:
-#     matchLabels:
-#       app: pgvector
-#   template:
-#     metadata:
-#       labels:
-#         app: pgvector
-#     spec:
-#       nodeSelector:
-#         type: standard
-#       tolerations:
-#         - key: "klipperlb-exclude"
-#           value: "true"
-#           effect: "NoSchedule"
-#           operator: "Equal"
-#       volumes:
-#         - name: init-sql
-#           configMap:
-#             name: pgvector-init
-#         - name: postgres-data
-#           persistentVolumeClaim:
-#             claimName: prospectio-pgvector-pvc 
-#       containers:
-#         - name: pgvector
-#           image: pgvector/pgvector:0.8.0-pg17
-#           ports:
-#             - containerPort: 5432
-#           envFrom:
-#             - secretRef:
-#                 name: pgvector-secret
-#           volumeMounts:
-#             - name: init-sql
-#               mountPath: /docker-entrypoint-initdb.d/init.sql
-#               subPath: init.sql
-#             - name: postgres-data
-#               mountPath: /var/lib/postgresql/data
-#           readinessProbe:
-#             exec:
-#               command: ["pg_isready", "-U", "prospectio", "-d", "prospectio"]
-#             initialDelaySeconds: 5
-#             periodSeconds: 5
-#           resources:
-#             requests:
-#               memory: "256Mi"
-#               cpu: "500m"
-#             limits:
-#               memory: "512Mi"
-#               cpu: "1000m"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgvector
+  namespace: prospectio
+  labels:
+    app: pgvector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgvector
+  template:
+    metadata:
+      labels:
+        app: pgvector
+    spec:
+      nodeSelector:
+        type: standard
+      tolerations:
+        - key: "klipperlb-exclude"
+          value: "true"
+          effect: "NoSchedule"
+          operator: "Equal"
+      volumes:
+        - name: init-sql
+          configMap:
+            name: pgvector-init
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: prospectio-pgvector-pvc 
+      containers:
+        - name: pgvector
+          image: pgvector/pgvector:0.8.0-pg17
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: pgvector-secret
+          volumeMounts:
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d/init.sql
+              subPath: init.sql
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "prospectio", "-d", "prospectio"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "500m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
