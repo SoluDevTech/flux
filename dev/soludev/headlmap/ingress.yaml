@@ -1,20 +1,20 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: soludev-headlamap-ingress
+  name: soludev-headlmap-ingress
   namespace: soludev
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
   rules:
-    - host: headlamap.local
+    - host: headlmap.local
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: my-headlamap
+                name: my-headlmap
                 port:
                   number: 4466
