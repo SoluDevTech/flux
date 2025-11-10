@@ -32,7 +32,5 @@ data:
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
-          http2: true
-          http3: false
       
       - service: http_status:404
