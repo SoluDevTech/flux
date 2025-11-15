@@ -1,0 +1,70 @@
+# values.yaml
+# Pas de credentials en dur
+auth:
+  ZO_ROOT_USER_EMAIL: ""
+  ZO_ROOT_USER_PASSWORD: ""
+  ZO_S3_ACCESS_KEY: ""
+  ZO_S3_SECRET_KEY: ""
+
+# Injecter les credentials depuis le secret
+extraEnv:
+  - name: ZO_ROOT_USER_EMAIL
+    valueFrom:
+      secretKeyRef:
+        name: openobserve-auth
+        key: ZO_ROOT_USER_EMAIL
+  - name: ZO_ROOT_USER_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: openobserve-auth
+        key: ZO_ROOT_USER_PASSWORD
+  - name: ZO_S3_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: openobserve-auth
+        key: ZO_S3_ACCESS_KEY
+  - name: ZO_S3_SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        name: openobserve-auth
+        key: ZO_S3_SECRET_KEY
+
+# Configuration MinIO
+config:
+  ZO_LOCAL_MODE: "false"  # IMPORTANT: désactiver le mode local
+  ZO_LOCAL_MODE_STORAGE: "s3"  # Utiliser S3 (MinIO)
+  ZO_S3_PROVIDER: "minio"  # Spécifier MinIO
+  ZO_S3_SERVER_URL: "http://minio.soludev.svc.cluster.local:9000"  # URL de votre MinIO
+  ZO_S3_REGION_NAME: "us-east-1"  # Région (n'importe laquelle pour MinIO)
+  ZO_S3_BUCKET_NAME: "observability"  # Nom du bucket à créer dans MinIO
+  ZO_S3_BUCKET_PREFIX: ""  # Optionnel: préfixe pour les objets
+  ZO_S3_FEATURE_FORCE_HOSTED_STYLE: "true"  # Important pour MinIO
+  ZO_S3_FEATURE_HTTP1_ONLY: "false"
+  ZO_S3_FEATURE_HTTP2_ONLY: "false"
+
+resources:
+  limits:
+    cpu: 1500m
+    memory: 2Gi
+  requests:
+    cpu: 1000m
+    memory: 1Gi
+
+persistence:
+  enabled: true
+  size: 5Gi  # Plus petit car les données sont dans MinIO
+  storageClassName: "nfs-soludev-openobserve"
+  accessModes:
+    - ReadWriteMany
+
+service:
+  type: ClusterIP
+  http_port: 5080
+  grpc_port: 5081
+
+ingress:
+  enabled: false
+
+# Désactiver MinIO intégré (vous utilisez le vôtre)
+minio:
+  enabled: false
