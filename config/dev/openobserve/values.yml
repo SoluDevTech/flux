@@ -11,26 +11,37 @@ extraEnv:
   - name: ZO_ROOT_USER_EMAIL
     valueFrom:
       secretKeyRef:
-        name: openobserve-auth
+        name: soludev-openobserve-secret
         key: ZO_ROOT_USER_EMAIL
   - name: ZO_ROOT_USER_PASSWORD
     valueFrom:
       secretKeyRef:
-        name: openobserve-auth
+        name: soludev-openobserve-secret
         key: ZO_ROOT_USER_PASSWORD
   - name: ZO_S3_ACCESS_KEY
     valueFrom:
       secretKeyRef:
-        name: openobserve-auth
-        key: ZO_S3_ACCESS_KEY
+        name: soludev-openobserve-secret
+        key: MINIO_ACCESS
   - name: ZO_S3_SECRET_KEY
     valueFrom:
       secretKeyRef:
-        name: openobserve-auth
-        key: ZO_S3_SECRET_KEY
+        name: soludev-openobserve-secret
+        key: MINIO_SECRET
+  - name: ZO_META_POSTGRES_DSN
+    valueFrom:
+      secretKeyRef:
+        name: soludev-openobserve-secret
+        key: ZO_META_POSTGRES_DSN
 
 # Configuration MinIO
 config:
+
+  # PostgreSQL pour métadonnées
+  ZO_META_STORE: "postgres"
+  ZO_META_CONNECTION_POOL_MIN_SIZE: "2"
+  ZO_META_CONNECTION_POOL_MAX_SIZE: "10"
+  
   ZO_LOCAL_MODE: "false"  # IMPORTANT: désactiver le mode local
   ZO_LOCAL_MODE_STORAGE: "s3"  # Utiliser S3 (MinIO)
   ZO_S3_PROVIDER: "minio"  # Spécifier MinIO
