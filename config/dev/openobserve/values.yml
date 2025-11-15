@@ -42,15 +42,19 @@ config:
   ZO_META_CONNECTION_POOL_MIN_SIZE: "2"
   ZO_META_CONNECTION_POOL_MAX_SIZE: "10"
   
-  ZO_LOCAL_MODE: "false"  # IMPORTANT: désactiver le mode local
-  ZO_LOCAL_MODE_STORAGE: "s3"  # Utiliser S3 (MinIO)
-  ZO_S3_PROVIDER: "minio"  # Spécifier MinIO
-  ZO_S3_SERVER_URL: "http://minio.soludev.svc.cluster.local:9000"  # URL de votre MinIO
-  ZO_S3_REGION_NAME: "us-east-1"  # Région (n'importe laquelle pour MinIO)
-  ZO_S3_BUCKET_NAME: "observability"  # Nom du bucket à créer dans MinIO
-  ZO_S3_BUCKET_PREFIX: ""  # Optionnel: préfixe pour les objets
-  ZO_S3_FEATURE_FORCE_HOSTED_STYLE: "true"  # Important pour MinIO
-  ZO_S3_FEATURE_HTTP1_ONLY: "false"
+  # Mode local activé pour éviter NATS (mais avec stockage S3/MinIO)
+  ZO_LOCAL_MODE: "true"
+  ZO_LOCAL_MODE_STORAGE: "s3"
+  
+  # Configuration MinIO
+  ZO_S3_PROVIDER: "minio"
+  ZO_S3_SERVER_URL: "http://minio.soludev.svc.cluster.local:9000"
+  ZO_S3_REGION_NAME: "us-east-1"
+  ZO_S3_BUCKET_NAME: "observability"
+  ZO_S3_BUCKET_PREFIX: ""
+  ZO_S3_FEATURE_FORCE_HOSTED_STYLE: "false"
+  ZO_S3_FEATURE_FORCE_PATH_STYLE: "true"
+  ZO_S3_FEATURiE_HTTP1_ONLY: "false"
   ZO_S3_FEATURE_HTTP2_ONLY: "false"
 
 resources:
@@ -61,10 +65,11 @@ resources:
     cpu: 1000m
     memory: 1Gi
 
+# Persistence temporaire pour cache local (les données sont dans MinIO)
 persistence:
   enabled: true
   size: 5Gi
-  storageClassName: "nfs-soludev-openobserve"
+  storageClass: "nfs-soludev-openobserve"
   accessModes:
     - ReadWriteMany
 
