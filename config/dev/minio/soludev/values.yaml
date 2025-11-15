@@ -1,0 +1,38 @@
+# minio-values.yaml
+# Namespace configuration
+namespaceOverride: soludev
+
+mode: standalone
+replicas: 1
+
+rootUser: minioadmin
+rootPassword: minioadmin
+
+# Stockage
+persistence:
+  enabled: true
+  existingClaim: minio
+  storageClass: nfs-pickpro-minio
+  accessMode: ReadWriteMany
+  size: 5Gi
+
+# Ressources
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 250m
+
+service:
+  type: ClusterIP
+  port: 9000
+  namespaceOverride: soludev-minio
+
+consoleService:
+  type: ClusterIP
+  port: 9001
+  namespaceOverride: soludev-minio-console
+
+# Créer automatiquement le bucket observability
+buckets:
+  - name: observability
+    policy: none
