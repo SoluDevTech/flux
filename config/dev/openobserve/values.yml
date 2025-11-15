@@ -52,7 +52,7 @@ resources:
 
 persistence:
   enabled: true
-  size: 5Gi  # Plus petit car les données sont dans MinIO
+  size: 5Gi
   storageClassName: "nfs-soludev-openobserve"
   accessModes:
     - ReadWriteMany
@@ -65,6 +65,5 @@ service:
 ingress:
   enabled: false
 
-# Désactiver MinIO intégré (vous utilisez le vôtre)
 minio:
   enabled: false
