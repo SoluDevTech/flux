@@ -9,4 +9,4 @@ spec:
   storageClassName: nfs-soludev-minio
   resources:
     requests:
-      storage: 10Gi
+      storage: 5Gi
