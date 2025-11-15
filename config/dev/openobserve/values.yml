@@ -53,7 +53,7 @@ resources:
 persistence:
   enabled: true
   size: 5Gi
-  storageClassName: "nfs-soludev-openobserve-minio"
+  storageClassName: "nfs-soludev-openobserve"
   accessModes:
     - ReadWriteMany
 
