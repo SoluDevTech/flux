@@ -25,12 +25,10 @@ resources:
 service:
   type: ClusterIP
   port: 9000
-  namespaceOverride: soludev-minio
 
 consoleService:
   type: ClusterIP
   port: 9001
-  namespaceOverride: soludev-minio-console
 
 # Créer automatiquement le bucket observability
 buckets:

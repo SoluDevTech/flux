@@ -15,7 +15,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: soludev-minio-console
+                name: minio-console
                 port:
                   number: 9001
     - host: dev-soludev-api-minio.local
@@ -25,6 +25,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: soludev-minio
+                name: minio
                 port:
                   number: 9000
