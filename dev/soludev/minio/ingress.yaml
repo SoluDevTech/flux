@@ -18,7 +18,7 @@ spec:
                 name: soludev-minio-console
                 port:
                   number: 9001
-    - host: api-soludev-minio.local
+    - host: dev-soludev-api-minio.local
       http:
         paths:
           - path: /
