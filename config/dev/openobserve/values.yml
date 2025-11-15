@@ -37,6 +37,11 @@ extraEnv:
 # Configuration MinIO
 config:
 
+  # Rétention des données (10 jours)
+  ZO_COMPACT_DATA_RETENTION_DAYS: "10"
+  ZO_COMPACT_ENABLED: "true"
+  ZO_COMPACT_INTERVAL: "3600"
+
   # PostgreSQL pour métadonnées
   ZO_META_STORE: "postgres"
   ZO_META_CONNECTION_POOL_MIN_SIZE: "2"
