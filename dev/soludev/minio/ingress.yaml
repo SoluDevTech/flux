@@ -8,23 +8,23 @@ metadata:
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
   rules:
-    - host: dev-minio.local
+    - host: dev-soludev-minio.local
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: minio-console
+                name: soludev-minio-console
                 port:
                   number: 9001
-    - host: api-minio.local
+    - host: api-soludev-minio.local
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: minio
+                name: soludev-minio
                 port:
                   number: 9000

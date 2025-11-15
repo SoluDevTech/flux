@@ -9,4 +9,4 @@ spec:
   storageClassName: nfs-soludev-postgres
   resources:
     requests:
-      storage: 20Gi
+      storage: 5Gi

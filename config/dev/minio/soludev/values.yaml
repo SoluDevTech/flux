@@ -12,7 +12,7 @@ rootPassword: minioadmin
 persistence:
   enabled: true
   existingClaim: minio
-  storageClass: nfs-pickpro-minio
+  storageClass: nfs-soludev-minio
   accessMode: ReadWriteMany
   size: 5Gi
 
