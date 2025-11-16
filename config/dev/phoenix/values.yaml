@@ -7,11 +7,38 @@ database:
     port: 5432
     db: "phoenix"
     user: "phoenix"
-    password: ""  # Password comes from soludev-phoenix-secret
+    password: ""  # Password comes from external secret via additionalEnv
 
 auth:
-  name: "soludev-phoenix-secret"  # Use external secret from OpenBao
   enableAuth: true
+
+#
+additionalEnv:
+  - name: PHOENIX_POSTGRES_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: soludev-phoenix-secret
+        key: PHOENIX_POSTGRES_PASSWORD
+  - name: PHOENIX_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: soludev-phoenix-secret
+        key: PHOENIX_SECRET
+  - name: PHOENIX_ADMIN_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: soludev-phoenix-secret
+        key: PHOENIX_ADMIN_SECRET
+  - name: PHOENIX_SMTP_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: soludev-phoenix-secret
+        key: PHOENIX_SMTP_PASSWORD
+  - name: PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: soludev-phoenix-secret
+        key: PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD
 
 persistence:
   enabled: false

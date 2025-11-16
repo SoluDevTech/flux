@@ -12,6 +12,8 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [Helm Installation](#helm-installation)
 - [Vault Installation](#vault-installation)
 - [MinIO Installation](#minio-installation)
+- [Phoenix Installation](#phoenix-installation)
+- [OpenObserve Installation](#openobserve-installation)
 - [Inference API Services](#inference-api-services)
 - [Troubleshooting](#troubleshooting)
 
@@ -1272,6 +1274,1294 @@ kubectl describe pod -n minio -l app=minio
 - Verify DNS resolution: `kubectl run -it --rm debug --image=busybox --restart=Never -- nslookup minio.minio.svc.cluster.local`
 - Check network policies and firewall rules
 - Verify credentials are correct
+
+## Phoenix Installation
+
+Phoenix is an open-source AI observability platform for LLM applications. This section covers deploying Phoenix in your K3s cluster with external PostgreSQL and secrets managed by OpenBao.
+
+### Prerequisites
+
+- Running PostgreSQL instance in the cluster
+- OpenBao/Vault configured and unsealed
+- External Secrets Operator installed
+- Helm 3.x installed
+
+### Important Notes
+
+**Chart Version Limitations:**
+- Phoenix Helm chart version 4.0.6 does NOT support the `additionalEnv` parameter for injecting external secrets
+- The chart always creates its own secret for authentication credentials
+- Cannot use `auth.name` to point directly to an external secret (causes ownership conflicts with External Secrets Operator)
+- Secrets must be provided at Helm upgrade time via command-line or temporary values file
+
+**Secret Requirements:**
+- `PHOENIX_SECRET`: Must be at least 32 characters long
+- `PHOENIX_ADMIN_SECRET`: Must be at least 32 characters long
+- Other secrets can be any length
+
+### 1. Prepare PostgreSQL Database
+
+Before installing Phoenix, create a dedicated database and user in your PostgreSQL instance.
+
+#### Connect to PostgreSQL
+
+```bash
+# Find your PostgreSQL pod
+kubectl get pods -n soludev | grep postgres
+
+# Connect to PostgreSQL
+kubectl exec -it -n soludev <postgres-pod-name> -- psql -U <postgres-user>
+```
+
+#### Create Database and User
+
+```sql
+-- Create the phoenix user
+CREATE USER phoenix WITH PASSWORD 'your-secure-password';
+
+-- Create the phoenix database
+CREATE DATABASE phoenix OWNER phoenix;
+
+-- Grant permissions
+GRANT ALL PRIVILEGES ON DATABASE phoenix TO phoenix;
+
+-- Verify
+\l  -- List databases
+\du -- List users
+```
+
+### 2. Create Secrets in OpenBao
+
+Phoenix requires several secrets to be stored in OpenBao. Create them with the following structure:
+
+#### Generate Strong Secrets
+
+```bash
+# Generate 32+ character secrets for PHOENIX_SECRET and PHOENIX_ADMIN_SECRET
+openssl rand -base64 32  # For PHOENIX_SECRET
+openssl rand -base64 32  # For PHOENIX_ADMIN_SECRET
+
+# Generate other secrets
+openssl rand -base64 16  # For PHOENIX_SMTP_PASSWORD (if using email)
+openssl rand -base64 16  # For PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD
+```
+
+#### Store Secrets in OpenBao
+
+Using the OpenBao CLI:
+
+```bash
+# Set your vault token
+export VAULT_TOKEN=<your-root-token>
+
+# Port forward to OpenBao (if needed)
+kubectl port-forward -n soludev svc/openbao 8200:8200 &
+
+# Store Phoenix secrets
+kubectl exec -n soludev openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
+  bao kv put soludev/phoenix \
+  PHOENIX_SECRET="<your-32+-char-secret>" \
+  PHOENIX_ADMIN_SECRET="<your-32+-char-secret>" \
+  PHOENIX_POSTGRES_PASSWORD="<your-db-password>" \
+  PHOENIX_SMTP_PASSWORD="" \
+  PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD="<your-admin-password>"
+```
+
+**Using the OpenBao UI:**
+
+1. Port forward to OpenBao: `kubectl port-forward -n soludev svc/openbao 8200:8200`
+2. Access UI at `http://localhost:8200`
+3. Login with your root token
+4. Navigate to **Secrets** → **soludev/**
+5. Create a new secret named `phoenix`
+6. Add the following keys:
+   - `PHOENIX_SECRET` (32+ characters)
+   - `PHOENIX_ADMIN_SECRET` (32+ characters)
+   - `PHOENIX_POSTGRES_PASSWORD` (your database password)
+   - `PHOENIX_SMTP_PASSWORD` (empty string if not using email)
+   - `PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD` (admin password)
+
+### 3. Configure ExternalSecret
+
+Create an ExternalSecret resource to sync secrets from OpenBao to Kubernetes:
+
+```yaml
+# dev/soludev/phoenix/external-secret.yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: soludev-phoenix-external-secret
+  namespace: soludev
+spec:
+  refreshInterval: 60s
+  secretStoreRef:
+    name: openbao-backend
+    kind: ClusterSecretStore
+  target:
+    name: soludev-phoenix-secret
+    creationPolicy: Owner
+  dataFrom:
+  - extract:
+      key: soludev/phoenix
+```
+
+Apply the ExternalSecret (if not using Flux):
+
+```bash
+kubectl apply -f dev/soludev/phoenix/external-secret.yaml
+```
+
+**Verify Secret Synchronization:**
+
+```bash
+# Check ExternalSecret status
+kubectl get externalsecret -n soludev soludev-phoenix-external-secret
+
+# Verify all keys are synced
+kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data}' | jq -r 'keys[]'
+
+# Expected output:
+# PHOENIX_ADMIN_SECRET
+# PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD
+# PHOENIX_POSTGRES_PASSWORD
+# PHOENIX_SECRET
+# PHOENIX_SMTP_PASSWORD
+
+# Verify secret lengths (should be 32+ for PHOENIX_SECRET and PHOENIX_ADMIN_SECRET)
+kubectl get secret -n soludev soludev-phoenix-secret -o json | \
+  jq -r '.data | to_entries[] | "\(.key): \(.value | @base64d | length) chars"'
+```
+
+### 4. Create Phoenix Values Configuration
+
+Create a values file for Phoenix that references your PostgreSQL instance:
+
+```yaml
+# config/dev/phoenix/values.yaml
+postgresql:
+  enabled: false  # We're using external PostgreSQL
+
+database:
+  postgres:
+    host: "postgres"  # Short name works for same-namespace services
+    port: 5432
+    db: "phoenix"
+    user: "phoenix"
+    password: ""  # Will be provided via command-line during upgrade
+
+auth:
+  enableAuth: true  # Enable authentication
+
+persistence:
+  enabled: false  # Use PostgreSQL for persistence instead of SQLite
+
+ingress:
+  enabled: false  # Configure based on your needs
+
+server:
+  port: 6006
+```
+
+### 5. Install Phoenix with Helm
+
+Since the Helm chart doesn't support external secrets directly, we need to pass secrets at upgrade time.
+
+#### Initial Installation
+
+```bash
+# Create temporary values file with secrets from Kubernetes secret
+cat > /tmp/phoenix-secrets.yaml <<EOF
+database:
+  postgres:
+    password: "$(kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_POSTGRES_PASSWORD}' | base64 -d)"
+auth:
+  secret:
+    - key: "PHOENIX_SECRET"
+      value: "$(kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_SECRET}' | base64 -d)"
+    - key: "PHOENIX_ADMIN_SECRET"
+      value: "$(kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_ADMIN_SECRET}' | base64 -d)"
+    - key: "PHOENIX_POSTGRES_PASSWORD"
+      value: "$(kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_POSTGRES_PASSWORD}' | base64 -d)"
+    - key: "PHOENIX_SMTP_PASSWORD"
+      value: "$(kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_SMTP_PASSWORD}' | base64 -d)"
+    - key: "PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD"
+      value: "$(kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD}' | base64 -d)"
+EOF
+
+# Install Phoenix
+helm install phoenix oci://registry-1.docker.io/arizephoenix/phoenix-helm \
+  --version 4.0.6 \
+  -n soludev \
+  -f config/dev/phoenix/values.yaml \
+  -f /tmp/phoenix-secrets.yaml
+
+# Clean up temporary file
+rm /tmp/phoenix-secrets.yaml
+```
+
+#### Upgrading Phoenix
+
+When you need to upgrade Phoenix or update configuration:
+
+```bash
+# Create temporary values file with current secrets
+cat > /tmp/phoenix-secrets.yaml <<EOF
+database:
+  postgres:
+    password: "$(kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_POSTGRES_PASSWORD}' | base64 -d)"
+auth:
+  secret:
+    - key: "PHOENIX_SECRET"
+      value: "$(kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_SECRET}' | base64 -d)"
+    - key: "PHOENIX_ADMIN_SECRET"
+      value: "$(kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_ADMIN_SECRET}' | base64 -d)"
+    - key: "PHOENIX_POSTGRES_PASSWORD"
+      value: "$(kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_POSTGRES_PASSWORD}' | base64 -d)"
+    - key: "PHOENIX_SMTP_PASSWORD"
+      value: "$(kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_SMTP_PASSWORD}' | base64 -d)"
+    - key: "PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD"
+      value: "$(kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD}' | base64 -d)"
+EOF
+
+# Upgrade Phoenix
+helm upgrade phoenix oci://registry-1.docker.io/arizephoenix/phoenix-helm \
+  --version 4.0.6 \
+  -n soludev \
+  -f config/dev/phoenix/values.yaml \
+  -f /tmp/phoenix-secrets.yaml
+
+# Clean up
+rm /tmp/phoenix-secrets.yaml
+```
+
+### 6. Verify Phoenix Installation
+
+```bash
+# Check if Phoenix pod is running
+kubectl get pods -n soludev -l app=phoenix
+
+# Expected output:
+# NAME                       READY   STATUS    RESTARTS   AGE
+# phoenix-xxxxxxxxxx-xxxxx   1/1     Running   0          2m
+
+# Check Phoenix logs
+kubectl logs -n soludev -l app=phoenix --tail=50
+
+# Look for successful startup messages:
+# - "Application startup complete"
+# - "Uvicorn running on http://0.0.0.0:6006"
+# - Database connection: "postgresql://phoenix:***@postgres:5432/phoenix"
+```
+
+### 7. Access Phoenix
+
+#### Port Forward (Development)
+
+```bash
+kubectl port-forward -n soludev svc/phoenix-svc 6006:6006
+```
+
+Access Phoenix at: `http://localhost:6006`
+
+#### Get Admin Credentials
+
+```bash
+# Get admin password
+kubectl get secret -n soludev phoenix-secret \
+  -o jsonpath='{.data.PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD}' | base64 -d
+
+echo  # Print newline
+
+# Default username: admin
+```
+
+### 8. Configure Ingress (Optional)
+
+To expose Phoenix externally:
+
+```yaml
+# dev/soludev/phoenix/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: phoenix-ingress
+  namespace: soludev
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod  # If using cert-manager
+spec:
+  rules:
+    - host: phoenix.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: phoenix-svc
+                port:
+                  number: 6006
+  tls:
+    - hosts:
+        - phoenix.yourdomain.com
+      secretName: phoenix-tls
+```
+
+### 9. Troubleshooting Phoenix
+
+#### Common Issues
+
+**1. DNS Resolution Errors**
+
+```
+Error: [Errno -2] Name or service not known
+```
+
+**Solution:**
+- Verify PostgreSQL service exists: `kubectl get svc -n soludev postgres`
+- For same-namespace services, short hostname (`postgres`) should work
+- For different namespaces, use FQDN: `postgres.soludev.svc.cluster.local`
+- Test DNS from Phoenix pod: `kubectl exec -n soludev <phoenix-pod> -- nslookup postgres`
+
+**2. Password Authentication Failed**
+
+```
+FATAL: password authentication failed for user "phoenix"
+```
+
+**Solution:**
+- Verify database password in secret: `kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_POSTGRES_PASSWORD}' | base64 -d`
+- Check PostgreSQL user exists: `kubectl exec -it -n soludev <postgres-pod> -- psql -U logto -c "\du" | grep phoenix`
+- Verify password matches what you set in PostgreSQL
+- Ensure secrets are properly synced from OpenBao
+
+**3. Secret Validation Errors**
+
+```
+ValueError: Phoenix secret must be at least 32 characters long
+```
+
+**Solution:**
+- Check secret lengths: `kubectl get secret -n soludev soludev-phoenix-secret -o json | jq -r '.data | to_entries[] | "\(.key): \(.value | @base64d | length) chars"'`
+- Regenerate secrets in OpenBao with proper length (32+ chars)
+- Wait for ExternalSecret to sync (60s refresh interval)
+- Force sync: Restart External Secrets Operator pod
+
+**4. Chart Limitations**
+
+If you see that `additionalEnv` is not being applied:
+
+- Chart version 4.0.6 doesn't support `additionalEnv` parameter
+- This feature exists in the GitHub main branch but hasn't been released
+- Use the temporary values file method shown above as a workaround
+- Watch for future chart versions that support external secrets natively
+
+**5. Pod Stuck in CrashLoopBackOff**
+
+```bash
+# Check pod events
+kubectl describe pod -n soludev <phoenix-pod-name>
+
+# View detailed logs
+kubectl logs -n soludev <phoenix-pod-name> --previous
+
+# Common causes:
+# - Database connection issues
+# - Invalid secret values
+# - Database migration failures
+```
+
+**6. Database Connection Troubleshooting**
+
+```bash
+# Test PostgreSQL connectivity from Phoenix pod
+kubectl run -it --rm debug --image=postgres:16 --restart=Never -n soludev -- \
+  psql -h postgres -U phoenix -d phoenix -c "SELECT version();"
+
+# If connection fails:
+# - Verify PostgreSQL service is running
+# - Check PostgreSQL logs for authentication errors
+# - Ensure database and user exist
+# - Verify network policies allow traffic
+```
+
+### 10. Updating Secrets
+
+When you need to update Phoenix secrets:
+
+1. **Update secrets in OpenBao:**
+   ```bash
+   kubectl exec -n soludev openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
+     bao kv patch soludev/phoenix \
+     PHOENIX_SECRET="<new-32+-char-secret>"
+   ```
+
+2. **Wait for ExternalSecret to sync** (60 seconds) or force sync:
+   ```bash
+   kubectl delete pod -n external-secrets-system -l app.kubernetes.io/name=external-secrets
+   ```
+
+3. **Verify secrets updated:**
+   ```bash
+   kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_SECRET}' | base64 -d
+   ```
+
+4. **Upgrade Phoenix** with new secrets using the upgrade command from step 5
+
+5. **Restart Phoenix pod** to apply changes:
+   ```bash
+   kubectl rollout restart deployment/phoenix -n soludev
+   ```
+
+### 11. Best Practices
+
+**Secret Management:**
+- ✅ Store all secrets in OpenBao, never in Git
+- ✅ Use strong, randomly generated secrets (32+ chars for main secrets)
+- ✅ Rotate secrets periodically
+- ✅ Use the temporary file method to avoid secrets in shell history
+- ✅ Delete temporary secret files immediately after use
+
+**Configuration:**
+- ✅ Use short hostnames for same-namespace services
+- ✅ Keep values.yaml in Git without any secret values
+- ✅ Document the secret structure in comments
+- ✅ Use `database.postgres.password: ""` as placeholder
+
+**Operations:**
+- ✅ Always verify secrets are synced before upgrading
+- ✅ Check pod logs after deployment
+- ✅ Monitor database connections
+- ✅ Set up proper monitoring and alerting
+
+**Security:**
+- ✅ Enable authentication (`auth.enableAuth: true`)
+- ✅ Use TLS for ingress in production
+- ✅ Restrict network access using NetworkPolicies
+- ✅ Regular security updates (upgrade Phoenix chart versions)
+
+### 12. Alternative Installation Methods
+
+#### Using a Shell Script
+
+For easier management, create a deployment script:
+
+```bash
+#!/bin/bash
+# deploy-phoenix.sh
+
+set -e
+
+NAMESPACE="soludev"
+RELEASE="phoenix"
+CHART_VERSION="4.0.6"
+
+echo "Creating temporary values file with secrets..."
+cat > /tmp/phoenix-secrets.yaml <<EOF
+database:
+  postgres:
+    password: "$(kubectl get secret -n ${NAMESPACE} soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_POSTGRES_PASSWORD}' | base64 -d)"
+auth:
+  secret:
+    - key: "PHOENIX_SECRET"
+      value: "$(kubectl get secret -n ${NAMESPACE} soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_SECRET}' | base64 -d)"
+    - key: "PHOENIX_ADMIN_SECRET"
+      value: "$(kubectl get secret -n ${NAMESPACE} soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_ADMIN_SECRET}' | base64 -d)"
+    - key: "PHOENIX_POSTGRES_PASSWORD"
+      value: "$(kubectl get secret -n ${NAMESPACE} soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_POSTGRES_PASSWORD}' | base64 -d)"
+    - key: "PHOENIX_SMTP_PASSWORD"
+      value: "$(kubectl get secret -n ${NAMESPACE} soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_SMTP_PASSWORD}' | base64 -d)"
+    - key: "PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD"
+      value: "$(kubectl get secret -n ${NAMESPACE} soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD}' | base64 -d)"
+EOF
+
+echo "Upgrading Phoenix release..."
+helm upgrade ${RELEASE} oci://registry-1.docker.io/arizephoenix/phoenix-helm \
+  --version ${CHART_VERSION} \
+  -n ${NAMESPACE} \
+  --install \
+  -f config/dev/phoenix/values.yaml \
+  -f /tmp/phoenix-secrets.yaml
+
+echo "Cleaning up temporary file..."
+rm /tmp/phoenix-secrets.yaml
+
+echo "Phoenix deployment complete!"
+echo "Check status with: kubectl get pods -n ${NAMESPACE} -l app=phoenix"
+```
+
+Make it executable and use:
+
+```bash
+chmod +x deploy-phoenix.sh
+./deploy-phoenix.sh
+```
+
+### 13. Future Improvements
+
+**Watch for chart updates** that add native support for:
+- External secret references via `additionalEnv`
+- Support for `existingSecret` parameter
+- Direct integration with External Secrets Operator
+
+Once these features are available, you can simplify the deployment by updating values.yaml to reference the external secret directly, eliminating the need for temporary files during upgrades.
+
+## OpenObserve Installation
+
+OpenObserve is a cloud-native observability platform for logs, metrics, and traces. This section covers deploying OpenObserve with MinIO for object storage and PostgreSQL for metadata.
+
+### Prerequisites
+
+- MinIO instance running in the cluster
+- PostgreSQL instance running in the cluster
+- OpenBao/Vault configured and unsealed
+- External Secrets Operator installed
+- Helm 3.x installed
+- NFS storage configured (for local cache)
+
+### Architecture Overview
+
+OpenObserve deployment uses:
+- **MinIO**: For storing logs, metrics, and traces (object storage)
+- **PostgreSQL**: For metadata storage
+- **NFS**: For local cache/temporary data
+- **External Secrets**: For secure credential management
+
+### 1. Prepare PostgreSQL Database
+
+Create a dedicated database for OpenObserve metadata.
+
+#### Connect to PostgreSQL
+
+```bash
+# Find your PostgreSQL pod
+kubectl get pods -n soludev | grep postgres
+
+# Connect to PostgreSQL
+kubectl exec -it -n soludev <postgres-pod-name> -- psql -U <postgres-user>
+```
+
+#### Create Database and User
+
+```sql
+-- Create the openobserve user
+CREATE USER openobserve WITH PASSWORD 'your-secure-password';
+
+-- Create the openobserve database
+CREATE DATABASE openobserve OWNER openobserve;
+
+-- Grant permissions
+GRANT ALL PRIVILEGES ON DATABASE openobserve TO openobserve;
+
+-- Connect to the database to grant schema permissions
+\c openobserve
+GRANT ALL ON SCHEMA public TO openobserve;
+
+-- Verify
+\l  -- List databases
+\du -- List users
+```
+
+### 2. Prepare MinIO Bucket
+
+Create a dedicated bucket in MinIO for OpenObserve data.
+
+#### Using MinIO Console
+
+```bash
+# Port forward to MinIO console
+kubectl port-forward -n soludev svc/minio 9001:9001
+
+# Access console at http://localhost:9001
+# Login with your MinIO credentials
+# Navigate to "Buckets" and create a new bucket named "observability"
+```
+
+#### Using MinIO CLI
+
+```bash
+# Install MinIO CLI if not already installed
+curl https://dl.min.io/client/mc/release/darwin-amd64/mc \
+  -o /usr/local/bin/mc
+chmod +x /usr/local/bin/mc
+
+# Port forward to MinIO API
+kubectl port-forward -n soludev svc/minio 9000:9000 &
+
+# Configure MinIO alias
+mc alias set minio http://localhost:9000 <MINIO_USER> <MINIO_PASSWORD>
+
+# Create bucket
+mc mb minio/observability
+
+# Verify
+mc ls minio
+```
+
+#### Create Access Keys for OpenObserve
+
+```bash
+# Using MinIO console:
+# 1. Go to "Access Keys"
+# 2. Click "Create Access Key"
+# 3. Save the Access Key and Secret Key
+
+# Or using CLI:
+mc admin user svcacct add minio <MINIO_USER> \
+  --access-key "openobserve-access" \
+  --secret-key "your-secret-key"
+```
+
+### 3. Create Secrets in OpenBao
+
+OpenObserve requires several secrets to be stored in OpenBao.
+
+#### Required Secrets
+
+1. `ZO_ROOT_USER_EMAIL`: Admin email for OpenObserve login
+2. `ZO_ROOT_USER_PASSWORD`: Admin password for OpenObserve
+3. `MINIO_ACCESS`: MinIO access key
+4. `MINIO_SECRET`: MinIO secret key
+5. `ZO_META_POSTGRES_DSN`: PostgreSQL connection string
+
+#### Generate PostgreSQL DSN
+
+The DSN format for PostgreSQL:
+```
+postgresql://username:password@host:port/database
+```
+
+Example:
+```
+postgresql://openobserve:your-password@postgres.soludev.svc.cluster.local:5432/openobserve
+```
+
+#### Store Secrets in OpenBao
+
+Using the OpenBao CLI:
+
+```bash
+# Set your vault token
+export VAULT_TOKEN=<your-root-token>
+
+# Port forward to OpenBao (if needed)
+kubectl port-forward -n soludev svc/openbao 8200:8200 &
+
+# Store OpenObserve secrets
+kubectl exec -n soludev openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
+  bao kv put soludev/openobserve \
+  ZO_ROOT_USER_EMAIL="admin@yourdomain.com" \
+  ZO_ROOT_USER_PASSWORD="your-secure-password" \
+  MINIO_ACCESS="openobserve-access-key" \
+  MINIO_SECRET="your-minio-secret-key" \
+  ZO_META_POSTGRES_DSN="postgresql://openobserve:your-db-password@postgres.soludev.svc.cluster.local:5432/openobserve"
+```
+
+**Using the OpenBao UI:**
+
+1. Port forward: `kubectl port-forward -n soludev svc/openbao 8200:8200`
+2. Access UI at `http://localhost:8200`
+3. Login with your root token
+4. Navigate to **Secrets** → **soludev/**
+5. Create a new secret named `openobserve`
+6. Add all required keys listed above
+
+### 4. Configure ExternalSecret
+
+Create an ExternalSecret resource to sync secrets from OpenBao:
+
+```yaml
+# dev/soludev/openobserve/external-secret.yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: soludev-openobserve-external-secret
+  namespace: soludev
+spec:
+  refreshInterval: 60s
+  secretStoreRef:
+    name: openbao-backend
+    kind: ClusterSecretStore
+  target:
+    name: soludev-openobserve-secret
+    creationPolicy: Owner
+  dataFrom:
+  - extract:
+      key: soludev/openobserve
+```
+
+Apply the ExternalSecret:
+
+```bash
+kubectl apply -f dev/soludev/openobserve/external-secret.yaml
+```
+
+**Verify Secret Synchronization:**
+
+```bash
+# Check ExternalSecret status
+kubectl get externalsecret -n soludev soludev-openobserve-external-secret
+
+# Verify all keys are synced
+kubectl get secret -n soludev soludev-openobserve-secret -o jsonpath='{.data}' | jq -r 'keys[]'
+
+# Expected output:
+# MINIO_ACCESS
+# MINIO_SECRET
+# ZO_META_POSTGRES_DSN
+# ZO_ROOT_USER_EMAIL
+# ZO_ROOT_USER_PASSWORD
+```
+
+### 5. Create NFS PersistentVolume
+
+OpenObserve needs local storage for cache. Create an NFS-backed PersistentVolume:
+
+```yaml
+# dev/soludev/openobserve/persistent-volume.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-soludev-openobserve
+  namespace: soludev
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-soludev-openobserve
+  nfs:
+    server: <NFS_SERVER_IP>  # Your NFS server IP
+    path: /path/to/openobserve/storage
+  mountOptions:
+    - nfsvers=4.1
+    - hard
+    - timeo=600
+    - retrans=2
+```
+
+**Create the NFS directory on your NFS server:**
+
+```bash
+# SSH to your NFS server
+ssh user@nfs-server
+
+# Create directory
+sudo mkdir -p /path/to/openobserve/storage
+sudo chmod 777 /path/to/openobserve/storage
+
+# Update NFS exports if needed
+sudo exportfs -ra
+```
+
+Apply the PersistentVolume:
+
+```bash
+kubectl apply -f dev/soludev/openobserve/persistent-volume.yaml
+
+# Verify PV is available
+kubectl get pv nfs-soludev-openobserve
+```
+
+### 6. Create OpenObserve Values Configuration
+
+Create a values file that references external secrets and configures OpenObserve:
+
+```yaml
+# config/dev/openobserve/values.yml
+
+# Empty auth section - credentials injected via extraEnv
+auth:
+  ZO_ROOT_USER_EMAIL: ""
+  ZO_ROOT_USER_PASSWORD: ""
+  ZO_S3_ACCESS_KEY: ""
+  ZO_S3_SECRET_KEY: ""
+
+# Inject credentials from external secret
+extraEnv:
+  - name: ZO_ROOT_USER_EMAIL
+    valueFrom:
+      secretKeyRef:
+        name: soludev-openobserve-secret
+        key: ZO_ROOT_USER_EMAIL
+  - name: ZO_ROOT_USER_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: soludev-openobserve-secret
+        key: ZO_ROOT_USER_PASSWORD
+  - name: ZO_S3_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: soludev-openobserve-secret
+        key: MINIO_ACCESS
+  - name: ZO_S3_SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        name: soludev-openobserve-secret
+        key: MINIO_SECRET
+  - name: ZO_META_POSTGRES_DSN
+    valueFrom:
+      secretKeyRef:
+        name: soludev-openobserve-secret
+        key: ZO_META_POSTGRES_DSN
+
+# OpenObserve configuration
+config:
+  # Data retention (10 days)
+  ZO_COMPACT_DATA_RETENTION_DAYS: "10"
+  ZO_COMPACT_ENABLED: "true"
+  ZO_COMPACT_INTERVAL: "3600"
+
+  # PostgreSQL for metadata
+  ZO_META_STORE: "postgres"
+  ZO_META_CONNECTION_POOL_MIN_SIZE: "2"
+  ZO_META_CONNECTION_POOL_MAX_SIZE: "10"
+  
+  # Local mode with S3/MinIO storage
+  ZO_LOCAL_MODE: "true"
+  ZO_LOCAL_MODE_STORAGE: "s3"
+  
+  # MinIO configuration
+  ZO_S3_PROVIDER: "minio"
+  ZO_S3_SERVER_URL: "http://minio.soludev.svc.cluster.local:9000"
+  ZO_S3_REGION_NAME: "us-east-1"
+  ZO_S3_BUCKET_NAME: "observability"
+  ZO_S3_BUCKET_PREFIX: ""
+  ZO_S3_FEATURE_FORCE_HOSTED_STYLE: "false"
+  ZO_S3_FEATURE_FORCE_PATH_STYLE: "true"
+  ZO_S3_FEATURE_HTTP1_ONLY: "false"
+  ZO_S3_FEATURE_HTTP2_ONLY: "false"
+
+# Resource limits
+resources:
+  limits:
+    cpu: 1500m
+    memory: 2Gi
+  requests:
+    cpu: 1000m
+    memory: 1Gi
+
+# Local cache persistence
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClass: "nfs-soludev-openobserve"
+  accessModes:
+    - ReadWriteMany
+
+# Service configuration
+service:
+  type: ClusterIP
+  http_port: 5080
+  grpc_port: 5081
+
+# Ingress disabled (configured separately)
+ingress:
+  enabled: false
+
+# Disable built-in MinIO (using external MinIO)
+minio:
+  enabled: false
+```
+
+### 7. Install OpenObserve with Helm
+
+#### Add OpenObserve Helm Repository
+
+```bash
+helm repo add openobserve https://charts.openobserve.ai
+helm repo update
+```
+
+#### Install OpenObserve
+
+```bash
+helm install openobserve openobserve/openobserve \
+  -n soludev \
+  -f config/dev/openobserve/values.yml
+```
+
+#### Upgrade OpenObserve
+
+When you need to update configuration:
+
+```bash
+helm upgrade openobserve openobserve/openobserve \
+  -n soludev \
+  -f config/dev/openobserve/values.yml
+```
+
+### 8. Verify OpenObserve Installation
+
+```bash
+# Check if OpenObserve pod is running
+kubectl get pods -n soludev -l app.kubernetes.io/name=openobserve
+
+# Expected output:
+# NAME                                              READY   STATUS    RESTARTS   AGE
+# openobserve-openobserve-standalone-0              1/1     Running   0          2m
+
+# Check PVC is bound
+kubectl get pvc -n soludev | grep openobserve
+
+# Check logs
+kubectl logs -n soludev -l app.kubernetes.io/name=openobserve --tail=50
+
+# Look for successful startup messages:
+# - "Starting OpenObserve"
+# - PostgreSQL connection established
+# - MinIO/S3 connection verified
+```
+
+### 9. Configure Ingress
+
+Create an Ingress resource to expose OpenObserve:
+
+```yaml
+# dev/soludev/openobserve/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openobserve-ingress
+  namespace: soludev
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/redirect-scheme: https
+    cert-manager.io/cluster-issuer: letsencrypt-prod  # If using cert-manager
+spec:
+  rules:
+    - host: openobserve.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: openobserve-openobserve-standalone
+                port:
+                  number: 5080
+  tls:
+    - hosts:
+        - openobserve.yourdomain.com
+      secretName: openobserve-tls
+```
+
+Apply the Ingress:
+
+```bash
+kubectl apply -f dev/soludev/openobserve/ingress.yaml
+
+# Verify ingress
+kubectl get ingress -n soludev openobserve-ingress
+```
+
+### 10. Access OpenObserve
+
+#### Port Forward (Development)
+
+```bash
+kubectl port-forward -n soludev svc/openobserve-openobserve-standalone 5080:5080
+```
+
+Access OpenObserve at: `http://localhost:5080`
+
+#### Get Login Credentials
+
+```bash
+# Get admin email
+kubectl get secret -n soludev soludev-openobserve-secret \
+  -o jsonpath='{.data.ZO_ROOT_USER_EMAIL}' | base64 -d
+echo
+
+# Get admin password
+kubectl get secret -n soludev soludev-openobserve-secret \
+  -o jsonpath='{.data.ZO_ROOT_USER_PASSWORD}' | base64 -d
+echo
+```
+
+### 11. Configure Data Ingestion
+
+#### Logs via HTTP
+
+```bash
+# Ingest logs using curl
+curl -u "admin@yourdomain.com:your-password" \
+  -X POST "http://openobserve.yourdomain.com/api/default/logs" \
+  -H "Content-Type: application/json" \
+  -d '[
+    {
+      "timestamp": "2024-01-01T12:00:00Z",
+      "level": "info",
+      "message": "Test log message",
+      "service": "my-app"
+    }
+  ]'
+```
+
+#### Logs via Fluent Bit
+
+```yaml
+# fluent-bit-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+  namespace: logging
+data:
+  fluent-bit.conf: |
+    [OUTPUT]
+        Name http
+        Match *
+        Host openobserve-openobserve-standalone.soludev.svc.cluster.local
+        Port 5080
+        URI /api/default/logs
+        Format json
+        HTTP_User admin@yourdomain.com
+        HTTP_Passwd your-password
+        tls Off
+```
+
+#### Metrics via Prometheus Remote Write
+
+```yaml
+# prometheus-config.yaml
+remote_write:
+  - url: http://openobserve-openobserve-standalone.soludev.svc.cluster.local:5080/api/default/prometheus/api/v1/write
+    basic_auth:
+      username: admin@yourdomain.com
+      password: your-password
+```
+
+### 12. Troubleshooting OpenObserve
+
+#### Common Issues
+
+**1. PostgreSQL Connection Errors**
+
+```
+Error: failed to connect to PostgreSQL
+```
+
+**Solution:**
+- Verify DSN format in secret: `kubectl get secret -n soludev soludev-openobserve-secret -o jsonpath='{.data.ZO_META_POSTGRES_DSN}' | base64 -d`
+- Check PostgreSQL is accessible: `kubectl exec -it -n soludev <openobserve-pod> -- nc -zv postgres 5432`
+- Verify database and user exist in PostgreSQL
+- Check PostgreSQL logs for authentication errors
+
+**2. MinIO/S3 Connection Errors**
+
+```
+Error: failed to connect to S3
+```
+
+**Solution:**
+- Verify MinIO is running: `kubectl get pods -n soludev | grep minio`
+- Check MinIO access keys in secret
+- Verify bucket exists: `mc ls minio/observability`
+- Test connectivity from OpenObserve pod:
+  ```bash
+  kubectl exec -it -n soludev <openobserve-pod> -- \
+    curl http://minio.soludev.svc.cluster.local:9000/minio/health/live
+  ```
+
+**3. PVC Not Binding**
+
+```bash
+# Check PVC status
+kubectl get pvc -n soludev | grep openobserve
+
+# Check PV status
+kubectl get pv nfs-soludev-openobserve
+
+# Describe PVC for events
+kubectl describe pvc -n soludev <pvc-name>
+```
+
+**Solution:**
+- Verify NFS server is accessible
+- Check NFS exports: `showmount -e <nfs-server-ip>`
+- Verify storage class matches: `kubectl get storageclass`
+- Check NFS path exists and has correct permissions
+
+**4. Secret Not Syncing**
+
+```bash
+# Check ExternalSecret status
+kubectl describe externalsecret -n soludev soludev-openobserve-external-secret
+
+# Check for errors in External Secrets Operator
+kubectl logs -n external-secrets-system -l app.kubernetes.io/name=external-secrets
+```
+
+**Solution:**
+- Verify secrets exist in OpenBao
+- Check ClusterSecretStore is configured correctly
+- Verify service account has proper permissions
+- Force sync by restarting External Secrets Operator pod
+
+**5. Data Not Appearing in UI**
+
+**Solution:**
+- Check data is being sent to correct endpoint
+- Verify authentication credentials
+- Check OpenObserve logs for ingestion errors
+- Verify MinIO bucket has data: `mc ls minio/observability`
+- Check PostgreSQL for metadata entries
+
+**6. High Memory Usage**
+
+**Solution:**
+- Reduce `ZO_META_CONNECTION_POOL_MAX_SIZE`
+- Increase resource limits in values.yml
+- Adjust `ZO_COMPACT_DATA_RETENTION_DAYS` to retain less data
+- Monitor MinIO bucket size
+
+### 13. Monitoring and Maintenance
+
+#### Check OpenObserve Health
+
+```bash
+# Health check endpoint
+curl http://openobserve.yourdomain.com/healthz
+
+# Metrics endpoint
+curl http://openobserve.yourdomain.com/metrics
+```
+
+#### Monitor Storage Usage
+
+```bash
+# Check MinIO bucket size
+mc du minio/observability
+
+# Check PVC usage
+kubectl exec -it -n soludev <openobserve-pod> -- df -h /data
+
+# Check PostgreSQL database size
+kubectl exec -it -n soludev <postgres-pod> -- \
+  psql -U openobserve -d openobserve -c \
+  "SELECT pg_size_pretty(pg_database_size('openobserve'));"
+```
+
+#### Data Compaction
+
+OpenObserve automatically compacts data based on configuration:
+
+```yaml
+config:
+  ZO_COMPACT_DATA_RETENTION_DAYS: "10"  # Keep data for 10 days
+  ZO_COMPACT_ENABLED: "true"
+  ZO_COMPACT_INTERVAL: "3600"  # Run compaction every hour
+```
+
+#### Backup Considerations
+
+**PostgreSQL Metadata:**
+```bash
+# Backup PostgreSQL database
+kubectl exec -n soludev <postgres-pod> -- \
+  pg_dump -U openobserve openobserve > openobserve-metadata-backup.sql
+```
+
+**MinIO Data:**
+```bash
+# Backup MinIO bucket
+mc mirror minio/observability /path/to/backup/
+```
+
+### 14. Scaling OpenObserve
+
+For production workloads, consider:
+
+**Horizontal Scaling:**
+```yaml
+replicaCount: 3  # Run multiple replicas
+```
+
+**Resource Scaling:**
+```yaml
+resources:
+  limits:
+    cpu: 4000m
+    memory: 8Gi
+  requests:
+    cpu: 2000m
+    memory: 4Gi
+```
+
+**PostgreSQL Connection Pool:**
+```yaml
+config:
+  ZO_META_CONNECTION_POOL_MAX_SIZE: "20"
+```
+
+### 15. Best Practices
+
+**Security:**
+- ✅ Use strong passwords for admin account
+- ✅ Enable TLS/HTTPS via ingress
+- ✅ Store all credentials in OpenBao
+- ✅ Use network policies to restrict access
+- ✅ Regularly rotate credentials
+
+**Performance:**
+- ✅ Adjust retention policies based on your needs
+- ✅ Monitor resource usage and scale accordingly
+- ✅ Use appropriate PostgreSQL connection pool sizes
+- ✅ Enable data compaction
+
+**Reliability:**
+- ✅ Use persistent storage for local cache
+- ✅ Backup PostgreSQL metadata regularly
+- ✅ Monitor MinIO bucket size
+- ✅ Set up proper monitoring and alerting
+
+**Cost Optimization:**
+- ✅ Adjust data retention to balance storage costs
+- ✅ Use MinIO lifecycle policies for old data
+- ✅ Right-size resource requests and limits
+
+### 16. Integration Examples
+
+#### Kubernetes Application Logs
+
+```yaml
+# Example: Configure your app to send logs to OpenObserve
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: my-app:latest
+          env:
+            - name: LOG_ENDPOINT
+              value: "http://openobserve-openobserve-standalone.soludev.svc.cluster.local:5080/api/default/logs"
+            - name: LOG_USER
+              valueFrom:
+                secretKeyRef:
+                  name: soludev-openobserve-secret
+                  key: ZO_ROOT_USER_EMAIL
+            - name: LOG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: soludev-openobserve-secret
+                  key: ZO_ROOT_USER_PASSWORD
+```
+
+#### OpenTelemetry Integration
+
+```yaml
+# otel-collector-config.yaml
+exporters:
+  otlphttp:
+    endpoint: http://openobserve-openobserve-standalone.soludev.svc.cluster.local:5080/api/default
+    headers:
+      Authorization: Basic <base64(email:password)>
+```
 
 ## Troubleshooting
 
