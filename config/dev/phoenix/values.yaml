@@ -8,6 +8,7 @@ database:
     db: "phoenix"
     user: "phoenix"
     password: ""  # Password comes from external secret via additionalEnv
+  defaultRetentionPolicyDays: 10  # Automatically delete traces older than 10 days
 
 auth:
   enableAuth: true
