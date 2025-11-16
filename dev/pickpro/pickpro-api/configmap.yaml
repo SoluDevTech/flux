@@ -11,6 +11,7 @@ data:
   TEMPERATURE: "0.0"
   CONCURRENT_CALLS: "20"
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
+  PHOENIX_HOST: https://dev-phoenix.soludev.tech
   PYTHONPATH: ./pickpro_api
 
 
