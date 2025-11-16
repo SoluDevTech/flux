@@ -1,25 +1,23 @@
-# Désactiver complètement Postgres embarqué
 postgresql:
   enabled: false
 
-# Utiliser la base Postgres externe
-externalPostgresql:
-  enabled: true
-  host: "postgresql.my-domain.svc.cluster.local"
-  port: 5432
-  database: "phoenix"
-  user: "phoenix_user"
-  existingSecret: "phoenix-db-secret"
-  existingSecretKey: "password"
+database:
+  postgres:
+    host: "postgres"
+    port: 5432
+    db: "phoenix"
+    user: "phoenix"
+    password: ""  # Password comes from soludev-phoenix-secret
 
-# Désactiver SQLite (pas de persistance locale)
+auth:
+  name: "soludev-phoenix-secret"  # Use external secret from OpenBao
+  enableAuth: true
+
 persistence:
   enabled: false
 
-# Pas d’ingress
 ingress:
   enabled: false
 
-# Port HTTP interne Phoenix
 server:
   port: 6006
