@@ -8,7 +8,7 @@ metadata:
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
   rules:
-    - host: headlamp.local
+    - host: dev-headlamp.soludev.tech
       http:
         paths:
           - path: /
