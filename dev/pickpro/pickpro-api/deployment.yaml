@@ -24,7 +24,7 @@ spec:
           operator: "Equal"
       containers:
         - name: pickpro-api
-          image: kaiohz/pickpro:pickpro-back-44dd45a055b027a26ba88a5558197f05628a8b23
+          image: kaiohz/pickpro:pickpro-back-013d2d90457102c00993ad1f36771dafe1646690
           ports:
             - containerPort: 8000
           envFrom:
