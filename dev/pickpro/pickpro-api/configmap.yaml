@@ -8,6 +8,7 @@ data:
   CHAT_MODEL: anthropic/claude-haiku-4.5
   TITLE_MODEL: anthropic/claude-haiku-4.5
   GRADER_MODEL: anthropic/claude-haiku-4.5
+  JOB_STRUCTURE_MODEL: anthropic/claude-sonnet-4.5
   TEMPERATURE: "0.0"
   CONCURRENT_CALLS: "20"
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
