@@ -1,0 +1,31 @@
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+config:
+  existingSecret: "oauth2-proxy-credentials"
+  cookieName: "oauth2-proxy"
+  existingConfig: "oauth2-config"
+
+authenticatedEmailsFile:
+  enabled: false
+
+image:
+  registry: "quay.io"
+  repository: "oauth2-proxy/oauth2-proxy"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  portNumber: 80
+
+ingress:
+  enabled: false
+
+replicaCount: 1
+
+sessionStorage:
+  type: cookie
+
+metrics:
+  enabled: true
