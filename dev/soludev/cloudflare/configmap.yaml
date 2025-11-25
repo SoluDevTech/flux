@@ -48,7 +48,7 @@ data:
         originRequest:
           noTLSVerify: true
 
-      - hostname: dev-oauth2-proxy.soludev.tech
+      - hostname: dev-pickpro-oauth2-proxy.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true

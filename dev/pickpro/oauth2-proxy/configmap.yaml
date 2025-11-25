@@ -13,4 +13,4 @@ data:
     set_authorization_header = true
     pass_user_headers = true
     upstreams = ["file:///dev/null"]
-    redirect_url = "https://dev-oauth2-proxy.soludev.tech/oauth2/callback"
+    redirect_url = "https://dev-pickpro-oauth2-proxy.soludev.tech/oauth2/callback"
