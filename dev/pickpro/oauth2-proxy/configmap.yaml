@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-config
+data:
+  oauth2_proxy.cfg: |
+    provider = "oidc"
+    oidc_issuer_url = "https://dev-logto.soludev.tech/oidc"
+    cookie_name = "oauth2-proxy"
+    email_domains = ["*"]
+    pass_access_token = true
+    pass_authorization_header = true
+    set_authorization_header = true
+    pass_user_headers = true
+    upstreams = ["file:///dev/null"]
+    redirect_url = "https://dev-oauth2-proxy.soludev.tech/oauth2/callback"
