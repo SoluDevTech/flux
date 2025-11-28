@@ -8,7 +8,7 @@ data:
     provider = "oidc"
     oidc_issuer_url = "https://dev-logto.soludev.tech/oidc"
     
-    redirect_url = "https://pickpro.soludev.tech/oauth2/callback"
+    redirect_url = "https://pickpro.soludev.tech/callback"
     
     # Cookie settings for cross-domain auth
     cookie_domains = [".soludev.tech"] 
