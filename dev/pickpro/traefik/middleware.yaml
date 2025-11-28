@@ -10,5 +10,4 @@ spec:
       - "X-Auth-Request-User"
       - "X-Auth-Request-Email"
       - "Authorization"
-      
     trustForwardHeader: true
