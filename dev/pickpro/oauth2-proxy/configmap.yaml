@@ -11,7 +11,7 @@ data:
     redirect_url = "https://dev-pickpro-oauth2-proxy.soludev.tech/oauth2/callback"
     
     cookie_domains = [".soludev.tech"] 
-    whitelist_domains = [".soludev.tech"]
+    whitelist_domains = [".soludev.tech", "pickpro.soludev.tech", "dev-pickpro-oauth2-proxy.soludev.tech"]
     
     cookie_name = "oauth2-proxy-pickpro"
     email_domains = ["*"]
@@ -27,6 +27,8 @@ data:
     
     cookie_secure = true
     cookie_httponly = true
+    cookie_samesite = "lax"
     
     skip_provider_button = true
     set_xauthrequest = true
+    silence_ping_logging = true
