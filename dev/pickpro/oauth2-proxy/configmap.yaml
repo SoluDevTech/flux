@@ -29,10 +29,8 @@ data:
     cookie_secure = true
     cookie_httponly = true
     cookie_path = "/"
-    cookie_samesite = "none" 
+    cookie_samesite = "lax" 
     cookie_refresh = "1h"
-    
-    code_challenge_method = "S256"
     
     skip_provider_button = true
     set_xauthrequest = true
