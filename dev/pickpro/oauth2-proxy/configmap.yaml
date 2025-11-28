@@ -10,6 +10,9 @@ data:
     
     redirect_url = "https://pickpro.soludev.tech/oauth2/callback"
     
+    # Request additional user information
+    scope = "openid email profile"
+    
     # Cookie settings for cross-domain auth
     cookie_domains = [".soludev.tech"] 
     whitelist_domains = [".soludev.tech"]
