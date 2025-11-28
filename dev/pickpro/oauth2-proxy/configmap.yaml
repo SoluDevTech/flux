@@ -24,9 +24,6 @@ data:
     http_address = "0.0.0.0:4180"
     reverse_proxy = true
     
-    # Map standard 'name' field from Logto to preferred_username
-    oidc_preferred_username_claim = "name"
-    
     pass_access_token = true
     pass_authorization_header = true
     set_authorization_header = true
