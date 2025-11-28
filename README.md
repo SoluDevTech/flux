@@ -3,6 +3,7 @@
 This documentation covers the complete setup of a K3s cluster with Flux for GitOps and Vault for secrets management.
 
 ## Table of Contents
+
 - [Mesh VPN Installation](#mesh-vpn-installation)
 - [K3s Installation](#k3s-installation)
 - [Control Plane Setup](#control-plane-setup)
@@ -17,7 +18,7 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [Inference API Services](#inference-api-services)
 - [Troubleshooting](#troubleshooting)
 
-## Mesh VPN for mac os workers 
+## Mesh VPN for mac os workers
 
 ### (Optional) Install Headscale server and tailscale clients for mac os colima vm as a worker
 
@@ -54,6 +55,7 @@ headscale nodes register --user USERNAME --key <GENERATED_KEY>
 ### Control Plane Setup
 
 #### 1. Basic Installation
+
 ```bash
 curl -sfL https://get.k3s.io | sh -
 ```
@@ -63,28 +65,34 @@ curl -sfL https://get.k3s.io | sh -
 If you encounter the error "failed to find memory cgroup (v2)", follow these steps:
 
 **Enable cgroups v2:**
+
 1. Edit the boot configuration:
+
 ```bash
 sudo nano /boot/firmware/cmdline.txt
 ```
 
 2. Add the following parameters to the end of the existing line (everything must be on one line):
+
 ```
 cgroup_enable=cpuset cgroup_enable=memory cgroup_memory=1
 ```
 
 3. Reboot the Raspberry Pi:
+
 ```bash
 sudo reboot
 ```
 
 4. Restart K3s service:
+
 ```bash
 sudo systemctl start k3s
 sudo systemctl status k3s
 ```
 
 5. Verify the cluster is working:
+
 ```bash
 sudo k3s kubectl get nodes
 ```
@@ -106,11 +114,13 @@ hostname -I
 #### 2. Install K3s Agent (Worker)
 
 On the worker node, run:
+
 ```bash
 curl -sfL https://get.k3s.io | K3S_URL=https://CONTROL_PLANE_IP:6443 K3S_TOKEN=YOUR_TOKEN sh -
 ```
 
-or 
+or
+
 ```bash
 curl -sfL https://get.k3s.io | K3S_URL=https://CONTROL_PLANE_IP:6443 \
   K3S_TOKEN=YOUR_TOKEN \
@@ -118,6 +128,7 @@ curl -sfL https://get.k3s.io | K3S_URL=https://CONTROL_PLANE_IP:6443 \
 ```
 
 Replace:
+
 - `CONTROL_PLANE_IP` with the actual IP of your control plane
 - `YOUR_TOKEN` with the token from the previous step
 
@@ -132,11 +143,13 @@ sudo systemctl status k3s-agent
 For Mac systems, use Colima to create a Ubuntu VM:
 
 #### 1. Create VM
+
 ```bash
 colima start --cpu 4 --memory 4 --disk 30
 ```
 
 #### 2. Access VM and Install Worker
+
 ```bash
 colima ssh
 ```
@@ -148,11 +161,13 @@ Then follow the worker installation steps above within the VM.
 ### 1. Install Flux CLI
 
 **macOS:**
+
 ```bash
 brew install fluxcd/tap/flux
 ```
 
 **Linux:**
+
 ```bash
 curl -s https://fluxcd.io/install.sh | sudo bash
 ```
@@ -166,11 +181,13 @@ flux install
 ### 3. Verify Flux Installation
 
 After installation, you should see Flux components running:
+
 ```bash
 kubectl get pods -A
 ```
 
 Expected output should include:
+
 ```
 NAMESPACE     NAME                                       READY   STATUS    RESTARTS   AGE
 flux-system   helm-controller-5c898f4887-568tw           1/1     Running   0          28s
@@ -186,11 +203,13 @@ Helm is required for installing Vault and other applications in the cluster.
 ### 1. Install Helm CLI
 
 **macOS:**
+
 ```bash
 brew install helm
 ```
 
 **Linux:**
+
 ```bash
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 ```
@@ -220,6 +239,7 @@ Note: Make sure you have a `values.yaml` file configured for your Vault setup.
 ### 3. Initialize and Unseal Vault
 
 #### Initialize Vault
+
 ```bash
 kubectl exec -n soludev openbao-0 -- vault operator init
 ```
@@ -227,6 +247,7 @@ kubectl exec -n soludev openbao-0 -- vault operator init
 This command will output unseal keys and a root token. **Save these securely!**
 
 #### Unseal Vault
+
 Use any 3 of the 5 unseal keys provided during initialization:
 
 ```bash
@@ -251,6 +272,7 @@ helm install external-secrets external-secrets/external-secrets \
 ```
 
 #### Enable Kubernetes Auth Method
+
 ```bash
 export VAULT_TOKEN=<YOUR_TOKEN>
 kubectl exec -n soludev openbao-0 -- \
@@ -259,6 +281,7 @@ kubectl exec -n soludev openbao-0 -- \
 ```
 
 #### Create Service Account for Vault Authentication
+
 ```bash
 # Create service account
 kubectl create serviceaccount openbao-auth -n soludev
@@ -275,6 +298,7 @@ kubectl create token openbao-auth -n soludev
 ```
 
 #### Configure Kubernetes Auth in Vault
+
 ```bash
 # Get the Kubernetes host URL (usually the API server)
 K8S_HOST=$(kubectl config view --raw --minify --flatten -o jsonpath='{.clusters[].cluster.server}')
@@ -294,6 +318,7 @@ kubectl exec -n soludev openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
 ```
 
 #### Create a Role for External Secrets
+
 ```bash
 kubectl exec -n soludev openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
   bao write auth/kubernetes/role/external-secrets-role \
@@ -304,6 +329,7 @@ kubectl exec -n soludev openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
 ```
 
 #### Create Policy for External Secrets
+
 ```bash
 kubectl exec -n soludev openbao-0 -- sh -c "echo 'path \"kv/data/*\" {
   capabilities = [\"read\", \"list\"]
@@ -336,6 +362,7 @@ spec:
 ```
 
 Apply the configuration:
+
 ```bash
 kubectl apply -f config/dev/gitrepository.yaml
 ```
@@ -366,6 +393,7 @@ spec:
 ```
 
 Apply the configuration:
+
 ```bash
 kubectl apply -f config/dev/kustomization.yaml
 ```
@@ -389,6 +417,7 @@ spec:
 ```
 
 Apply the configuration:
+
 ```bash
 kubectl apply -f dev/gitrepositories.yaml
 ```
@@ -420,6 +449,7 @@ spec:
 ```
 
 **Access from pods:**
+
 ```
 http://ollama-inference-jetson.kaiohz.svc.cluster.local:11434
 ```
@@ -443,6 +473,7 @@ spec:
 ```
 
 **Access from pods:**
+
 ```
 http://ollama-inference-mac.kaiohz.svc.cluster.local:11434
 ```
@@ -450,6 +481,7 @@ http://ollama-inference-mac.kaiohz.svc.cluster.local:11434
 ### 3. Service Configuration Options
 
 **ExternalName Service:**
+
 - `type: ExternalName`: Creates a CNAME record pointing to the external host
 - `externalName`: IP address or hostname of the external service
 - `ports`: Port mapping for the service
@@ -534,6 +566,7 @@ spec:
 ### 6. Network Requirements
 
 Ensure that:
+
 1. The external machines (Mac/Jetson) are accessible from the K3s cluster nodes
 2. Firewall rules allow traffic on the inference API ports (11434)
 3. The inference services are running and bound to the correct network interfaces
@@ -571,6 +604,7 @@ curl http://ollama-inference-jetson:11434
 ### 9. Verify Flux GitOps Setup
 
 Check that Flux is monitoring your repositories:
+
 ```bash
 # Check GitRepository resources
 kubectl get gitrepositories -A
@@ -586,6 +620,7 @@ flux get kustomizations
 ### 10. Directory Structure for GitOps
 
 Your repository should be structured like this for optimal GitOps workflow:
+
 ```
 flux/
 ├── config/
@@ -602,12 +637,14 @@ flux/
 ### Configuration Options
 
 **GitRepository Parameters:**
+
 - `interval`: How often Flux checks for changes
 - `url`: Git repository URL (HTTPS or SSH)
 - `ref.branch`: Branch to monitor
 - `ref.tag`: Specific tag to use (alternative to branch)
 
 **Kustomization Parameters:**
+
 - `interval`: How often to reconcile manifests
 - `timeout`: Maximum time for reconciliation
 - `wait`: Whether to wait for resources to be ready
@@ -662,6 +699,7 @@ kubectl get crd | grep traefik
 ```
 
 You should see output similar to:
+
 ```
 ingressroutes.traefik.containo.us
 ingressroutetcps.traefik.containo.us
@@ -679,10 +717,10 @@ traefikservices.traefik.containo.us
 If you get the error "no matches for kind 'IngressRouteTCP'", it means the CRDs are not installed. Follow one of the installation methods above.
 
 Common issues:
+
 - **CRDs not found**: Ensure Traefik is deployed with `installCRDs: true` or install manually
 - **Version mismatch**: Make sure the CRD version matches your Traefik version
 - **Permissions**: Ensure you have cluster-admin permissions to install CRDs
-
 
 ## Synchronizing Vault secrets to K3s
 
@@ -738,7 +776,6 @@ spec:
             name: "external-secrets-sa"
 ```
 
-
 ```bash
 # Apply the configuration
 kubectl apply -f vault-secret-store.yaml
@@ -751,10 +788,12 @@ kubectl describe secretstore vault-backend -n kaiohz
 ### 3. Create secrets in Vault (examples)
 
 #### Via Vault UI
+
 - Secrets > secret/ (or your engine)
 - Create secret
 
 Example structures:
+
 ```
 # Secrets for an application
 Path: myapp/database
@@ -798,7 +837,6 @@ vault kv put secret/myapp/config \
     log_level=info
 ```
 
-
 ### 4. Create ExternalSecrets
 
 #### Basic ExternalSecret - Individual secrets
@@ -838,7 +876,6 @@ spec:
       property: port
 ```
 
-
 #### ExternalSecret - Full secret synchronization
 
 ```yaml
@@ -860,7 +897,6 @@ spec:
   - extract:
     key: myapp/api  # Retrieves ALL keys from this Vault secret
 ```
-
 
 #### ExternalSecret - TLS Secret
 
@@ -890,7 +926,6 @@ spec:
       key: myapp/tls
       property: key
 ```
-
 
 ### 5. Apply the ExternalSecrets
 
@@ -971,7 +1006,6 @@ spec:
           secretName: myapp-tls-secret
 ```
 
-
 #### Environment variables from an entire secret
 
 ```yaml
@@ -980,28 +1014,32 @@ spec:
       name: myapp-api-secret  # All keys become environment variables
 ```
 
-
 ### 8. Configure NFS server inside Colima
 
 Run these commands inside the Colima VM:
 
 # Create storage directory
+
 sudo mkdir -p /var/lib/k3s-storage
 sudo chmod 777 /var/lib/k3s-storage
 
 # Install NFS server
+
 sudo apt update
 sudo apt install -y nfs-kernel-server
 
 # Configure NFS export for Headscale network
+
 echo "/var/lib/k3s-storage 100.64.0.0/10(rw,sync,no_subtree_check,no_root_squash,insecure)" | sudo tee -a /etc/exports
 
 # Apply and start
+
 sudo exportfs -ra
 sudo systemctl enable nfs-kernel-server
 sudo systemctl restart nfs-kernel-server
 
 # Verify
+
 showmount -e localhost
 
 Test port NFS (2049)
@@ -1009,11 +1047,12 @@ bash# Avec netcat
 nc -zv <IP_HEADSCALE_COLIMA> 2049
 
 # Ou avec telnet
+
 telnet <IP_HEADSCALE_COLIMA> 2049
 
 # Ou avec nmap si installé
-nmap -p 2049 <IP_HEADSCALE_COLIMA>
 
+nmap -p 2049 <IP_HEADSCALE_COLIMA>
 
 ## MinIO Installation
 
@@ -1146,6 +1185,7 @@ spec:
 ```
 
 Apply the ingress:
+
 ```bash
 kubectl apply -f dev/minio/ingress.yaml
 ```
@@ -1260,17 +1300,20 @@ kubectl delete namespace minio
 ### 11. Troubleshooting MinIO
 
 **PVC not binding:**
+
 ```bash
 kubectl describe pvc -n minio
 kubectl get pv
 ```
 
 **Pod stuck in Pending:**
+
 ```bash
 kubectl describe pod -n minio -l app=minio
 ```
 
 **Connection issues from applications:**
+
 - Verify DNS resolution: `kubectl run -it --rm debug --image=busybox --restart=Never -- nslookup minio.minio.svc.cluster.local`
 - Check network policies and firewall rules
 - Verify credentials are correct
@@ -1289,12 +1332,14 @@ Phoenix is an open-source AI observability platform for LLM applications. This s
 ### Important Notes
 
 **Chart Version Limitations:**
+
 - Phoenix Helm chart version 4.0.6 does NOT support the `additionalEnv` parameter for injecting external secrets
 - The chart always creates its own secret for authentication credentials
 - Cannot use `auth.name` to point directly to an external secret (causes ownership conflicts with External Secrets Operator)
 - Secrets must be provided at Helm upgrade time via command-line or temporary values file
 
 **Secret Requirements:**
+
 - `PHOENIX_SECRET`: Must be at least 32 characters long
 - `PHOENIX_ADMIN_SECRET`: Must be at least 32 characters long
 - Other secrets can be any length
@@ -1617,6 +1662,7 @@ Error: [Errno -2] Name or service not known
 ```
 
 **Solution:**
+
 - Verify PostgreSQL service exists: `kubectl get svc -n soludev postgres`
 - For same-namespace services, short hostname (`postgres`) should work
 - For different namespaces, use FQDN: `postgres.soludev.svc.cluster.local`
@@ -1629,6 +1675,7 @@ FATAL: password authentication failed for user "phoenix"
 ```
 
 **Solution:**
+
 - Verify database password in secret: `kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_POSTGRES_PASSWORD}' | base64 -d`
 - Check PostgreSQL user exists: `kubectl exec -it -n soludev <postgres-pod> -- psql -U logto -c "\du" | grep phoenix`
 - Verify password matches what you set in PostgreSQL
@@ -1641,6 +1688,7 @@ ValueError: Phoenix secret must be at least 32 characters long
 ```
 
 **Solution:**
+
 - Check secret lengths: `kubectl get secret -n soludev soludev-phoenix-secret -o json | jq -r '.data | to_entries[] | "\(.key): \(.value | @base64d | length) chars"'`
 - Regenerate secrets in OpenBao with proper length (32+ chars)
 - Wait for ExternalSecret to sync (60s refresh interval)
@@ -1689,6 +1737,7 @@ kubectl run -it --rm debug --image=postgres:16 --restart=Never -n soludev -- \
 When you need to update Phoenix secrets:
 
 1. **Update secrets in OpenBao:**
+
    ```bash
    kubectl exec -n soludev openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
      bao kv patch soludev/phoenix \
@@ -1696,11 +1745,13 @@ When you need to update Phoenix secrets:
    ```
 
 2. **Wait for ExternalSecret to sync** (60 seconds) or force sync:
+
    ```bash
    kubectl delete pod -n external-secrets-system -l app.kubernetes.io/name=external-secrets
    ```
 
 3. **Verify secrets updated:**
+
    ```bash
    kubectl get secret -n soludev soludev-phoenix-secret -o jsonpath='{.data.PHOENIX_SECRET}' | base64 -d
    ```
@@ -1708,6 +1759,7 @@ When you need to update Phoenix secrets:
 4. **Upgrade Phoenix** with new secrets using the upgrade command from step 5
 
 5. **Restart Phoenix pod** to apply changes:
+
    ```bash
    kubectl rollout restart deployment/phoenix -n soludev
    ```
@@ -1715,6 +1767,7 @@ When you need to update Phoenix secrets:
 ### 11. Best Practices
 
 **Secret Management:**
+
 - ✅ Store all secrets in OpenBao, never in Git
 - ✅ Use strong, randomly generated secrets (32+ chars for main secrets)
 - ✅ Rotate secrets periodically
@@ -1722,18 +1775,21 @@ When you need to update Phoenix secrets:
 - ✅ Delete temporary secret files immediately after use
 
 **Configuration:**
+
 - ✅ Use short hostnames for same-namespace services
 - ✅ Keep values.yaml in Git without any secret values
 - ✅ Document the secret structure in comments
 - ✅ Use `database.postgres.password: ""` as placeholder
 
 **Operations:**
+
 - ✅ Always verify secrets are synced before upgrading
 - ✅ Check pod logs after deployment
 - ✅ Monitor database connections
 - ✅ Set up proper monitoring and alerting
 
 **Security:**
+
 - ✅ Enable authentication (`auth.enableAuth: true`)
 - ✅ Use TLS for ingress in production
 - ✅ Restrict network access using NetworkPolicies
@@ -1799,6 +1855,7 @@ chmod +x deploy-phoenix.sh
 ### 13. Future Improvements
 
 **Watch for chart updates** that add native support for:
+
 - External secret references via `additionalEnv`
 - Support for `existingSecret` parameter
 - Direct integration with External Secrets Operator
@@ -1821,6 +1878,7 @@ OpenObserve is a cloud-native observability platform for logs, metrics, and trac
 ### Architecture Overview
 
 OpenObserve deployment uses:
+
 - **MinIO**: For storing logs, metrics, and traces (object storage)
 - **PostgreSQL**: For metadata storage
 - **NFS**: For local cache/temporary data
@@ -1926,11 +1984,13 @@ OpenObserve requires several secrets to be stored in OpenBao.
 #### Generate PostgreSQL DSN
 
 The DSN format for PostgreSQL:
+
 ```
 postgresql://username:password@host:port/database
 ```
 
 Example:
+
 ```
 postgresql://openobserve:your-password@postgres.soludev.svc.cluster.local:5432/openobserve
 ```
@@ -2343,6 +2403,7 @@ Error: failed to connect to PostgreSQL
 ```
 
 **Solution:**
+
 - Verify DSN format in secret: `kubectl get secret -n soludev soludev-openobserve-secret -o jsonpath='{.data.ZO_META_POSTGRES_DSN}' | base64 -d`
 - Check PostgreSQL is accessible: `kubectl exec -it -n soludev <openobserve-pod> -- nc -zv postgres 5432`
 - Verify database and user exist in PostgreSQL
@@ -2355,10 +2416,12 @@ Error: failed to connect to S3
 ```
 
 **Solution:**
+
 - Verify MinIO is running: `kubectl get pods -n soludev | grep minio`
 - Check MinIO access keys in secret
 - Verify bucket exists: `mc ls minio/observability`
 - Test connectivity from OpenObserve pod:
+
   ```bash
   kubectl exec -it -n soludev <openobserve-pod> -- \
     curl http://minio.soludev.svc.cluster.local:9000/minio/health/live
@@ -2378,6 +2441,7 @@ kubectl describe pvc -n soludev <pvc-name>
 ```
 
 **Solution:**
+
 - Verify NFS server is accessible
 - Check NFS exports: `showmount -e <nfs-server-ip>`
 - Verify storage class matches: `kubectl get storageclass`
@@ -2394,6 +2458,7 @@ kubectl logs -n external-secrets-system -l app.kubernetes.io/name=external-secre
 ```
 
 **Solution:**
+
 - Verify secrets exist in OpenBao
 - Check ClusterSecretStore is configured correctly
 - Verify service account has proper permissions
@@ -2402,6 +2467,7 @@ kubectl logs -n external-secrets-system -l app.kubernetes.io/name=external-secre
 **5. Data Not Appearing in UI**
 
 **Solution:**
+
 - Check data is being sent to correct endpoint
 - Verify authentication credentials
 - Check OpenObserve logs for ingestion errors
@@ -2411,6 +2477,7 @@ kubectl logs -n external-secrets-system -l app.kubernetes.io/name=external-secre
 **6. High Memory Usage**
 
 **Solution:**
+
 - Reduce `ZO_META_CONNECTION_POOL_MAX_SIZE`
 - Increase resource limits in values.yml
 - Adjust `ZO_COMPACT_DATA_RETENTION_DAYS` to retain less data
@@ -2457,6 +2524,7 @@ config:
 #### Backup Considerations
 
 **PostgreSQL Metadata:**
+
 ```bash
 # Backup PostgreSQL database
 kubectl exec -n soludev <postgres-pod> -- \
@@ -2464,6 +2532,7 @@ kubectl exec -n soludev <postgres-pod> -- \
 ```
 
 **MinIO Data:**
+
 ```bash
 # Backup MinIO bucket
 mc mirror minio/observability /path/to/backup/
@@ -2474,11 +2543,13 @@ mc mirror minio/observability /path/to/backup/
 For production workloads, consider:
 
 **Horizontal Scaling:**
+
 ```yaml
 replicaCount: 3  # Run multiple replicas
 ```
 
 **Resource Scaling:**
+
 ```yaml
 resources:
   limits:
@@ -2490,6 +2561,7 @@ resources:
 ```
 
 **PostgreSQL Connection Pool:**
+
 ```yaml
 config:
   ZO_META_CONNECTION_POOL_MAX_SIZE: "20"
@@ -2498,6 +2570,7 @@ config:
 ### 15. Best Practices
 
 **Security:**
+
 - ✅ Use strong passwords for admin account
 - ✅ Enable TLS/HTTPS via ingress
 - ✅ Store all credentials in OpenBao
@@ -2505,18 +2578,21 @@ config:
 - ✅ Regularly rotate credentials
 
 **Performance:**
+
 - ✅ Adjust retention policies based on your needs
 - ✅ Monitor resource usage and scale accordingly
 - ✅ Use appropriate PostgreSQL connection pool sizes
 - ✅ Enable data compaction
 
 **Reliability:**
+
 - ✅ Use persistent storage for local cache
 - ✅ Backup PostgreSQL metadata regularly
 - ✅ Monitor MinIO bucket size
 - ✅ Set up proper monitoring and alerting
 
 **Cost Optimization:**
+
 - ✅ Adjust data retention to balance storage costs
 - ✅ Use MinIO lifecycle policies for old data
 - ✅ Right-size resource requests and limits
@@ -2563,6 +2639,110 @@ exporters:
       Authorization: Basic <base64(email:password)>
 ```
 
+## PickPro Application Setup
+
+This section covers the deployment of the PickPro application stack, including OAuth2 Proxy for authentication, MinIO for storage, and Traefik middleware integration.
+
+### 1. OAuth2 Proxy Installation
+
+OAuth2 Proxy is used to protect the application with OIDC authentication (e.g., Logto).
+
+#### Prerequisites
+
+- **OpenBao/Vault** configured with the secret `pickpro/oauth2-proxy` containing:
+  - `client-id`
+  - `client-secret`
+  - `cookie-secret`
+
+#### Deployment Steps
+
+1. **Add Helm Repository:**
+
+   ```bash
+   helm repo add oauth2-proxy https://oauth2-proxy.github.io/manifests
+   helm repo update
+   ```
+
+2. **Deploy with Helm:**
+
+   ```bash
+   helm upgrade --install oauth2-proxy oauth2-proxy/oauth2-proxy \
+     --namespace pickpro \
+     --create-namespace \
+     -f config/dev/oauth2-proxy/values.yaml
+   ```
+
+3. **Apply External Secrets and ConfigMap:**
+   Ensure the `oauth2-proxy-secret` and `oauth2-proxy-config` are created:
+
+   ```bash
+   kubectl apply -f dev/pickpro/oauth2-proxy/
+   ```
+
+### 2. Traefik Forward Auth Middleware
+
+To protect your Ingress resources, configure a Traefik Middleware that delegates authentication to OAuth2 Proxy.
+
+#### Configuration
+
+File: `dev/pickpro/traefik/middleware.yaml`
+
+```yaml
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: traefik-forward-auth
+  namespace: pickpro
+spec:
+  forwardAuth:
+    address: "http://oauth2-proxy.pickpro.svc.cluster.local:4180/oauth2/auth"
+    authResponseHeaders:
+      - "X-Auth-Request-User"
+      - "X-Auth-Request-Email"
+      - "Authorization"
+    trustForwardHeader: true
+```
+
+#### Apply Middleware
+
+```bash
+kubectl apply -f dev/pickpro/traefik/middleware.yaml
+```
+
+### 3. MinIO for PickPro
+
+PickPro uses a dedicated MinIO instance for storing CVs and other documents.
+
+#### Deployment
+
+```bash
+helm upgrade --install minio-pickpro minio/minio \
+  --namespace pickpro \
+  -f config/dev/minio/pickpro/values.yaml
+```
+
+This configuration:
+
+- Creates a bucket named `cvs`
+- Uses NFS storage class `nfs-pickpro-minio`
+- Sets up a standalone MinIO instance
+
+### 4. Application Ingress Protection
+
+To protect an Ingress resource (e.g., `pickpro-front`), add the middleware annotation:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pickpro-front
+  namespace: pickpro
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: pickpro-traefik-forward-auth@kubernetescrd
+spec:
+  # ... ingress rules ...
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -2593,6 +2773,7 @@ sudo journalctl -u k3s -f
 ## Architecture
 
 This setup creates:
+
 - A K3s cluster with control plane and worker nodes
 - Flux for GitOps deployment management
 - Vault for secrets management
@@ -2603,6 +2784,7 @@ This setup creates:
 ## Next Steps
 
 After completing this setup, you can:
+
 1. Configure Flux to watch your Git repository
 2. Set up Vault policies and authentication
 3. Deploy applications using GitOps workflows
