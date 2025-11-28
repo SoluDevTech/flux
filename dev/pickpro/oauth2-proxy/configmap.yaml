@@ -31,6 +31,8 @@ data:
     cookie_path = "/"
     cookie_samesite = "lax" 
     cookie_refresh = "1h"
+    cookie_csrf_per_request = false
+    cookie_csrf_expire = "0s"
     
     skip_provider_button = true
     set_xauthrequest = true
