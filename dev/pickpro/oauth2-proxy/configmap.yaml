@@ -17,7 +17,7 @@ data:
     cookie_name = "oauth2-proxy-pickpro"
     email_domains = ["*"]
     
-    upstreams = ["file:///dev/null"]
+    upstreams = ["http://pickpro-front.pickpro.svc.cluster.local:5173"]
     http_address = "0.0.0.0:4180"
     reverse_proxy = true
     
