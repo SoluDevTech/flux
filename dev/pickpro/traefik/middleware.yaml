@@ -9,5 +9,13 @@ spec:
     authResponseHeaders:
       - "X-Auth-Request-User"
       - "X-Auth-Request-Email"
+      - "X-Auth-Request-Access-Token"
       - "Authorization"
+    authResponseHeadersRegex: "^X-"
+    authRequestHeaders:
+      - "X-Forwarded-Method"
+      - "X-Forwarded-Proto"
+      - "X-Forwarded-Host"
+      - "X-Forwarded-Uri"
+      - "X-Forwarded-For"
     trustForwardHeader: true

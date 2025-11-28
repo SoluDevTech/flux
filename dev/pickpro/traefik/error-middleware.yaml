@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: traefik-error-pages
+  namespace: pickpro
+spec:
+  errors:
+    status:
+      - "401-403"
+    service:
+      name: oauth2-proxy-service
+      port: 4180
+    query: "/oauth2/start?rd={url}"

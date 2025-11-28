@@ -27,3 +27,6 @@ data:
     
     cookie_secure = true
     cookie_httponly = true
+    
+    skip_provider_button = true
+    set_xauthrequest = true
