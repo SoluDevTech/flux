@@ -11,6 +11,7 @@ spec:
       - "X-Auth-Request-Email"
       - "X-Auth-Request-Access-Token"
       - "Authorization"
+      - "Location"
     authResponseHeadersRegex: "^X-"
     authRequestHeaders:
       - "X-Forwarded-Method"
@@ -19,3 +20,4 @@ spec:
       - "X-Forwarded-Uri"
       - "X-Forwarded-For"
     trustForwardHeader: true
+    authRedirect: true
