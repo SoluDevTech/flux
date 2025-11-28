@@ -10,6 +10,7 @@ data:
     
     redirect_url = "https://dev-pickpro-oauth2-proxy.soludev.tech/oauth2/callback"
     
+    # Cookie settings for cross-domain auth
     cookie_domains = [".soludev.tech"] 
     whitelist_domains = [".soludev.tech", "pickpro.soludev.tech", "dev-pickpro-oauth2-proxy.soludev.tech"]
     
@@ -28,6 +29,7 @@ data:
     cookie_secure = true
     cookie_httponly = true
     cookie_samesite = "lax"
+    cookie_refresh = "1h"
     
     skip_provider_button = true
     set_xauthrequest = true
