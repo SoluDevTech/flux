@@ -13,6 +13,11 @@ data:
     # Request additional user information
     scope = "openid email profile"
     
+    # Enable userinfo endpoint to get profile data
+    oidc_email_claim = "email"
+    oidc_groups_claim = "groups"
+    profile_url = "https://dev-logto.soludev.tech/oidc/me"
+    
     # Cookie settings for cross-domain auth
     cookie_domains = [".soludev.tech"] 
     whitelist_domains = [".soludev.tech"]
