@@ -13,12 +13,6 @@ data:
     # Request additional user information
     scope = "openid email profile"
     
-    # Map 'name' claim to preferred_username field
-    oidc_preferred_username_claim = "name"
-    
-    # Force fetching from userinfo endpoint
-    profile_url = "https://dev-logto.soludev.tech/oidc/me"
-    
     # Cookie settings for cross-domain auth
     cookie_domains = [".soludev.tech"] 
     whitelist_domains = [".soludev.tech"]
