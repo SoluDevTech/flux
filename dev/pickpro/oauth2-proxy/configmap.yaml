@@ -2,15 +2,28 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: oauth2-proxy-config
+  namespace: pickpro
 data:
   oauth2_proxy.cfg: |
     provider = "oidc"
     oidc_issuer_url = "https://dev-logto.soludev.tech/oidc"
-    cookie_name = "oauth2-proxy"
+    
+    redirect_url = "https://dev-pickpro-oauth2-proxy.soludev.tech/oauth2/callback"
+    
+    cookie_domains = [".soludev.tech"] 
+    whitelist_domains = [".soludev.tech"]
+    
+    cookie_name = "oauth2-proxy-pickpro"
     email_domains = ["*"]
+    
+    upstreams = ["file:///dev/null"]
+    http_address = "0.0.0.0:4180"
+    reverse_proxy = true
+    
     pass_access_token = true
     pass_authorization_header = true
     set_authorization_header = true
     pass_user_headers = true
-    upstreams = ["file:///dev/null"]
-    redirect_url = "https://dev-pickpro-oauth2-proxy.soludev.tech/oauth2/callback"
+    
+    cookie_secure = true
+    cookie_httponly = true

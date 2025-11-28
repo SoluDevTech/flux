@@ -4,6 +4,8 @@ metadata:
   name: pickpro-api-ingress
   namespace: pickpro
   annotations:
+    # OAuth2 Proxy authentication
+    traefik.ingress.kubernetes.io/router.middlewares: pickpro-traefik-forward-auth@kubernetescrd
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
