@@ -4,7 +4,7 @@ metadata:
   name: pickpro-indexing-api-ingress
   namespace: pickpro
   annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: pickpro-traefik-forward-auth@kubernetescrd,pickpro-traefik-error-pages@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: pickpro-traefik-error-pages@kubernetescrd,pickpro-traefik-forward-auth@kubernetescrd
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
