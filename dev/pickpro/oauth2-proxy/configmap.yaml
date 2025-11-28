@@ -28,7 +28,8 @@ data:
     
     cookie_secure = true
     cookie_httponly = true
-    cookie_samesite = "lax"
+    cookie_path = "/"
+    # cookie_samesite = "lax" 
     cookie_refresh = "1h"
     
     skip_provider_button = true
