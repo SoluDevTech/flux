@@ -10,10 +10,8 @@ data:
     
     redirect_url = "https://pickpro.soludev.tech/oauth2/callback"
     
-    # Request additional user information
     scope = "openid email profile"
     
-    # Cookie settings for cross-domain auth
     cookie_domains = [".soludev.tech"] 
     whitelist_domains = [".soludev.tech"]
     
@@ -24,11 +22,9 @@ data:
     http_address = "0.0.0.0:4180"
     reverse_proxy = true
     
-    pass_access_token = true
+    pass_access_token = false
     pass_authorization_header = true
     set_authorization_header = true
-    pass_user_headers = true
-    pass_user_data_header = true
     
     cookie_secure = true
     cookie_httponly = true
