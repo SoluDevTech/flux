@@ -23,12 +23,7 @@ data:
     reverse_proxy = true
     
     pass_authorization_header = true
-    pass_access_token = true
-    
-    # Validation des JWT Bearer tokens
-    skip_jwt_bearer_tokens = false
-    extra_jwt_issuers = ["https://dev-logto.soludev.tech/oidc@sazp1vx8ah3pwv56rqm9v"]
-    
+
     cookie_secure = true
     cookie_httponly = true
     cookie_path = "/"

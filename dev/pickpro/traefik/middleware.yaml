@@ -10,6 +10,7 @@ spec:
       - "Authorization"
     authResponseHeadersRegex: "^X-"
     authRequestHeaders:
+      - "Cookie"
       - "X-Forwarded-Method"
       - "X-Forwarded-Proto"
       - "X-Forwarded-Host"
