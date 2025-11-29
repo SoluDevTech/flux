@@ -22,8 +22,7 @@ data:
     http_address = "0.0.0.0:4180"
     reverse_proxy = true
     
-    pass_access_token = false
-    pass_authorization_header = false
+    pass_authorization_header = true
 
     cookie_secure = true
     cookie_httponly = true
