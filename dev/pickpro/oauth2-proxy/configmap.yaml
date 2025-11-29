@@ -28,6 +28,7 @@ data:
     pass_authorization_header = true
     set_authorization_header = true
     pass_user_headers = true
+    pass_user_data_header = true
     
     cookie_secure = true
     cookie_httponly = true
