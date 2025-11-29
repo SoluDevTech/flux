@@ -6,9 +6,5 @@ metadata:
 data:
   config.json: |
     {
-        "logtoUrl": "https://dev-logto.soludev.tech",
-        "logtoAppId": "0nvmupc3d9dfkxcd5zpip",
-        "redirectUrl": "https://pickpro.soludev.tech/callback",
-        "signOutUrl": "https://pickpro.soludev.tech/",
         "backendUrl": "https://pickpro-api.soludev.tech"
     }
