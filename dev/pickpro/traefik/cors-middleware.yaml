@@ -1,7 +1,7 @@
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: pickpro-cors-middleware
+  name: cors-middleware
   namespace: pickpro
 spec:
   headers:
@@ -13,7 +13,7 @@ spec:
       - "OPTIONS"
     accessControlAllowHeaders:
       - "*"
-    accessControlAllowOrigins:
+    accessControlAllowOriginList:
       - "https://pickpro.soludev.tech"
       - "http://localhost:5173"
     accessControlMaxAge: 100
