@@ -12,7 +12,11 @@ spec:
       - "DELETE"
       - "OPTIONS"
     accessControlAllowHeaders:
-      - "*"
+      - "Content-Type"
+      - "Authorization"
+      - "X-Requested-With"
+      - "Accept"
+      - "Origin"
     accessControlAllowOriginList:
       - "https://pickpro.soludev.tech"
       - "http://localhost:5173"
