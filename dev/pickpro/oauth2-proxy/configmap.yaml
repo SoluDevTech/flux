@@ -23,6 +23,8 @@ data:
     reverse_proxy = true
     
     pass_authorization_header = true
+    set_authorization_header = true
+    pass_access_token = true
 
     cookie_secure = true
     cookie_httponly = true
