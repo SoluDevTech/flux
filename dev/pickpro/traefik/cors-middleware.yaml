@@ -18,3 +18,4 @@ spec:
       - "http://localhost:5173"
     accessControlMaxAge: 100
     addVaryHeader: true
+    accessControlAllowCredentials: true
