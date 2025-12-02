@@ -8,6 +8,12 @@ data:
     tunnel: a67e25e7-bae5-4a2d-a46e-fc05d0c1f84e
     
     ingress:
+
+      - hostname: soludev.tech
+        service: https://traefik.kube-system.svc.cluster.local:443
+        originRequest:
+          noTLSVerify: true
+
       - hostname: dev-bao.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
