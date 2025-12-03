@@ -2236,7 +2236,7 @@ helm repo update
 #### Install OpenObserve
 
 ```bash
-helm install openobserve openobserve/openobserve \
+helm install openobserve openobserve/openobserve-standalone \
   -n soludev \
   -f config/dev/openobserve/values.yml
 ```
@@ -2246,7 +2246,7 @@ helm install openobserve openobserve/openobserve \
 When you need to update configuration:
 
 ```bash
-helm upgrade openobserve openobserve/openobserve \
+helm upgrade openobserve openobserve/openobserve-standalone \
   -n soludev \
   -f config/dev/openobserve/values.yml
 ```

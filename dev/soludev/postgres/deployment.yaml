@@ -15,8 +15,6 @@ spec:
       labels:
         app: postgres
     spec:
-      nodeSelector:
-        type: standard
       tolerations:
         - key: "klipperlb-exclude"
           value: "true"
