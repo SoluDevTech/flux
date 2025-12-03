@@ -2751,6 +2751,61 @@ spec:
 2. **Network Issues**: Ensure firewall allows traffic on port 6443
 3. **Token Issues**: Verify the token is copied correctly without extra spaces or characters
 
+### Pods Stuck in ContainerCreating with NFS Volumes
+
+**Symptoms:**
+- Pods remain in `ContainerCreating` state for extended periods (5+ minutes)
+- Multiple pods trying to mount the same NFS volume simultaneously
+- No events showing volume mounting progress
+- `kubectl describe pod` shows the pod is scheduled but containers haven't started
+
+**Root Cause:**
+NFS server in Colima VM stops responding or becomes unresponsive, preventing pods from mounting NFS volumes.
+
+**Solution:**
+
+1. **Restart Colima completely:**
+   ```bash
+   # Stop Colima
+   colima stop
+   
+   # Start Colima
+   colima start
+   ```
+
+2. **Verify NFS is running after restart:**
+   ```bash
+   # SSH into Colima
+   colima ssh
+   
+   # Check NFS server status
+   sudo systemctl status nfs-kernel-server
+   
+   # Verify exports
+   showmount -e localhost
+   ```
+
+3. **If NFS still not working, restart the service manually:**
+   ```bash
+   # Inside Colima VM
+   sudo systemctl restart nfs-kernel-server
+   sudo exportfs -ra
+   ```
+
+4. **Test connectivity from other nodes:**
+   ```bash
+   # From jetson or raspberry pi
+   showmount -e <COLIMA_HEADSCALE_IP>
+   nc -zv <COLIMA_HEADSCALE_IP> 2049
+   ```
+
+**Prevention:**
+- Monitor NFS server health regularly
+- Consider restarting Colima periodically if experiencing frequent NFS issues
+- Use `local-path` storage class for critical system components that don't need shared storage
+
+**Note:** After restarting Colima, pods should automatically retry mounting volumes and transition from `ContainerCreating` to `Running` within 1-2 minutes.
+
 ### Useful Commands
 
 ```bash
