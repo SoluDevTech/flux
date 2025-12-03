@@ -2768,6 +2768,12 @@ sudo systemctl status k3s-agent
 
 # View K3s logs
 sudo journalctl -u k3s -f
+
+# Check CPU and memory usage by nodes
+kubectl top nodes
+
+# Check allocated resources vs available on nodes
+kubectl describe nodes | grep -A 7 "Allocated resources"
 ```
 
 ## Architecture
