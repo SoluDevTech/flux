@@ -1,79 +1,79 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: cloudflared
-  namespace: prospectio
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: cloudflared
-  template:
-    metadata:
-      labels:
-        app: cloudflared
-    spec:
-      tolerations:
-        - key: "klipperlb-exclude"
-          value: "true"
-          effect: "NoSchedule"
-          operator: "Equal"
-      containers:
-      - name: cloudflared
-        image: cloudflare/cloudflared:latest
-        args:
-        - tunnel
-        - --no-autoupdate
-        - --protocol
-        - http2
-        - --config
-        - /etc/cloudflared/config.yml  
-        - run
-        - --token
-        - $(TUNNEL_TOKEN)
-        env:
-        - name: TUNNEL_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: cloudflare-secret
-              key: TUNNEL_TOKEN
-        volumeMounts:
-        - name: config
-          mountPath: /etc/cloudflared/config.yml
-          subPath: config.yml
-          readOnly: true
-        - name: cloudflared-cert
-          mountPath: /etc/cloudflared/cert.pem
-          subPath: cert.pem
-          readOnly: true
-        resources:
-          requests:
-            memory: "64Mi"
-            cpu: "50m"
-          limits:
-            memory: "128Mi"
-            cpu: "100m"
-        livenessProbe:
-          httpGet:
-            path: /metrics
-            port: 20241
-          initialDelaySeconds: 30
-          periodSeconds: 30
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /metrics
-            port: 20241
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-      volumes:
-      - name: config
-        configMap:
-          name: cloudflared-config
-      - name: cloudflared-cert
-        secret:
-          secretName: cloudflare-secret
-      restartPolicy: Always
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: cloudflared
+#   namespace: prospectio
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: cloudflared
+#   template:
+#     metadata:
+#       labels:
+#         app: cloudflared
+#     spec:
+#       tolerations:
+#         - key: "klipperlb-exclude"
+#           value: "true"
+#           effect: "NoSchedule"
+#           operator: "Equal"
+#       containers:
+#       - name: cloudflared
+#         image: cloudflare/cloudflared:latest
+#         args:
+#         - tunnel
+#         - --no-autoupdate
+#         - --protocol
+#         - http2
+#         - --config
+#         - /etc/cloudflared/config.yml  
+#         - run
+#         - --token
+#         - $(TUNNEL_TOKEN)
+#         env:
+#         - name: TUNNEL_TOKEN
+#           valueFrom:
+#             secretKeyRef:
+#               name: cloudflare-secret
+#               key: TUNNEL_TOKEN
+#         volumeMounts:
+#         - name: config
+#           mountPath: /etc/cloudflared/config.yml
+#           subPath: config.yml
+#           readOnly: true
+#         - name: cloudflared-cert
+#           mountPath: /etc/cloudflared/cert.pem
+#           subPath: cert.pem
+#           readOnly: true
+#         resources:
+#           requests:
+#             memory: "64Mi"
+#             cpu: "50m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#         livenessProbe:
+#           httpGet:
+#             path: /metrics
+#             port: 20241
+#           initialDelaySeconds: 30
+#           periodSeconds: 30
+#           timeoutSeconds: 5
+#           failureThreshold: 3
+#         readinessProbe:
+#           httpGet:
+#             path: /metrics
+#             port: 20241
+#           initialDelaySeconds: 10
+#           periodSeconds: 10
+#           timeoutSeconds: 5
+#           failureThreshold: 3
+#       volumes:
+#       - name: config
+#         configMap:
+#           name: cloudflared-config
+#       - name: cloudflared-cert
+#         secret:
+#           secretName: cloudflare-secret
+#       restartPolicy: Always

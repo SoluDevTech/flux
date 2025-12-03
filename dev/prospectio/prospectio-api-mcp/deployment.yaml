@@ -1,53 +1,53 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: prospectio-api-mcp
-  namespace: prospectio
-  labels:
-    app: prospectio-api-mcp
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: prospectio-api-mcp
-  template:
-    metadata:
-      labels:
-        app: prospectio-api-mcp
-    spec:
-      nodeSelector:
-        type: standard
-      tolerations:
-        - key: "klipperlb-exclude"
-          value: "true"
-          effect: "NoSchedule"
-          operator: "Equal"
-      containers:
-        - name: prospectio-api-mcp
-          image: kaiohz/prospectio-api-mcp:latest
-          ports:
-            - containerPort: 7002
-          envFrom:
-            - configMapRef:
-                name: prospectio-api-mcp-config
-            - secretRef:
-                name: prospectio-api-mcp-secret
-          livenessProbe:
-            httpGet:
-              path: /docs
-              port: 7002
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /docs
-              port: 7002
-            initialDelaySeconds: 5
-            periodSeconds: 5
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "100m"
-            limits:
-              memory: "768Mi"
-              cpu: "200m"
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: prospectio-api-mcp
+#   namespace: prospectio
+#   labels:
+#     app: prospectio-api-mcp
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: prospectio-api-mcp
+#   template:
+#     metadata:
+#       labels:
+#         app: prospectio-api-mcp
+#     spec:
+#       nodeSelector:
+#         type: standard
+#       tolerations:
+#         - key: "klipperlb-exclude"
+#           value: "true"
+#           effect: "NoSchedule"
+#           operator: "Equal"
+#       containers:
+#         - name: prospectio-api-mcp
+#           image: kaiohz/prospectio-api-mcp:latest
+#           ports:
+#             - containerPort: 7002
+#           envFrom:
+#             - configMapRef:
+#                 name: prospectio-api-mcp-config
+#             - secretRef:
+#                 name: prospectio-api-mcp-secret
+#           livenessProbe:
+#             httpGet:
+#               path: /docs
+#               port: 7002
+#             initialDelaySeconds: 30
+#             periodSeconds: 10
+#           readinessProbe:
+#             httpGet:
+#               path: /docs
+#               port: 7002
+#             initialDelaySeconds: 5
+#             periodSeconds: 5
+#           resources:
+#             requests:
+#               memory: "512Mi"
+#               cpu: "100m"
+#             limits:
+#               memory: "768Mi"
+#               cpu: "200m"

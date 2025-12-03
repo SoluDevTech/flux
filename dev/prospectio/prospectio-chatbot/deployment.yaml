@@ -1,53 +1,53 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: prospectio-chatbot
-  namespace: prospectio
-  labels:
-    app: prospectio-chatbot
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: prospectio-chatbot
-  template:
-    metadata:
-      labels:
-        app: prospectio-chatbot
-    spec:
-      nodeSelector:
-        type: standard
-      tolerations:
-        - key: "klipperlb-exclude"
-          value: "true"
-          effect: "NoSchedule"
-          operator: "Equal"
-      containers:
-        - name: prospectio-chatbot
-          image: kaiohz/prospectio-chatbot:latest
-          ports:
-            - containerPort: 7002
-          envFrom:
-            - configMapRef:
-                name: prospectio-chatbot-config
-            - secretRef:
-                name: prospectio-chatbot-secret
-          livenessProbe:
-            httpGet:
-              path: /docs
-              port: 8000
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /docs
-              port: 8000
-            initialDelaySeconds: 5
-            periodSeconds: 5
-          resources:
-            requests:
-              memory: "256Mi"
-              cpu: "100m"
-            limits:
-              memory: "384Mi"
-              cpu: "200m"
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: prospectio-chatbot
+#   namespace: prospectio
+#   labels:
+#     app: prospectio-chatbot
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: prospectio-chatbot
+#   template:
+#     metadata:
+#       labels:
+#         app: prospectio-chatbot
+#     spec:
+#       nodeSelector:
+#         type: standard
+#       tolerations:
+#         - key: "klipperlb-exclude"
+#           value: "true"
+#           effect: "NoSchedule"
+#           operator: "Equal"
+#       containers:
+#         - name: prospectio-chatbot
+#           image: kaiohz/prospectio-chatbot:latest
+#           ports:
+#             - containerPort: 7002
+#           envFrom:
+#             - configMapRef:
+#                 name: prospectio-chatbot-config
+#             - secretRef:
+#                 name: prospectio-chatbot-secret
+#           livenessProbe:
+#             httpGet:
+#               path: /docs
+#               port: 8000
+#             initialDelaySeconds: 30
+#             periodSeconds: 10
+#           readinessProbe:
+#             httpGet:
+#               path: /docs
+#               port: 8000
+#             initialDelaySeconds: 5
+#             periodSeconds: 5
+#           resources:
+#             requests:
+#               memory: "256Mi"
+#               cpu: "100m"
+#             limits:
+#               memory: "384Mi"
+#               cpu: "200m"
