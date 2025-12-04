@@ -85,6 +85,9 @@ extraEnv:
     value: "true"
   - name: ZO_RESULT_CACHE_ENABLED
     value: "true"
+  # Increase dashboard series limit
+  - name: ZO_MAX_DASHBOARD_SERIES
+    value: "500"
 
 # NOTE: Config section is not used by this chart, all configuration is in extraEnv above
 # Kept for documentation purposes only
