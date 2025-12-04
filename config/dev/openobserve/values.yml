@@ -33,34 +33,62 @@ extraEnv:
       secretKeyRef:
         name: soludev-openobserve-secret
         key: ZO_META_POSTGRES_DSN
-
-# Configuration MinIO
-config:
-
-  # Rétention des données (10 jours)
-  ZO_COMPACT_DATA_RETENTION_DAYS: "10"
-  ZO_COMPACT_ENABLED: "true"
-  ZO_COMPACT_INTERVAL: "3600"
-
-  # PostgreSQL pour métadonnées
-  ZO_META_STORE: "postgres"
-  ZO_META_CONNECTION_POOL_MIN_SIZE: "2"
-  ZO_META_CONNECTION_POOL_MAX_SIZE: "10"
   
-  # Mode local activé pour éviter NATS (mais avec stockage S3/MinIO)
-  ZO_LOCAL_MODE: "true"
-  ZO_LOCAL_MODE_STORAGE: "s3"
-  
-  # Configuration MinIO
-  ZO_S3_PROVIDER: "minio"
-  ZO_S3_SERVER_URL: "http://minio.soludev.svc.cluster.local:9000"
-  ZO_S3_REGION_NAME: "us-east-1"
-  ZO_S3_BUCKET_NAME: "observability"
-  ZO_S3_BUCKET_PREFIX: ""
-  ZO_S3_FEATURE_FORCE_HOSTED_STYLE: "false"
-  ZO_S3_FEATURE_FORCE_PATH_STYLE: "true"
-  ZO_S3_FEATURiE_HTTP1_ONLY: "false"
-  ZO_S3_FEATURE_HTTP2_ONLY: "false"
+  # Configuration variables
+  - name: ZO_META_STORE
+    value: "postgres"
+  - name: ZO_META_CONNECTION_POOL_MIN_SIZE
+    value: "2"
+  - name: ZO_META_CONNECTION_POOL_MAX_SIZE
+    value: "10"
+  - name: ZO_LOCAL_MODE
+    value: "true"
+  - name: ZO_LOCAL_MODE_STORAGE
+    value: "s3"
+  - name: ZO_S3_PROVIDER
+    value: "minio"
+  - name: ZO_S3_SERVER_URL
+    value: "http://minio.soludev.svc.cluster.local:9000"
+  - name: ZO_S3_REGION_NAME
+    value: "us-east-1"
+  - name: ZO_S3_BUCKET_NAME
+    value: "observability"
+  - name: ZO_S3_BUCKET_PREFIX
+    value: ""
+  - name: ZO_S3_FEATURE_FORCE_HOSTED_STYLE
+    value: "false"
+  - name: ZO_S3_FEATURE_FORCE_PATH_STYLE
+    value: "true"
+  - name: ZO_S3_FEATURE_HTTP1_ONLY
+    value: "false"
+  - name: ZO_S3_FEATURE_HTTP2_ONLY
+    value: "false"
+  - name: ZO_COMPACT_DATA_RETENTION_DAYS
+    value: "10"
+  - name: ZO_COMPACT_ENABLED
+    value: "true"
+  - name: ZO_COMPACT_INTERVAL
+    value: "3600"
+  # Reduce data latency - make data queryable faster
+  - name: ZO_FILE_PUSH_INTERVAL
+    value: "10"
+  - name: ZO_MAX_FILE_RETENTION_TIME
+    value: "60"
+  - name: ZO_MEM_PERSIST_INTERVAL
+    value: "1"
+  # Enable memory cache for faster queries
+  - name: ZO_MEMORY_CACHE_ENABLED
+    value: "true"
+  - name: ZO_MEMORY_CACHE_MAX_SIZE
+    value: "512"
+  - name: ZO_DISK_CACHE_ENABLED
+    value: "true"
+  - name: ZO_RESULT_CACHE_ENABLED
+    value: "true"
+
+# NOTE: Config section is not used by this chart, all configuration is in extraEnv above
+# Kept for documentation purposes only
+config: {}
 
 resources:
   limits:
