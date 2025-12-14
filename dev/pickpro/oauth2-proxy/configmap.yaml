@@ -10,7 +10,7 @@ data:
     
     redirect_url = "https://pickpro.soludev.tech/oauth2/callback"
 
-    backend_logout_url = "https://dev-logto.soludev.tech/oidc/session/end?post_logout_redirect_uri=https://pickpro.soludev.tech/oauth2/start&id_token_hint={id_token}"
+    backend_logout_url = "https://dev-logto.soludev.tech/oidc/session/end?post_logout_redirect_uri=https://pickpro.soludev.tech/oauth2/start"
     
     scope = "openid email profile"
     
