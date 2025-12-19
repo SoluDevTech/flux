@@ -14,6 +14,9 @@ data:
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
   PHOENIX_HOST: https://dev-phoenix.soludev.tech
   PYTHONPATH: ./pickpro_api
-
+  MINIO_HOST: minio.pickpro.svc.cluster.local:9000
+  MINIO_ACCESS: minioadmin
+  MINIO_BUCKET: cvs
+  MINIO_ALLOWED_EXTENSION: .pdf
 
 
