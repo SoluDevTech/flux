@@ -12,7 +12,7 @@ set -e
 # Configuration
 NAMESPACE="openobserve-collector"
 CLUSTER_NAME="cluster1"
-OPENOBSERVE_ENDPOINT="https://openobserve.soludev.tech/api/default"
+OPENOBSERVE_ENDPOINT="https://openobserve.soludev.tech/api/36LT0RsBbKHFH3k3kd0EMGPp5sj"
 
 # Versions
 CERT_MANAGER_VERSION="v1.19.0"
