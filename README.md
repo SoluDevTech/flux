@@ -48,6 +48,11 @@ curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up --login-server=http://<IP_SERVER>:8080
 
 headscale nodes register --user USERNAME --key <GENERATED_KEY>
+
+on docker : 
+
+sudo docker exec -it headscale   headscale nodes register --user k3s-headscale --key <KEY>
+
 ```
 
 ## K3s Installation
@@ -2805,6 +2810,66 @@ NFS server in Colima VM stops responding or becomes unresponsive, preventing pod
 - Use `local-path` storage class for critical system components that don't need shared storage
 
 **Note:** After restarting Colima, pods should automatically retry mounting volumes and transition from `ContainerCreating` to `Running` within 1-2 minutes.
+
+### Jetson ServiceLB / Traefik iptables Errors
+
+**Symptoms:**
+```
+Warning: Extension tcp revision 0 not supported, missing kernel module?
+iptables v1.8.11 (nf_tables): RULE_INSERT failed (No such file or directory): rule in chain FORWARD
+```
+
+Or pods `svclb-traefik-*` in CrashLoopBackOff:
+```
+failed to "StartContainer" for "lb-tcp-80" with CrashLoopBackOff
+failed to "StartContainer" for "lb-tcp-443" with CrashLoopBackOff
+```
+
+**Root Cause:**
+The Traefik/ServiceLB containers use `iptables-nft` internally, but the Jetson host uses `iptables-legacy`. This causes iptables rule insertion failures.
+
+**Solution: Disable ServiceLB on Jetson and enable on other nodes**
+
+**Important:** Once you set an `enablelb` label on ANY node, K3s changes behavior:
+- Without any labels → svclb deploys on ALL nodes
+- With labels → svclb deploys ONLY on nodes with `enablelb=true`
+
+So you must explicitly enable it on nodes where you want it:
+
+```bash
+# Disable ServiceLB on the Jetson node
+kubectl label node jetson-desktop svccontroller.k3s.cattle.io/enablelb=false
+
+# Enable ServiceLB on all other nodes (required!)
+kubectl label node bignode svccontroller.k3s.cattle.io/enablelb=true
+kubectl label node colima svccontroller.k3s.cattle.io/enablelb=true
+kubectl label node raspberrypi svccontroller.k3s.cattle.io/enablelb=true
+# Add any other nodes here...
+```
+
+**Verify the fix:**
+```bash
+# Check svclb pods are running on correct nodes
+kubectl get pods -n kube-system -o wide | grep svclb
+
+# Verify the DaemonSet has the expected number of pods
+kubectl get daemonset -n kube-system | grep svclb
+
+# Check labels on all nodes
+kubectl get nodes --show-labels | grep enablelb
+```
+
+**Expected result:**
+- DaemonSet should show pods on all nodes except Jetson
+- `svclb-traefik` pods should be Running on bignode, colima, raspberrypi
+- No svclb pods on jetson-desktop
+
+**Alternative: If you need ServiceLB on Jetson**
+
+You would need to either:
+1. Switch the Jetson to use `iptables-nft` (not recommended, may break other things)
+2. Wait for a Traefik/K3s update that handles this better
+3. Use a different ingress controller that supports legacy iptables
 
 ### Useful Commands
 

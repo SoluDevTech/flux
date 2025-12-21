@@ -8,7 +8,7 @@ metadata:
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
   rules:
-    - host: dev-openobserve.soludev.tech
+    - host: openobserve.soludev.tech
       http:
         paths:
           - path: /

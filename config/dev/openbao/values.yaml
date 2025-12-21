@@ -8,3 +8,9 @@ server:
       value: "true"
       effect: NoSchedule
       operator: Equal
+  # Configuration du stockage NFS
+  dataStorage:
+    enabled: true
+    size: 5Gi
+    storageClass: nfs-soludev-openbao
+    accessMode: ReadWriteMany

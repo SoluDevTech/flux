@@ -8,7 +8,17 @@ metadata:
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
   rules:
-    - host: dev-bao.soludev.tech
+    - host: bao.soludev.tech
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: openbao
+                port:
+                  number: 8200
+    - host: bao.local
       http:
         paths:
           - path: /

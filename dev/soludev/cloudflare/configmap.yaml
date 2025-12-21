@@ -14,17 +14,17 @@ data:
         originRequest:
           noTLSVerify: true
 
-      - hostname: dev-bao.soludev.tech
+      - hostname: bao.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
 
-      - hostname: dev-logto.soludev.tech
+      - hostname: logto.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
 
-      - hostname: dev-logto-admin.soludev.tech
+      - hostname: logto-admin.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
@@ -39,22 +39,27 @@ data:
         originRequest:
           noTLSVerify: true
 
-      - hostname: dev-openobserve.soludev.tech
+      - hostname: pickpro-indexing-api.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
 
-      - hostname: dev-phoenix.soludev.tech
+      - hostname: openobserve.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
 
-      - hostname: dev-headlamp.soludev.tech
+      - hostname: phoenix.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
 
-      - hostname: dev-pickpro-oauth2-proxy.soludev.tech
+      - hostname: headlamp.soludev.tech
+        service: https://traefik.kube-system.svc.cluster.local:443
+        originRequest:
+          noTLSVerify: true
+
+      - hostname: pickpro-oauth2-proxy.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
