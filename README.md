@@ -765,12 +765,12 @@ kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-sec
 apiVersion: external-secrets.io/v1beta1
 kind: SecretStore
 metadata:
-  name: vault-backend
-  namespace: kaiohz
+  name: openbao-backend
+  namespace: soludev
 spec:
   provider:
     vault:
-      server: "http://vault.kaiohz.svc.cluster.local:8200"
+      server: "http://vault.soludev.svc.cluster.local:8200"
   path: "secret"          # Path to your KV engine
   version: "v2"           # Version of the KV engine (v1 or v2)
       auth:

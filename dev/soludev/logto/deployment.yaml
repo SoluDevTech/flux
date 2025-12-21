@@ -15,13 +15,6 @@ spec:
       labels:
         app: logto
     spec:
-      nodeSelector:
-        type: standard
-      tolerations:
-        - key: "klipperlb-exclude"
-          value: "true"
-          effect: "NoSchedule"
-          operator: "Equal"
       containers:
         - name: logto
           image: svhd/logto:1.32
