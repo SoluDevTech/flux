@@ -15,13 +15,6 @@ spec:
       labels:
         app: pickpro-api
     spec:
-      nodeSelector:
-        type: standard
-      tolerations:
-        - key: "klipperlb-exclude"
-          value: "true"
-          effect: "NoSchedule"
-          operator: "Equal"
       containers:
         - name: pickpro-api
           image: kaiohz/pickpro:pickpro-back-197966586add73265033b200aa3415fda8a3f87f

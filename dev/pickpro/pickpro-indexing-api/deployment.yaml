@@ -15,13 +15,6 @@ spec:
       labels:
         app: pickpro-indexing-api
     spec:
-      nodeSelector:
-        type: standard
-      tolerations:
-        - key: "klipperlb-exclude"
-          value: "true"
-          effect: "NoSchedule"
-          operator: "Equal"
       containers:
         - name: pickpro-indexing-api
           image: kaiohz/pickpro:pickpro-indexing-api-6d57128ca7eadc9535190ceaa10c1292f5d0fb69
