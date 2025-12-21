@@ -12,7 +12,7 @@ data:
   PYTHONPATH: ./pickpro_indexing_api
   MAX_WORKERS: "5"
   MINIO_HOST: minio.pickpro.svc.cluster.local:9000
-  PHOENIX_HOST: https://dev-phoenix.soludev.tech
+  PHOENIX_HOST: https://phoenix.soludev.tech
 
 
 
