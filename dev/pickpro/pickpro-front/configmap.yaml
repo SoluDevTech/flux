@@ -8,5 +8,5 @@ data:
     {
         "backendUrl": "https://pickpro-api.soludev.tech",
         "oauth2ProxyUrl": "https://pickpro.soludev.tech",
-        "logtoUrl": "https://dev-logto.soludev.tech"
+        "logtoUrl": "https://logto.soludev.tech"
     }
