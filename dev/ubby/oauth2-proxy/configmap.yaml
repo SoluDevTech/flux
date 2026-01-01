@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-config
+  namespace: ubby
+data:
+  oauth2_proxy.cfg: |
+    provider = "oidc"
+    oidc_issuer_url = "https://logto.soludev.tech/oidc"
+    
+    redirect_url = "https://ubby.soludev.tech/oauth2/callback"
+    
+    scope = "openid email profile"
+    
+    cookie_domains = [".soludev.tech"] 
+    whitelist_domains = [".soludev.tech"]
+    
+    cookie_name = "oauth2-proxy-ubby"
+    email_domains = ["*"]
+    
+    upstreams = ["http://ubby-front.ubby.svc.cluster.local:5173"]
+    http_address = "0.0.0.0:4180"
+    reverse_proxy = true
+    
+    pass_authorization_header = true
+    set_authorization_header = true
+    pass_access_token = true
+
+    cookie_secure = true
+    cookie_httponly = true
+    cookie_path = "/"
+    cookie_samesite = "lax" 
+    cookie_refresh = "1h"
+    cookie_csrf_per_request = false
+    cookie_csrf_expire = "0s"
+    
+    skip_provider_button = true
+    silence_ping_logging = true

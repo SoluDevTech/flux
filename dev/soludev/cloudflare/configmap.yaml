@@ -63,5 +63,25 @@ data:
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+
+      - hostname: ubby.soludev.tech
+        service: https://traefik.kube-system.svc.cluster.local:443
+        originRequest:
+          noTLSVerify: true
+
+      - hostname: ubby-api.soludev.tech
+        service: https://traefik.kube-system.svc.cluster.local:443
+        originRequest:
+          noTLSVerify: true
+
+      - hostname: ubby-mcp-api.soludev.tech
+        service: https://traefik.kube-system.svc.cluster.local:443
+        originRequest:
+          noTLSVerify: true
+
+      - hostname: ubby-oauth2-proxy.soludev.tech
+        service: https://traefik.kube-system.svc.cluster.local:443
+        originRequest:
+          noTLSVerify: true
       
       - service: http_status:404
