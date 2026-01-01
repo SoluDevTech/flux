@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pickpro-pgvector-pvc
-  namespace: pickpro
+  name: ubby-pgvector-pvc
+  namespace: ubby
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: nfs-pickpro-pgvector
+  storageClassName: nfs-ubby-pgvector
   resources:
     requests:
       storage: 5Gi
