@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ubby-api-config
+  name: ubby-back-config
   namespace: ubby
 data:
   ALLOWED_ORIGINS: '["*"]'
