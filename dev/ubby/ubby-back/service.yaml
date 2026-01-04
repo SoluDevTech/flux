@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ubby-back
+  namespace: ubby
+  labels:
+    app: ubby-back
+spec:
+  type: ClusterIP
+  selector:
+    app: ubby-back
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http

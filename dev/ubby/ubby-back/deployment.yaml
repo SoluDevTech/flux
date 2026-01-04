@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ubby-back
+  namespace: pickpro
+  labels:
+    app: ubby-back
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ubby-back
+  template:
+    metadata:
+      labels:
+        app: ubby-back
+    spec:
+      containers:
+        - name: ubby-back
+          image: kaiohz/pickpro:ubby-back-55983c07108f4533724154e52e13d143a7bf94ed
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: ubby-back-config
+            - secretRef:
+                name: ubby-back-secret
+          livenessProbe:
+            httpGet:
+              path: /pickpro/rest/v1/health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /pickpro/rest/v1/health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      imagePullSecrets:
+        - name: pickpro-docker-secret
