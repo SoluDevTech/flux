@@ -1,12 +1,12 @@
-# apiVersion: v1
-# kind: ConfigMap
-# metadata:
-#   name: ubby-front-config
-#   namespace: ubby
-# data:
-#   config.json: |
-#     {
-#         "backendUrl": "https://ubby-api.soludev.tech",
-#         "oauth2ProxyUrl": "https://ubby.soludev.tech",
-#         "logtoUrl": "https://logto.soludev.tech"
-#     }
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ubby-front-config
+  namespace: ubby
+data:
+  config.json: |
+    {
+        "backendUrl": "https://ubby-api.soludev.tech",
+        "oauth2ProxyUrl": "https://ubby.soludev.tech",
+        "logtoUrl": "https://logto.soludev.tech"
+    }
