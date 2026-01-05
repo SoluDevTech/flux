@@ -4,7 +4,6 @@ metadata:
   name: ubby-mcp-api-ingress
   namespace: ubby
   annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: ubby-cors-middleware@kubernetescrd,ubby-traefik-forward-auth@kubernetescrd
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
