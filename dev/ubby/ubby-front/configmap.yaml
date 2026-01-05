@@ -7,5 +7,5 @@ data:
   config.json: |
     {
       "apiBaseUrl": "https://ubby-back.soludev.tech/api/v1",
-      "loginPageUrl": "http://localhost:3000/login"
+      "loginPageUrl": "https://ubby.soludev.tech/login"
     }
