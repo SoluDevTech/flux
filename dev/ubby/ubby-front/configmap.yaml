@@ -6,7 +6,6 @@ metadata:
 data:
   config.json: |
     {
-        "backendUrl": "https://ubby-api.soludev.tech",
-        "oauth2ProxyUrl": "https://ubby.soludev.tech",
-        "logtoUrl": "https://logto.soludev.tech"
+      "apiBaseUrl": "http://localhost:8000/api/v1",
+      "loginPageUrl": "http://localhost:3000/login"
     }
