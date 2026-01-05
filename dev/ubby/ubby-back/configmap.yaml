@@ -11,6 +11,6 @@ data:
   RELOAD: "true"
   MAX_WORKERS: "5"
   MAX_FILE_SIZE: "10485760"
-  MCP_USE_API_URL: "http://localhost:3000/api/v1/mcp/create"
+  MCP_USE_API_URL: "https://ubby-mcp-api.soludev.tech/api/v1/mcp/create"
 
 
