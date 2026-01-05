@@ -19,7 +19,7 @@ spec:
         - name: ubby-mcp-api
           image: kaiohz/pickpro:ubby-mcp-api-3da229076374684656819b9eedfad20a1b94ea38
           ports:
-            - containerPort: 8000
+            - containerPort: 3000
           envFrom:
             - configMapRef:
                 name: ubby-mcp-api-config
@@ -28,13 +28,13 @@ spec:
           livenessProbe:
             httpGet:
               path: /api/v1/health
-              port: 8000
+              port: 3000
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /api/v1/health
-              port: 8000
+              port: 3000
             initialDelaySeconds: 5
             periodSeconds: 5
           resources:
