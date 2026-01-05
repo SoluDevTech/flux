@@ -79,7 +79,7 @@ data:
         originRequest:
           noTLSVerify: true
 
-      - hostname: *.ubby-mcp-api.soludev.tech
+      - hostname: "*.ubby-mcp-api.soludev.tech"
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
