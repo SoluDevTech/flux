@@ -8,7 +8,7 @@ data:
     provider = "oidc"
     oidc_issuer_url = "https://logto.soludev.tech/oidc"
     
-    redirect_url = "https://ubby.soludev.tech/"
+    redirect_url = "https://ubby.soludev.tech/oauth2/callback"
     
     scope = "openid email profile"
     
