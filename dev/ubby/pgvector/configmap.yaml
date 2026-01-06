@@ -13,6 +13,7 @@ data:
       "user_id" TEXT,
       "description" TEXT,
       "created_at" BIGINT,
+      "lastsaved_at" BIGINT,
       "version" TEXT,
       PRIMARY KEY("id")
     );
