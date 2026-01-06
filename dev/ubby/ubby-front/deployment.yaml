@@ -22,7 +22,7 @@ spec:
           operator: "Equal"
       containers:
         - name: ubby-front
-          image: kaiohz/pickpro:ubby-front-f67de91efc79f723d62cbf2f6dff29d718ac686c
+          image: kaiohz/pickpro:ubby-front-1bdabcb57a8a53cb567f14f916d44d45aef1f335
           ports:
             - containerPort: 80
           volumeMounts:
