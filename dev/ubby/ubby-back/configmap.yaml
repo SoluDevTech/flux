@@ -4,7 +4,7 @@ metadata:
   name: ubby-back-config
   namespace: ubby
 data:
-  ALLOWED_ORIGINS: '["https://soludev.tech"]'
+  ALLOWED_ORIGINS: '["https://ubby.soludev.tech"]'
   HOST: 0.0.0.0
   PORT: "8000"
   UVICORN_LOG_LEVEL: info
