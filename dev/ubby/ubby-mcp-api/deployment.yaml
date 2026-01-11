@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: ubby-mcp-api
-          image: kaiohz/pickpro:ubby-mcp-api-86a9c2d27f358a1694bdeba64c7fb23412a3760a
+          image: kaiohz/pickpro:ubby-mcp-api-c9e604bc463eebc39bfab1d6e2ae27cd0e8d3028
           ports:
             - containerPort: 3000
           envFrom:
