@@ -16,6 +16,7 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [Phoenix Installation](#phoenix-installation)
 - [OpenObserve Installation](#openobserve-installation)
 - [Inference API Services](#inference-api-services)
+- [Storage Maintenance](#storage-maintenance)
 - [Troubleshooting](#troubleshooting)
 
 ## Mesh VPN for mac os workers
@@ -2746,6 +2747,53 @@ metadata:
     traefik.ingress.kubernetes.io/router.middlewares: pickpro-traefik-forward-auth@kubernetescrd
 spec:
   # ... ingress rules ...
+```
+
+## Storage Maintenance
+
+### Cleaning Old Data Files
+
+OpenObserve and MinIO may accumulate old data files that are not automatically cleaned up due to cache or compaction issues. Use the following command to manually clean files older than a specific number of days.
+
+#### Delete files older than N days
+
+```bash
+# Preview files that would be deleted (dry run)
+find /path/to/storage -type f -mtime +10 -ls
+
+# Delete files older than 10 days (keeps directories intact)
+find /path/to/storage -type f -mtime +10 -delete
+```
+
+**Parameters:**
+- `-type f`: Only target files (not directories)
+- `-mtime +10`: Files modified more than 10 days ago
+- `-delete`: Remove the matched files
+- `-ls`: (dry run) List files instead of deleting
+
+**Example for NFS storage paths:**
+
+```bash
+# Clean OpenObserve cache (older than 10 days)
+find /home/lima.linux/k3s-storage/soludev/openobserve -type f -mtime +10 -delete
+
+# Clean MinIO data (older than 10 days)
+find /home/lima.linux/k3s-storage/soludev/minio -type f -mtime +10 -delete
+```
+
+**Note:** This command recursively explores all subdirectories. Always run the dry run (`-ls` instead of `-delete`) first to verify which files will be affected.
+
+#### Schedule automatic cleanup (cron)
+
+To automate cleanup, add a cron job on your NFS server:
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add this line to run cleanup daily at 3 AM
+0 3 * * * find /home/lima.linux/k3s-storage/soludev/minio -type f -mtime +10 -delete
+0 3 * * * find /home/lima.linux/k3s-storage/soludev/openobserve -type f -mtime +10 -delete
 ```
 
 ## Troubleshooting

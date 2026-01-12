@@ -83,6 +83,14 @@ extraEnv:
     value: "512"
   - name: ZO_DISK_CACHE_ENABLED
     value: "true"
+  - name: ZO_DISK_CACHE_MAX_SIZE
+    value: "5000"
+  - name: ZO_DISK_CACHE_GC_INTERVAL
+    value: "30"
+  - name: ZO_DISK_CACHE_GC_SIZE
+    value: "500"
+  - name: ZO_DISK_CACHE_STRATEGY
+    value: "time_lru"
   - name: ZO_RESULT_CACHE_ENABLED
     value: "true"
   # Increase dashboard series limit

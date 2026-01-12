@@ -12,5 +12,7 @@ data:
   MAX_WORKERS: "5"
   MAX_FILE_SIZE: "10485760"
   MCP_USE_API_URL: "https://ubby-mcp-api.soludev.tech/api/v1/mcp/create"
+  CHAT_MODEL: "google/gemini-3-pro-preview"
+  OPEN_ROUTER_API_URL: "https://openrouter.ai/api/v1"
 
 
