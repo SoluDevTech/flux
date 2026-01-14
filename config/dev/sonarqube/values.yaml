@@ -10,7 +10,7 @@ jdbcOverwrite:
   enable: true
   jdbcUrl: "jdbc:postgresql://postgres.soludev.svc.cluster.local:5432/sonarqube"
   jdbcUsername: "sonarqube"
-  jdbcSecretName: "sonarqube-db-secret"
+  jdbcSecretName: "soludev-sonarqube-db-secret"
   jdbcSecretPasswordKey: "SONAR_JDBC_PASSWORD"
 
 # Resources
