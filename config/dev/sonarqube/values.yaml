@@ -1,0 +1,60 @@
+# SonarQube Community Edition - Helm Values
+edition: community
+
+# Désactiver PostgreSQL embarqué (on utilise pgvector existant)
+postgresql:
+  enabled: false
+
+# Connexion à pgvector existant (cross-namespace)
+jdbcOverwrite:
+  enable: true
+  jdbcUrl: "jdbc:postgresql://postgres.soludev.svc.cluster.local:5432/sonarqube"
+  jdbcUsername: "sonarqube"
+  jdbcSecretName: "sonarqube-db-secret"
+  jdbcSecretPasswordKey: "SONAR_JDBC_PASSWORD"
+
+# Resources
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "2Gi"
+    cpu: "2000m"
+
+# Persistence pour data SonarQube (extensions, plugins)
+persistence:
+  enabled: true
+  storageClass: ""
+  size: 5Gi
+
+# Service
+service:
+  type: ClusterIP
+  externalPort: 9000
+
+# Désactiver ingress Helm (on le gère via Flux)
+ingress:
+  enabled: false
+
+# Init container pour sysctl
+initSysctl:
+  enabled: true
+  vmMaxMapCount: 524288
+  fsFileMax: 131072
+  nofile: 131072
+  nproc: 8192
+  securityContext:
+    privileged: true
+
+# Probes
+livenessProbe:
+  initialDelaySeconds: 120
+  periodSeconds: 30
+readinessProbe:
+  initialDelaySeconds: 60
+  periodSeconds: 10
+startupProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 24
