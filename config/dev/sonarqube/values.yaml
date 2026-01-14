@@ -1,8 +1,9 @@
 # SonarQube Community Edition - Helm Values
-edition: community
+community:
+  enabled: true
 
 # Monitoring passcode depuis OpenBao (soludev/sonarqube -> MONITORING_PASSCODE)
-monitoringPasscodeSecretName: "soludev-sonarqube-secret"
+monitoringPasscodeSecretName: "sonarqube-secret"
 monitoringPasscodeSecretKey: "MONITORING_PASSCODE"
 
 # Désactiver PostgreSQL embarqué (on utilise pgvector existant)
@@ -14,16 +15,16 @@ jdbcOverwrite:
   enable: true
   jdbcUrl: "jdbc:postgresql://postgres.soludev.svc.cluster.local:5432/sonarqube"
   jdbcUsername: "sonarqube"
-  jdbcSecretName: "soludev-sonarqube-secret"
+  jdbcSecretName: "sonarqube-secret"
   jdbcSecretPasswordKey: "SONAR_JDBC_PASSWORD"
 
 # Resources
 resources:
   requests:
-    memory: "1Gi"
+    memory: "2Gi"
     cpu: "500m"
   limits:
-    memory: "2Gi"
+    memory: "3Gi"
     cpu: "2000m"
 
 # Persistence pour data SonarQube (extensions, plugins)
@@ -55,10 +56,15 @@ initSysctl:
 livenessProbe:
   initialDelaySeconds: 120
   periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 24
 readinessProbe:
   initialDelaySeconds: 60
   periodSeconds: 10
+  timeoutSeconds: 10
+  failureThreshold: 24
 startupProbe:
   initialDelaySeconds: 30
   periodSeconds: 10
+  timeoutSeconds: 10
   failureThreshold: 24
