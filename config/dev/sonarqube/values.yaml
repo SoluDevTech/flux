@@ -1,6 +1,10 @@
 # SonarQube Community Edition - Helm Values
 edition: community
 
+# Monitoring passcode depuis OpenBao (soludev/sonarqube -> MONITORING_PASSCODE)
+monitoringPasscodeSecretName: "soludev-sonarqube-secret"
+monitoringPasscodeSecretKey: "MONITORING_PASSCODE"
+
 # Désactiver PostgreSQL embarqué (on utilise pgvector existant)
 postgresql:
   enabled: false
@@ -10,7 +14,7 @@ jdbcOverwrite:
   enable: true
   jdbcUrl: "jdbc:postgresql://postgres.soludev.svc.cluster.local:5432/sonarqube"
   jdbcUsername: "sonarqube"
-  jdbcSecretName: "soludev-sonarqube-db-secret"
+  jdbcSecretName: "soludev-sonarqube-secret"
   jdbcSecretPasswordKey: "SONAR_JDBC_PASSWORD"
 
 # Resources
