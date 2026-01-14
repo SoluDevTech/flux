@@ -3,6 +3,17 @@ server:
   serviceAccount:
     create: false
     name: openbao
+  # Resource limits to prevent OOM kills
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  # Force scheduling on bignode for NFS stability
+  nodeSelector:
+    kubernetes.io/hostname: bignode
   tolerations:
     - key: klipperlb-exclude
       value: "true"
