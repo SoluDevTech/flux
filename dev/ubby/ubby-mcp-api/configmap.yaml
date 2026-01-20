@@ -10,5 +10,6 @@ data:
   MCP_URL: "http://localhost:3001"
   MCP_USE_ANONYMIZED_TELEMETRY: "false"
   MCP_BASE_URL: https://{port}-ubby-mcp-api.soludev.tech
+  BODY_SIZE_LIMIT: 10mb
 
 
