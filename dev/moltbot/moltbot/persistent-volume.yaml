@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-moltbot-config
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-moltbot-config
+  nfs:
+    server: 100.64.0.4
+    path: /home/lima.linux/k3s-storage/moltbot/config
+  mountOptions:
+    - nfsvers=4.1
+    - hard
+    - timeo=600
+    - retrans=2
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-moltbot-workspace
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-moltbot-workspace
+  nfs:
+    server: 100.64.0.4
+    path: /home/lima.linux/k3s-storage/moltbot/workspace
+  mountOptions:
+    - nfsvers=4.1
+    - hard
+    - timeo=600
+    - retrans=2
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-moltbot-minio
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-moltbot-minio
+  nfs:
+    server: 100.64.0.4
+    path: /home/lima.linux/k3s-storage/moltbot/minio
+  mountOptions:
+    - nfsvers=4.1
+    - hard
+    - timeo=600
+    - retrans=2

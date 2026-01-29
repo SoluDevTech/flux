@@ -1,0 +1,36 @@
+# minio-values.yaml
+# Namespace configuration
+namespaceOverride: moltbot
+
+mode: standalone
+replicas: 1
+
+rootUser: minioadmin
+rootPassword: minioadmin
+
+# Storage
+persistence:
+  enabled: true
+  existingClaim: minio
+  storageClass: nfs-moltbot-minio
+  accessMode: ReadWriteMany
+  size: 5Gi
+
+# Resources
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 250m
+
+service:
+  type: ClusterIP
+  port: 9000
+
+consoleService:
+  type: ClusterIP
+  port: 9001
+
+# Auto-create the inbox bucket
+buckets:
+  - name: moltbot-inbox
+    policy: none

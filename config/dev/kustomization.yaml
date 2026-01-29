@@ -64,6 +64,22 @@ spec:
     name: kaiohz-repo
   path: "dev/ubby"
   #When the Git revision changes, the manifests are reconciled automatically. If previously applied objects are missing from the current revision, these objects are deleted from the cluster when spec.prune is enabled
+  prune: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: moltbot-kustomization
+  namespace: flux-system
+spec:
+  interval: 2m
+  timeout: 90s
+  wait: true
+  targetNamespace: moltbot
+  sourceRef:
+    kind: GitRepository
+    name: kaiohz-repo
+  path: "dev/moltbot"
   prune: true 
 
 

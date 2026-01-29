@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: moltbot-config
+  namespace: moltbot
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-moltbot-config
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: moltbot-workspace
+  namespace: moltbot
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-moltbot-workspace
+  resources:
+    requests:
+      storage: 5Gi

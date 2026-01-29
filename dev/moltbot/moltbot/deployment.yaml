@@ -1,0 +1,145 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moltbot
+  namespace: moltbot
+  labels:
+    app: moltbot
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: moltbot
+  template:
+    metadata:
+      labels:
+        app: moltbot
+    spec:
+      automountServiceAccountToken: false
+
+      initContainers:
+        - name: init-config
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              if [ ! -f /config/moltbot.json ]; then
+                cp /init-config/moltbot.json /config/moltbot.json
+              fi
+              if [ ! -f /workspace/SOUL.md ]; then
+                cp /init-soul/SOUL.md /workspace/SOUL.md
+              fi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: workspace
+              mountPath: /workspace
+            - name: init-config
+              mountPath: /init-config
+            - name: init-soul
+              mountPath: /init-soul
+
+      containers:
+        - name: moltbot
+          image: ghcr.io/moltbot/moltbot:main
+          imagePullPolicy: Always
+
+          ports:
+            - name: gateway
+              containerPort: 18789
+            - name: bridge
+              containerPort: 18790
+
+          env:
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: moltbot-secret
+                  key: OPENROUTER_API_KEY
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: moltbot-secret
+                  key: TELEGRAM_BOT_TOKEN
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: moltbot-secret
+                  key: MINIO_ACCESS_KEY
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: moltbot-secret
+                  key: MINIO_SECRET_KEY
+            - name: S3_ENDPOINT
+              value: "http://minio.moltbot.svc.cluster.local:9000"
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: moltbot-secret
+                  key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: moltbot-secret
+                  key: GOOGLE_CLIENT_SECRET
+            - name: CLAWDBOT_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: moltbot-secret
+                  key: GATEWAY_TOKEN
+            - name: CLAWDBOT_CONFIG_DIR
+              value: "/home/node/.clawdbot"
+            - name: CLAWDBOT_WORKSPACE_DIR
+              value: "/home/node/clawd"
+
+          volumeMounts:
+            - name: config
+              mountPath: /home/node/.clawdbot
+            - name: workspace
+              mountPath: /home/node/clawd
+
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: gateway
+            initialDelaySeconds: 30
+            periodSeconds: 30
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: gateway
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: moltbot-config
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: moltbot-workspace
+        - name: init-config
+          configMap:
+            name: moltbot-config
+            items:
+              - key: moltbot.json
+                path: moltbot.json
+        - name: init-soul
+          configMap:
+            name: moltbot-config
+            items:
+              - key: SOUL.md
+                path: SOUL.md
