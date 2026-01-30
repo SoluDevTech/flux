@@ -11,8 +11,8 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs-ubby-pgvector
   nfs:
-    server: 100.64.0.4
-    path: /home/lima.linux/k3s-storage/ubby/pgvector
+    server: 192.168.1.11
+    path: /Volumes/NFSStorage/ubby/pgvector
   mountOptions:
     - nfsvers=4.1
     - hard
