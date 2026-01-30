@@ -11,8 +11,8 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs-soludev-openobserve
   nfs:
-    server: 100.64.0.4
-    path: /home/lima.linux/k3s-storage/soludev/openobserve
+    server: 192.168.1.11
+    path: /Volumes/NFSStorage/soludev/openobserve
   mountOptions:
     - nfsvers=4.1
     - hard

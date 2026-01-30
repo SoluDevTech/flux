@@ -11,8 +11,8 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs-pickpro-minio
   nfs:
-    server: 100.64.0.4
-    path: /home/lima.linux/k3s-storage/pickpro/minio
+    server: 192.168.1.11
+    path: /Volumes/NFSStorage/pickpro/minio
   mountOptions:
     - nfsvers=4.1
     - hard
