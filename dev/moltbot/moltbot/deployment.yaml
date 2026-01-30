@@ -64,18 +64,6 @@ spec:
                 secretKeyRef:
                   name: moltbot-secret
                   key: TELEGRAM_BOT_TOKEN
-            - name: AWS_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: moltbot-secret
-                  key: MINIO_ACCESS_KEY
-            - name: AWS_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: moltbot-secret
-                  key: MINIO_SECRET_KEY
-            - name: S3_ENDPOINT
-              value: "http://minio.moltbot.svc.cluster.local:9000"
             - name: GOOGLE_CLIENT_ID
               valueFrom:
                 secretKeyRef:

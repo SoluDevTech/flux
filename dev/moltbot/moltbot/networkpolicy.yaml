@@ -31,16 +31,6 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
-    # MinIO (same namespace)
-    - to:
-        - podSelector:
-            matchLabels:
-              app: minio
-      ports:
-        - protocol: TCP
-          port: 9000
-        - protocol: TCP
-          port: 9001
     # Internet (exclude private IPs)
     - to:
         - ipBlock:
