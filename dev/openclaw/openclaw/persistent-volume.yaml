@@ -12,9 +12,9 @@ spec:
   storageClassName: nfs-openclaw-config
   nfs:
     server: 100.64.0.4
-    path: /home/lima.linux/k3s-storage/openclaw/config
+    path: /Volumes/NFSStorage/openclaw/config
   mountOptions:
-    - nfsvers=4.1
+    - nfsvers=3
     - hard
     - timeo=600
     - retrans=2
@@ -33,9 +33,9 @@ spec:
   storageClassName: nfs-openclaw-workspace
   nfs:
     server: 100.64.0.4
-    path: /home/lima.linux/k3s-storage/openclaw/workspace
+    path: /Volumes/NFSStorage/openclaw/workspace
   mountOptions:
-    - nfsvers=4.1
+    - nfsvers=3
     - hard
     - timeo=600
     - retrans=2
