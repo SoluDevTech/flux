@@ -47,7 +47,6 @@ spec:
           image: ghcr.io/openclaw/openclaw:main
           imagePullPolicy: Always
 
-          command: ["openclaw"]
           args: ["gateway", "--port", "18789", "--bind", "0.0.0.0"]
 
           ports:
