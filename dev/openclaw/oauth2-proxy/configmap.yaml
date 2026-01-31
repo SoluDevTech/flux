@@ -4,7 +4,7 @@ metadata:
   name: oauth2-proxy-config
   namespace: openclaw
 data:
-  oauth2-proxy.cfg: |
+  oauth2_proxy.cfg: |
     provider = "oidc"
     oidc_issuer_url = "https://logto.soludev.tech/oidc"
     redirect_url = "https://openclaw.soludev.tech/oauth2/callback"
