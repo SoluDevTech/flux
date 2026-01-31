@@ -11,10 +11,10 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs-pickpro-minio
   nfs:
-    server: 192.168.1.11
+    server: 100.64.0.6
     path: /Volumes/NFSStorage/pickpro/minio
   mountOptions:
-    - nfsvers=4.1
+    - nfsvers=3
     - hard
     - timeo=600
     - retrans=2
