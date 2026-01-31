@@ -26,10 +26,10 @@ spec:
             - sh
             - -c
             - |
-              if [ ! -f /state/openclaw.json ]; then
-                cat > /state/openclaw.json << EOF
+              cat > /state/openclaw.json << EOF
               {
                 "gateway": {
+                  "mode": "local",
                   "bind": "lan",
                   "controlUi": { "enabled": true },
                   "auth": {
@@ -59,7 +59,6 @@ spec:
                 }
               }
               EOF
-              fi
               if [ ! -f /workspace/SOUL.md ]; then
                 cp /init-soul/SOUL.md /workspace/SOUL.md
               fi
