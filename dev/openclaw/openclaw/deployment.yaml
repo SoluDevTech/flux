@@ -33,6 +33,7 @@ spec:
                   "mode": "local",
                   "bind": "lan",
                   "controlUi": { "enabled": true },
+                  "trustedProxies": ["10.42.0.0/16"],
                   "auth": {
                     "mode": "token",
                     "token": "${GATEWAY_TOKEN}"
