@@ -32,7 +32,7 @@ spec:
                 "gateway": {
                   "mode": "local",
                   "bind": "lan",
-                  "controlUi": { "enabled": true },
+                  "controlUi": { "enabled": true, "dangerouslyDisableDeviceAuth": true },
                   "trustedProxies": ["10.42.0.0/16"],
                   "auth": {
                     "mode": "token",
