@@ -26,4 +26,7 @@ data:
     set_authorization_header = true
     pass_access_token = true
 
+    skip_provider_button = true                                                                          
+    silence_ping_logging = true 
+
     email_domains = ["*"]
