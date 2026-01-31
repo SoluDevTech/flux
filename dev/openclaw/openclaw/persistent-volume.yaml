@@ -11,7 +11,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs-openclaw-config
   nfs:
-    server: 100.64.0.4
+    server: 100.64.0.6
     path: /Volumes/NFSStorage/openclaw/config
   mountOptions:
     - nfsvers=3
@@ -32,7 +32,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs-openclaw-workspace
   nfs:
-    server: 100.64.0.4
+    server: 100.64.0.6
     path: /Volumes/NFSStorage/openclaw/workspace
   mountOptions:
     - nfsvers=3
