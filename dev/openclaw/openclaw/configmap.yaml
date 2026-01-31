@@ -6,9 +6,13 @@ metadata:
 data:
   openclaw.json: |
     {
-      "agent": {
-        "model": "anthropic/claude-sonnet-4-5-20250929",
-        "thinkingBudget": "high"
+      "agents": {
+        "defaults": {
+          "model": {
+            "primary": "anthropic/claude-sonnet-4-5-20250929"
+          },
+          "thinkingBudget": "high"
+        }
       },
       "channels": {
         "telegram": {
