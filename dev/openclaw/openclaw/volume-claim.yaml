@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: moltbot-config
-  namespace: moltbot
+  name: openclaw-config
+  namespace: openclaw
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: nfs-moltbot-config
+  storageClassName: nfs-openclaw-config
   resources:
     requests:
       storage: 1Gi
@@ -14,12 +14,12 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: moltbot-workspace
-  namespace: moltbot
+  name: openclaw-workspace
+  namespace: openclaw
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: nfs-moltbot-workspace
+  storageClassName: nfs-openclaw-workspace
   resources:
     requests:
       storage: 5Gi

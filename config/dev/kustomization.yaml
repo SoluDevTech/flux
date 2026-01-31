@@ -69,17 +69,17 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: moltbot-kustomization
+  name: openclaw-kustomization
   namespace: flux-system
 spec:
   interval: 2m
   timeout: 90s
   wait: true
-  targetNamespace: moltbot
+  targetNamespace: openclaw
   sourceRef:
     kind: GitRepository
     name: kaiohz-repo
-  path: "dev/moltbot"
+  path: "dev/openclaw"
   prune: true 
 
 

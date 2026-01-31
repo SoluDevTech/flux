@@ -1,12 +1,12 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: moltbot-isolation
-  namespace: moltbot
+  name: openclaw-isolation
+  namespace: openclaw
 spec:
   podSelector:
     matchLabels:
-      app: moltbot
+      app: openclaw
   policyTypes:
     - Ingress
     - Egress

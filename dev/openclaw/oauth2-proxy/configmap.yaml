@@ -2,23 +2,23 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: oauth2-proxy-config
-  namespace: moltbot
+  namespace: openclaw
 data:
   oauth2-proxy.cfg: |
     provider = "oidc"
     oidc_issuer_url = "https://logto.soludev.tech/oidc"
-    redirect_url = "https://moltbot.soludev.tech/oauth2/callback"
+    redirect_url = "https://openclaw.soludev.tech/oauth2/callback"
     scope = "openid email profile"
 
     cookie_domains = [".soludev.tech"]
     whitelist_domains = [".soludev.tech"]
-    cookie_name = "oauth2-proxy-moltbot"
+    cookie_name = "oauth2-proxy-openclaw"
     cookie_secure = true
     cookie_httponly = true
     cookie_samesite = "lax"
     cookie_refresh = "1h"
 
-    upstreams = ["http://moltbot.moltbot.svc.cluster.local:18789"]
+    upstreams = ["http://openclaw.openclaw.svc.cluster.local:18789"]
     http_address = "0.0.0.0:4180"
     reverse_proxy = true
 

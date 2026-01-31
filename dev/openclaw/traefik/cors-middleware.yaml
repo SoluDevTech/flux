@@ -2,7 +2,7 @@ apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: cors-middleware
-  namespace: moltbot
+  namespace: openclaw
 spec:
   headers:
     accessControlAllowMethods:
@@ -18,7 +18,7 @@ spec:
       - "Accept"
       - "Origin"
     accessControlAllowOriginList:
-      - "https://moltbot.soludev.tech"
+      - "https://openclaw.soludev.tech"
       - "http://localhost:18789"
     accessControlMaxAge: 100
     addVaryHeader: true

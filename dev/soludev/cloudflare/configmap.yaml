@@ -84,7 +84,7 @@ data:
         originRequest:
           noTLSVerify: true
 
-      - hostname: moltbot.soludev.tech
+      - hostname: openclaw.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true   

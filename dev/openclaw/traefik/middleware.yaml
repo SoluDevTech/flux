@@ -2,10 +2,10 @@ apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: traefik-forward-auth
-  namespace: moltbot
+  namespace: openclaw
 spec:
   forwardAuth:
-    address: "http://oauth2-proxy-service.moltbot.svc.cluster.local:4180/oauth2/auth"
+    address: "http://oauth2-proxy-service.openclaw.svc.cluster.local:4180/oauth2/auth"
     authResponseHeaders:
       - "Authorization"
     authResponseHeadersRegex: "^X-"

@@ -2,13 +2,13 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: oauth2-proxy-ingress
-  namespace: moltbot
+  namespace: openclaw
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
   rules:
-    - host: moltbot-oauth2-proxy.soludev.tech
+    - host: openclaw-oauth2-proxy.soludev.tech
       http:
         paths:
           - path: /

@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: moltbot
-  namespace: moltbot
+  name: openclaw
+  namespace: openclaw
   labels:
-    app: moltbot
+    app: openclaw
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: moltbot
+      app: openclaw
   template:
     metadata:
       labels:
-        app: moltbot
+        app: openclaw
     spec:
       automountServiceAccountToken: false
 
@@ -26,8 +26,8 @@ spec:
             - sh
             - -c
             - |
-              if [ ! -f /config/moltbot.json ]; then
-                cp /init-config/moltbot.json /config/moltbot.json
+              if [ ! -f /config/openclaw.json ]; then
+                cp /init-config/openclaw.json /config/openclaw.json
               fi
               if [ ! -f /workspace/SOUL.md ]; then
                 cp /init-soul/SOUL.md /workspace/SOUL.md
@@ -43,8 +43,8 @@ spec:
               mountPath: /init-soul
 
       containers:
-        - name: moltbot
-          image: ghcr.io/moltbot/moltbot:main
+        - name: openclaw
+          image: ghcr.io/openclaw/openclaw:main
           imagePullPolicy: Always
 
           ports:
@@ -57,27 +57,27 @@ spec:
             - name: OPENROUTER_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: moltbot-secret
+                  name: openclaw-secret
                   key: OPENROUTER_API_KEY
             - name: TELEGRAM_BOT_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: moltbot-secret
+                  name: openclaw-secret
                   key: TELEGRAM_BOT_TOKEN
             - name: GOOGLE_CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  name: moltbot-secret
+                  name: openclaw-secret
                   key: GOOGLE_CLIENT_ID
             - name: GOOGLE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: moltbot-secret
+                  name: openclaw-secret
                   key: GOOGLE_CLIENT_SECRET
             - name: CLAWDBOT_GATEWAY_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: moltbot-secret
+                  name: openclaw-secret
                   key: GATEWAY_TOKEN
             - name: CLAWDBOT_CONFIG_DIR
               value: "/home/node/.clawdbot"
@@ -115,19 +115,19 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: moltbot-config
+            claimName: openclaw-config
         - name: workspace
           persistentVolumeClaim:
-            claimName: moltbot-workspace
+            claimName: openclaw-workspace
         - name: init-config
           configMap:
-            name: moltbot-config
+            name: openclaw-config
             items:
-              - key: moltbot.json
-                path: moltbot.json
+              - key: openclaw.json
+                path: openclaw.json
         - name: init-soul
           configMap:
-            name: moltbot-config
+            name: openclaw-config
             items:
               - key: SOUL.md
                 path: SOUL.md

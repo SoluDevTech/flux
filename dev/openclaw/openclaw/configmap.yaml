@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: moltbot-config
-  namespace: moltbot
+  name: openclaw-config
+  namespace: openclaw
 data:
-  moltbot.json: |
+  openclaw.json: |
     {
       "agent": {
         "model": "anthropic/claude-sonnet-4-5-20250929",
