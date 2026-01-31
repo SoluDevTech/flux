@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openclaw
+  namespace: openclaw
+  labels:
+    app: openclaw
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: openclaw
+  template:
+    metadata:
+      labels:
+        app: openclaw
+    spec:
+      automountServiceAccountToken: false
+
+      initContainers:
+        - name: init-config
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              if [ ! -f /config/openclaw.json ]; then
+                cp /init-config/openclaw.json /config/openclaw.json
+              fi
+              if [ ! -f /workspace/SOUL.md ]; then
+                cp /init-soul/SOUL.md /workspace/SOUL.md
+              fi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: workspace
+              mountPath: /workspace
+            - name: init-config
+              mountPath: /init-config
+            - name: init-soul
+              mountPath: /init-soul
+
+      containers:
+        - name: openclaw
+          image: ghcr.io/openclaw/openclaw:main
+          imagePullPolicy: Always
+
+          ports:
+            - name: gateway
+              containerPort: 18789
+            - name: bridge
+              containerPort: 18790
+
+          env:
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secret
+                  key: OPENROUTER_API_KEY
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secret
+                  key: TELEGRAM_BOT_TOKEN
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secret
+                  key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secret
+                  key: GOOGLE_CLIENT_SECRET
+            - name: CLAWDBOT_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secret
+                  key: GATEWAY_TOKEN
+            - name: CLAWDBOT_CONFIG_DIR
+              value: "/home/node/.clawdbot"
+            - name: CLAWDBOT_WORKSPACE_DIR
+              value: "/home/node/clawd"
+
+          volumeMounts:
+            - name: config
+              mountPath: /home/node/.clawdbot
+            - name: workspace
+              mountPath: /home/node/clawd
+
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: gateway
+            initialDelaySeconds: 30
+            periodSeconds: 30
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: gateway
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: openclaw-config
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: openclaw-workspace
+        - name: init-config
+          configMap:
+            name: openclaw-config
+            items:
+              - key: openclaw.json
+                path: openclaw.json
+        - name: init-soul
+          configMap:
+            name: openclaw-config
+            items:
+              - key: SOUL.md
+                path: SOUL.md

@@ -16,6 +16,7 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [Phoenix Installation](#phoenix-installation)
 - [OpenObserve Installation](#openobserve-installation)
 - [Inference API Services](#inference-api-services)
+- [OpenClaw Installation](#openclaw-installation)
 - [Storage Maintenance](#storage-maintenance)
 - [Troubleshooting](#troubleshooting)
 
@@ -2748,6 +2749,223 @@ metadata:
 spec:
   # ... ingress rules ...
 ```
+
+## OpenClaw Installation
+
+OpenClaw is a personal AI assistant that integrates with Telegram and various AI providers. This section covers deploying OpenClaw with OAuth2 Proxy authentication and NFS storage.
+
+### Prerequisites
+
+- Namespace `openclaw` created
+- ClusterSecretStore `openbao-backend` configured
+- NFS server accessible (e.g., `100.64.0.4`)
+- Logto OIDC configured at `https://logto.soludev.tech/oidc`
+
+### 1. Create Namespace
+
+```bash
+kubectl create namespace openclaw
+```
+
+### 2. Configure Secrets in OpenBao
+
+OpenClaw requires two secret paths in OpenBao:
+
+#### Application Secrets (`openclaw/openclaw`)
+
+| Key | Description |
+|-----|-------------|
+| `OPENROUTER_API_KEY` | API key for OpenRouter LLM service |
+| `TELEGRAM_BOT_TOKEN` | Bot token for Telegram integration |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `GATEWAY_TOKEN` | Token for clawdbot gateway access |
+
+#### OAuth2 Proxy Secrets (`openclaw/oauth2-proxy`)
+
+| Key | Description |
+|-----|-------------|
+| `client-id` | OIDC client ID from Logto |
+| `client-secret` | OIDC client secret from Logto |
+| `cookie-secret` | Secret for signing auth cookies (min 16 bytes, base64) |
+
+**Store secrets using OpenBao CLI:**
+
+```bash
+export VAULT_TOKEN=<your-root-token>
+
+# Application secrets
+kubectl exec -n soludev openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
+  bao kv put openclaw/openclaw \
+  OPENROUTER_API_KEY="<your-openrouter-key>" \
+  TELEGRAM_BOT_TOKEN="<your-telegram-token>" \
+  GOOGLE_CLIENT_ID="<your-google-client-id>" \
+  GOOGLE_CLIENT_SECRET="<your-google-client-secret>" \
+  GATEWAY_TOKEN="<your-gateway-token>"
+
+# OAuth2 Proxy secrets
+kubectl exec -n soludev openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
+  bao kv put openclaw/oauth2-proxy \
+  client-id="<logto-client-id>" \
+  client-secret="<logto-client-secret>" \
+  cookie-secret="$(openssl rand -base64 32)"
+```
+
+### 3. Prepare NFS Storage
+
+Create directories on your NFS server:
+
+```bash
+# SSH to NFS server
+ssh user@nfs-server
+
+# Create directories
+sudo mkdir -p /home/lima.linux/k3s-storage/openclaw/config
+sudo mkdir -p /home/lima.linux/k3s-storage/openclaw/workspace
+sudo chmod -R 777 /home/lima.linux/k3s-storage/openclaw
+
+# Update NFS exports if needed
+sudo exportfs -ra
+```
+
+### 4. Customize Configuration
+
+Edit the ConfigMap in `dev/openclaw/openclaw/configmap.yaml` to customize:
+
+**openclaw.json:**
+```json
+{
+  "agent": {
+    "model": "anthropic/claude-sonnet-4-5-20250929",
+    "thinkingBudget": "high"
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "allowFrom": ["<YOUR_TELEGRAM_USER_ID>"]
+    }
+  },
+  "skills": {
+    "entries": {
+      "google-calendar": { "enabled": true },
+      "agent-browser": { "enabled": true },
+      "web-search-plus": { "enabled": true }
+    }
+  }
+}
+```
+
+**SOUL.md:** Customize the AI assistant's personality and identity.
+
+### 5. Deploy via Flux
+
+OpenClaw is deployed automatically via Flux GitOps. The kustomization in `config/dev/kustomization.yaml` includes the openclaw path.
+
+**Manual deployment (if not using Flux):**
+
+```bash
+# Apply all manifests
+kubectl apply -f dev/openclaw/openclaw/
+kubectl apply -f dev/openclaw/oauth2-proxy/
+kubectl apply -f dev/openclaw/traefik/
+```
+
+### 6. Verify Installation
+
+```bash
+# Check pods
+kubectl get pods -n openclaw
+
+# Expected output:
+# NAME                            READY   STATUS    RESTARTS   AGE
+# openclaw-xxxxxxxxxx-xxxxx       1/1     Running   0          2m
+# oauth2-proxy-xxxxxxxxxx-xxxxx   1/1     Running   0          2m
+
+# Check logs
+kubectl logs -n openclaw deployment/openclaw --tail=50
+
+# Check services
+kubectl get svc -n openclaw
+
+# Check ingress
+kubectl get ingress -n openclaw
+```
+
+### 7. Access the Application
+
+- **URL:** `https://openclaw.soludev.tech`
+- **Authentication:** Via Logto OIDC (redirects to login page)
+
+### 8. Architecture Overview
+
+```
+                    ┌─────────────────────────────────┐
+                    │         Traefik Ingress         │
+                    │    openclaw.soludev.tech        │
+                    └───────────────┬─────────────────┘
+                                    │
+                    ┌───────────────▼─────────────────┐
+                    │    Traefik ForwardAuth          │
+                    │      Middleware                 │
+                    └───────────────┬─────────────────┘
+                                    │
+                    ┌───────────────▼─────────────────┐
+                    │       OAuth2 Proxy              │
+                    │   (OIDC via Logto)              │
+                    └───────────────┬─────────────────┘
+                                    │
+                    ┌───────────────▼─────────────────┐
+                    │         OpenClaw                │
+                    │   Ports: 18789 (gateway)        │
+                    │          18790 (bridge)         │
+                    └───────────────┬─────────────────┘
+                                    │
+              ┌─────────────────────┼─────────────────────┐
+              │                     │                     │
+    ┌─────────▼─────────┐ ┌────────▼────────┐ ┌──────────▼──────────┐
+    │   NFS Config      │ │  NFS Workspace  │ │   External APIs     │
+    │ /home/node/       │ │ /home/node/     │ │ - OpenRouter        │
+    │  .clawdbot        │ │  clawd          │ │ - Telegram          │
+    └───────────────────┘ └─────────────────┘ │ - Google Calendar   │
+                                              └─────────────────────┘
+```
+
+### 9. Troubleshooting
+
+**Pod stuck in ContainerCreating:**
+- Check NFS server is accessible
+- Verify PersistentVolumes are created: `kubectl get pv | grep openclaw`
+- Check PVC status: `kubectl get pvc -n openclaw`
+
+**OAuth2 authentication errors:**
+- Verify secrets are synced: `kubectl get externalsecret -n openclaw`
+- Check OAuth2 Proxy logs: `kubectl logs -n openclaw deployment/oauth2-proxy`
+- Verify Logto OIDC configuration
+
+**Application not starting:**
+- Check secrets are properly configured
+- Verify ConfigMap content: `kubectl get configmap -n openclaw openclaw-config -o yaml`
+- Check resource limits are sufficient
+
+**Network policy blocking traffic:**
+- The NetworkPolicy allows ingress only from oauth2-proxy
+- Egress is limited to DNS and external IPs (no internal cluster traffic except DNS)
+
+### 10. Updating Configuration
+
+**Update ConfigMap:**
+```bash
+# Edit configmap
+kubectl edit configmap -n openclaw openclaw-config
+
+# Restart deployment to apply changes
+kubectl rollout restart deployment/openclaw -n openclaw
+```
+
+**Update Secrets:**
+1. Update secrets in OpenBao
+2. Wait for ExternalSecret to sync (60s) or force sync
+3. Restart deployment: `kubectl rollout restart deployment/openclaw -n openclaw`
 
 ## Storage Maintenance
 

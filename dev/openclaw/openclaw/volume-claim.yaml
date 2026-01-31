@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openclaw-config
+  namespace: openclaw
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-openclaw-config
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openclaw-workspace
+  namespace: openclaw
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-openclaw-workspace
+  resources:
+    requests:
+      storage: 5Gi

@@ -1,0 +1,14 @@
+config:
+  existingSecret: "oauth2-proxy-secret"
+  existingConfig: "oauth2-proxy-config"
+  cookieName: "oauth2-proxy-openclaw"
+
+sessionStorage:
+  type: cookie
+
+ingress:
+  enabled: false
+
+service:
+  type: ClusterIP
+  portNumber: 4180
