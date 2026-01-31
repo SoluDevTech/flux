@@ -1,4 +1,8 @@
 # values.yaml
+
+image:
+  tag: "v0.50.3"
+
 # Pas de credentials en dur
 auth:
   ZO_ROOT_USER_EMAIL: ""
@@ -34,13 +38,17 @@ extraEnv:
         name: soludev-openobserve-secret
         key: ZO_META_POSTGRES_DSN
   
+  # Debug
+  - name: RUST_BACKTRACE
+    value: "full"
+
   # Configuration variables
   - name: ZO_META_STORE
     value: "postgres"
   - name: ZO_META_CONNECTION_POOL_MIN_SIZE
-    value: "2"
+    value: "5"
   - name: ZO_META_CONNECTION_POOL_MAX_SIZE
-    value: "10"
+    value: "20"
   - name: ZO_LOCAL_MODE
     value: "true"
   - name: ZO_LOCAL_MODE_STORAGE
@@ -106,16 +114,12 @@ resources:
     cpu: 1500m
     memory: 2Gi
   requests:
-    cpu: 1000m
+    cpu: 500m
     memory: 1Gi
 
-# Persistence temporaire pour cache local (les données sont dans MinIO)
+# Persistence désactivée - le NFS bloque le runtime async
 persistence:
-  enabled: true
-  size: 5Gi
-  storageClass: "nfs-soludev-openobserve"
-  accessModes:
-    - ReadWriteMany
+  enabled: false
 
 service:
   type: ClusterIP
