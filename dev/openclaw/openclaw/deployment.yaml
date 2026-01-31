@@ -26,15 +26,15 @@ spec:
             - sh
             - -c
             - |
-              if [ ! -f /config/openclaw.json ]; then
-                cp /init-config/openclaw.json /config/openclaw.json
+              if [ ! -f /state/openclaw.json ]; then
+                cp /init-config/openclaw.json /state/openclaw.json
               fi
               if [ ! -f /workspace/SOUL.md ]; then
                 cp /init-soul/SOUL.md /workspace/SOUL.md
               fi
           volumeMounts:
             - name: config
-              mountPath: /config
+              mountPath: /state
             - name: workspace
               mountPath: /workspace
             - name: init-config
@@ -46,6 +46,9 @@ spec:
         - name: openclaw
           image: ghcr.io/openclaw/openclaw:main
           imagePullPolicy: Always
+
+          command: ["openclaw"]
+          args: ["gateway", "--port", "18789", "--bind", "0.0.0.0"]
 
           ports:
             - name: gateway
@@ -74,21 +77,21 @@ spec:
                 secretKeyRef:
                   name: openclaw-secret
                   key: GOOGLE_CLIENT_SECRET
-            - name: CLAWDBOT_GATEWAY_TOKEN
+            - name: OPENCLAW_GATEWAY_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: openclaw-secret
                   key: GATEWAY_TOKEN
-            - name: CLAWDBOT_CONFIG_DIR
-              value: "/home/node/.clawdbot"
-            - name: CLAWDBOT_WORKSPACE_DIR
-              value: "/home/node/clawd"
+            - name: OPENCLAW_STATE_DIR
+              value: "/home/node/.openclaw"
+            - name: OPENCLAW_WORKSPACE_DIR
+              value: "/home/node/workspace"
 
           volumeMounts:
             - name: config
-              mountPath: /home/node/.clawdbot
+              mountPath: /home/node/.openclaw
             - name: workspace
-              mountPath: /home/node/clawd
+              mountPath: /home/node/workspace
 
           resources:
             requests:
