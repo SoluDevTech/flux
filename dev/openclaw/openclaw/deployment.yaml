@@ -27,18 +27,53 @@ spec:
             - -c
             - |
               if [ ! -f /state/openclaw.json ]; then
-                cp /init-config/openclaw.json /state/openclaw.json
+                cat > /state/openclaw.json << EOF
+              {
+                "gateway": {
+                  "bind": "lan",
+                  "controlUi": { "enabled": true },
+                  "auth": {
+                    "mode": "token",
+                    "token": "${GATEWAY_TOKEN}"
+                  }
+                },
+                "agents": {
+                  "defaults": {
+                    "model": {
+                      "primary": "anthropic/claude-sonnet-4-5-20250929"
+                    }
+                  }
+                },
+                "channels": {
+                  "telegram": {
+                    "enabled": true,
+                    "allowFrom": ["<TON_TELEGRAM_USER_ID>"]
+                  }
+                },
+                "skills": {
+                  "entries": {
+                    "google-calendar": { "enabled": true },
+                    "agent-browser": { "enabled": true },
+                    "web-search-plus": { "enabled": true }
+                  }
+                }
+              }
+              EOF
               fi
               if [ ! -f /workspace/SOUL.md ]; then
                 cp /init-soul/SOUL.md /workspace/SOUL.md
               fi
+          env:
+            - name: GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secret
+                  key: GATEWAY_TOKEN
           volumeMounts:
             - name: config
               mountPath: /state
             - name: workspace
               mountPath: /workspace
-            - name: init-config
-              mountPath: /init-config
             - name: init-soul
               mountPath: /init-soul
 
@@ -121,12 +156,6 @@ spec:
         - name: workspace
           persistentVolumeClaim:
             claimName: openclaw-workspace
-        - name: init-config
-          configMap:
-            name: openclaw-config
-            items:
-              - key: openclaw.json
-                path: openclaw.json
         - name: init-soul
           configMap:
             name: openclaw-config

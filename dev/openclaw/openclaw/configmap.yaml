@@ -4,30 +4,6 @@ metadata:
   name: openclaw-config
   namespace: openclaw
 data:
-  openclaw.json: |
-    {
-      "agents": {
-        "defaults": {
-          "model": {
-            "primary": "anthropic/claude-sonnet-4-5-20250929"
-          },
-          "thinkingBudget": "high"
-        }
-      },
-      "channels": {
-        "telegram": {
-          "enabled": true,
-          "allowFrom": ["<TON_TELEGRAM_USER_ID>"]
-        }
-      },
-      "skills": {
-        "entries": {
-          "google-calendar": { "enabled": true },
-          "agent-browser": { "enabled": true },
-          "web-search-plus": { "enabled": true }
-        }
-      }
-    }
   SOUL.md: |
     # Identite
     Tu es l'assistant personnel de Yohan, fondateur de SoluDevTech.
