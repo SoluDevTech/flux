@@ -42,7 +42,7 @@ spec:
                 "agents": {
                   "defaults": {
                     "model": {
-                      "primary": "openrouter/anthropic/claude-sonnet-4-5"
+                      "primary": "anthropic/claude-opus-4-5"
                     }
                   }
                 },
@@ -93,11 +93,11 @@ spec:
               containerPort: 18790
 
           env:
-            - name: OPENROUTER_API_KEY
+            - name: ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: openclaw-secret
-                  key: OPENROUTER_API_KEY
+                  key: ANTHROPIC_API_KEY
             - name: TELEGRAM_BOT_TOKEN
               valueFrom:
                 secretKeyRef:
