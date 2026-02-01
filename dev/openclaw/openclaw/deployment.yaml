@@ -52,13 +52,6 @@ spec:
                     "enabled": true,
                     "allowFrom": ["1988394825"]
                   }
-                },
-                "skills": {
-                  "entries": {
-                    "google-calendar": { "enabled": true },
-                    "agent-browser": { "enabled": true },
-                    "web-search-plus": { "enabled": true }
-                  }
                 }
               }
               EOF
@@ -94,6 +87,11 @@ spec:
               containerPort: 18790
 
           env:
+            - name: BRAVE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secret
+                  key: BRAVE_API_KEY
             - name: ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:
