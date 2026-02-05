@@ -80,7 +80,18 @@ spec:
     kind: GitRepository
     name: kaiohz-repo
   path: "dev/openclaw"
-  prune: true 
-
-
-
+  prune: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: kube-router-kustomization
+  namespace: flux-system
+spec:
+  interval: 2m
+  timeout: 90s
+  sourceRef:
+    kind: GitRepository
+    name: kaiohz-repo
+  path: "dev/kube-router"
+  prune: true

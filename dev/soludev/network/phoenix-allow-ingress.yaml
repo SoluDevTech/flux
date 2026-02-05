@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: phoenix-allow-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: phoenix
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: prospectio
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: pickpro
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ubby
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openclaw
+      ports:
+        - protocol: TCP
+          port: 6006
