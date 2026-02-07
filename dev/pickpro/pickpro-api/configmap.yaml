@@ -5,7 +5,7 @@ metadata:
   namespace: pickpro
 data:
   ALLOWED_ORIGINS: '["https://pickpro.soludev.tech", "http://localhost:8080"]'
-  DEV_MODE: "true"
+  DEV_MODE: "false"
   CHAT_MODEL: anthropic/claude-haiku-4.5
   TITLE_MODEL: anthropic/claude-haiku-4.5
   GRADER_MODEL: anthropic/claude-haiku-4.5
