@@ -19,5 +19,6 @@ data:
   MINIO_ACCESS: minioadmin
   MINIO_BUCKET: cvs
   MINIO_ALLOWED_EXTENSION: .pdf
+  INDEXING_API_URL: http://pickpro-indexing-api.pickpro.svc.cluster.local:8000
 
 
