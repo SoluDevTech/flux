@@ -4,15 +4,13 @@ metadata:
   name: ubby-back-config
   namespace: ubby
 data:
-  ALLOWED_ORIGINS: '["https://ubby.soludev.tech"]'
-  HOST: 0.0.0.0
-  PORT: "8000"
-  UVICORN_LOG_LEVEL: info
-  RELOAD: "true"
-  MAX_WORKERS: "5"
-  MAX_FILE_SIZE: "10485760"
-  MCP_USE_API_URL: "https://ubby-mcp-api.soludev.tech/api/v1/mcp/create"
-  CHAT_MODEL: "google/gemini-3-pro-preview"
-  OPEN_ROUTER_API_URL: "https://openrouter.ai/api/v1"
-
-
+  UBBY_MCP_FACTORY_ALLOWED_ORIGINS: '["https://ubby.soludev.tech","https://mcp-factory.ubby.ai"]'
+  UBBY_MCP_FACTORY_HOST: 0.0.0.0
+  UBBY_MCP_FACTORY_PORT: "8000"
+  UBBY_MCP_FACTORY_UVICORN_LOG_LEVEL: info
+  UBBY_MCP_FACTORY_RELOAD: "false"
+  UBBY_MCP_FACTORY_MAX_WORKERS: "5"
+  UBBY_MCP_FACTORY_MAX_FILE_SIZE: "10485760"
+  UBBY_MCP_FACTORY_MCP_USE_API_URL: "https://ubby-mcp-api.soludev.tech/api/v1/mcp/create"
+  UBBY_MCP_FACTORY_CHAT_MODEL: "google/gemini-3-pro-preview"
+  UBBY_MCP_FACTORY_OPEN_ROUTER_API_URL: "https://openrouter.ai/api/v1"
