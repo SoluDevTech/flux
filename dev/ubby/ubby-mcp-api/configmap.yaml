@@ -8,7 +8,7 @@ data:
   PORT: "3000"
   MCP_DEFAULT_PORT: "3001"
   MCP_USE_ANONYMIZED_TELEMETRY: "false"
-  MCP_BASE_URL: https://ubby-mcp-api.soludev.tech/proxy/{id}
+  MCP_BASE_URL: https://ubby-mcp-api.soludev.tech/{id}
   BODY_SIZE_LIMIT: 10mb
 
 
