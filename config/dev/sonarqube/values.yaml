@@ -12,7 +12,7 @@ postgresql:
 
 # Connexion à pgvector existant (cross-namespace)
 jdbcOverwrite:
-  enable: true
+  enabled: true
   jdbcUrl: "jdbc:postgresql://postgres.soludev.svc.cluster.local:5432/sonarqube"
   jdbcUsername: "sonarqube"
   jdbcSecretName: "sonarqube-secret"
@@ -54,17 +54,17 @@ initSysctl:
 
 # Probes
 livenessProbe:
-  initialDelaySeconds: 120
-  periodSeconds: 30
-  timeoutSeconds: 10
-  failureThreshold: 24
+  initialDelaySeconds: 180
+  periodSeconds: 60
+  timeoutSeconds: 30
+  failureThreshold: 15
 readinessProbe:
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  timeoutSeconds: 30
+  failureThreshold: 10
+startupProbe:
   initialDelaySeconds: 60
   periodSeconds: 10
   timeoutSeconds: 10
-  failureThreshold: 24
-startupProbe:
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  timeoutSeconds: 10
-  failureThreshold: 24
+  failureThreshold: 60

@@ -13,33 +13,7 @@ database:
 auth:
   enableAuth: true
 
-#
-additionalEnv:
-  - name: PHOENIX_POSTGRES_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: soludev-phoenix-secret
-        key: PHOENIX_POSTGRES_PASSWORD
-  - name: PHOENIX_SECRET
-    valueFrom:
-      secretKeyRef:
-        name: soludev-phoenix-secret
-        key: PHOENIX_SECRET
-  - name: PHOENIX_ADMIN_SECRET
-    valueFrom:
-      secretKeyRef:
-        name: soludev-phoenix-secret
-        key: PHOENIX_ADMIN_SECRET
-  - name: PHOENIX_SMTP_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: soludev-phoenix-secret
-        key: PHOENIX_SMTP_PASSWORD
-  - name: PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: soludev-phoenix-secret
-        key: PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD
+# Secrets are injected via auth.secret by the install script (no additionalEnv needed in chart 5.x)
 
 persistence:
   enabled: false

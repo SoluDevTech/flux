@@ -13,7 +13,7 @@ set -e
 # =============================================================================
 
 NAMESPACE="soludev"
-PHOENIX_VERSION="4.0.6"
+PHOENIX_VERSION="5.0.3"
 VALUES_FILE="config/dev/phoenix/values.yaml"
 EXTERNAL_SECRET_FILE="dev/soludev/phoenix/external-secret.yaml"
 SECRET_NAME="soludev-phoenix-secret"
