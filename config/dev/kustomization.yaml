@@ -80,7 +80,20 @@ spec:
     kind: GitRepository
     name: kaiohz-repo
   path: "dev/openclaw"
-  prune: true 
-
-
-
+  prune: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: liame-kustomization
+  namespace: flux-system
+spec:
+  interval: 2m
+  timeout: 90s
+  wait: true
+  targetNamespace: liame
+  sourceRef:
+    kind: GitRepository
+    name: kaiohz-repo
+  path: "dev/liame"
+  prune: true
