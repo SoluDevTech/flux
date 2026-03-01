@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: liam-landing
+  name: liame-landing
   namespace: liame
   labels:
     app: liam-landing
 spec:
   type: ClusterIP
   selector:
-    app: liam-landing
+    app: liame-landing
   ports:
     - port: 80
       targetPort: 80
