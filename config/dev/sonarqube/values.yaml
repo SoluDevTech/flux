@@ -2,9 +2,8 @@
 community:
   enabled: true
 
-# Monitoring passcode depuis OpenBao (soludev/sonarqube -> MONITORING_PASSCODE)
-monitoringPasscodeSecretName: "sonarqube-secret"
-monitoringPasscodeSecretKey: "MONITORING_PASSCODE"
+# Monitoring passcode (hardcoded ASCII - le secret OpenBao contient un £ non-ASCII qui casse wget)
+monitoringPasscode: "SoludevSonar2026Monitoring"
 
 # Désactiver PostgreSQL embarqué (on utilise pgvector existant)
 postgresql:
