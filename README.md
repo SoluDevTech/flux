@@ -3137,6 +3137,76 @@ You would need to either:
 2. Wait for a Traefik/K3s update that handles this better
 3. Use a different ingress controller that supports legacy iptables
 
+### Pods ne se créent plus après un crash cluster (context deadline exceeded)
+
+**Symptômes :**
+- Après un reboot/crash du cluster, les pods ne se créent plus
+- Les ReplicaSets affichent `Error creating: Timeout: request did not complete within requested timeout - context deadline exceeded`
+- Plusieurs déploiements critiques sont à 0/1 (CoreDNS, Flux, Phoenix, etc.)
+
+**Cause root :**
+Le mutating webhook de l'opérateur OpenTelemetry (`mpod.kb.io`) intercepte **tous les CREATE de pods**. Après un crash :
+1. Le pod de l'opérateur OTel est mort → le service webhook n'a plus d'endpoint
+2. Chaque création de pod attend 10s (timeout du webhook) avant que `failurePolicy: Ignore` ne le laisse passer
+3. Ce délai cumulé cause des `context deadline exceeded` sur l'API server
+4. L'opérateur OTel ne peut pas redémarrer lui-même (son pod est aussi bloqué) → **deadlock**
+
+**Solution :**
+
+1. **Backup du webhook :**
+   ```bash
+   kubectl get mutatingwebhookconfiguration opentelemetry-operator-mutating-webhook-configuration -o yaml > /tmp/otel-mutating-webhook-backup.yaml
+   ```
+
+2. **Supprimer le webhook pour débloquer la création de pods :**
+   ```bash
+   kubectl delete mutatingwebhookconfiguration opentelemetry-operator-mutating-webhook-configuration
+   ```
+
+3. **Vérifier que les pods se créent :**
+   ```bash
+   # Attendre 30-60 secondes puis vérifier
+   kubectl get deployments --all-namespaces | grep "0/"
+   ```
+
+4. **L'opérateur OTel re-créera automatiquement son webhook** après son redémarrage. Aucune action supplémentaire nécessaire.
+
+**Note :** Le webhook est re-créé automatiquement par l'opérateur OTel dès qu'il redémarre. Pas besoin de le restaurer manuellement.
+
+### SonarQube : liveness probe 403 (passcode non-ASCII)
+
+**Symptômes :**
+- SonarQube démarre correctement puis redémarre toutes les ~15-20 minutes
+- Les events montrent `Liveness probe failed` et `Container failed liveness probe, will be restarted`
+- Les logs montrent un arrêt gracieux (pas de OOM)
+
+**Cause root :**
+Le `MONITORING_PASSCODE` dans OpenBao contient un caractère non-ASCII (`£` = UTF-8 multi-byte `0xC2 0xA3`). Le `wget` busybox dans le conteneur corrompt ce caractère dans le header HTTP `X-Sonar-Passcode`, ce qui fait que la liveness probe `/api/system/liveness` retourne toujours 403.
+
+**Diagnostic :**
+```bash
+# Tester manuellement la liveness probe depuis le pod
+kubectl exec <sonarqube-pod> -n soludev -- sh -c \
+  'wget --no-proxy --quiet -O /dev/null --timeout=30 --header="X-Sonar-Passcode: $SONAR_WEB_SYSTEMPASSCODE" "http://localhost:9000/api/system/liveness"; echo "EXIT: $?"'
+
+# Vérifier les caractères du passcode
+kubectl exec <sonarqube-pod> -n soludev -- sh -c \
+  'printf "%s" "$SONAR_WEB_SYSTEMPASSCODE" | od -c'
+```
+
+**Solution :**
+Utiliser `monitoringPasscode` directement dans `values.yaml` avec un passcode ASCII pur au lieu de référencer le secret OpenBao :
+```yaml
+# Avant (broken)
+monitoringPasscodeSecretName: "sonarqube-secret"
+monitoringPasscodeSecretKey: "MONITORING_PASSCODE"
+
+# Après (fix)
+monitoringPasscode: "UnPasscodeASCIIPur123"
+```
+
+Puis appliquer : `helm upgrade sonarqube sonarqube/sonarqube -n soludev -f config/dev/sonarqube/values.yaml --force-conflicts`
+
 ### Useful Commands
 
 ```bash
