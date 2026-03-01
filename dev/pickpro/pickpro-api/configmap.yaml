@@ -20,5 +20,7 @@ data:
   MINIO_BUCKET: cvs
   MINIO_ALLOWED_EXTENSION: .pdf
   INDEXING_API_URL: http://pickpro-indexing-api.pickpro.svc.cluster.local:8000/pickpro/rest/v1
+  LOGTO_URL: https://logto.soludev.tech
+  LOGTO_GOOGLE_CONNECTOR_ID: cfw668egqtdjweu6oxhxk
 
 
