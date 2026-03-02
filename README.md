@@ -3207,6 +3207,92 @@ monitoringPasscode: "UnPasscodeASCIIPur123"
 
 Puis appliquer : `helm upgrade sonarqube sonarqube/sonarqube -n soludev -f config/dev/sonarqube/values.yaml --force-conflicts`
 
+### PostgreSQL : performances dégradées via NFS over Tailscale DERP
+
+**Symptômes :**
+- Readiness probe failures massifs sur le pod PostgreSQL (60+ en 6h)
+- `Broken pipe` dans les logs PostgreSQL
+- Checkpoints extrêmement lents (50-270 secondes au lieu de < 10s)
+- Débit NFS ~1.6 MB/s au lieu de 80+ MB/s
+- Pod qui oscille entre Ready et Not Ready
+
+**Cause root :**
+Le Raspberry Pi hébergeant Headscale a changé d'IP (`192.168.1.12` → `192.168.1.13`). Les clients Tailscale configurés avec l'ancienne `ControlURL` n'arrivent plus à se coordonner → perte du peer-to-peer → fallback sur les relais DERP publics (Singapour, Hong Kong). Le trafic NFS entre bignode et le Mac Mini (même LAN) transite par Internet avec 100ms+ de RTT au lieu de 0.35ms en direct.
+
+Chaîne causale :
+1. Changement IP Headscale → clients avec ancienne ControlURL
+2. Perte de coordination → `machineAuthorized=false`
+3. Fallback sur relais DERP publics (sin, hkg)
+4. Latence NFS x300 → PostgreSQL en souffrance (écritures synchrones)
+
+**Problème additionnel :** sur le Mac Mini, le processus `limactl` (colima) occupait le port UDP 41641 (port WireGuard par défaut), empêchant le Tailscale macOS host de se connecter en peer-to-peer.
+
+**Diagnostic :**
+
+```bash
+# 1. Vérifier si les peers sont en relay ou en direct
+tailscale status
+# Si "relay" apparaît (ex: "relay sin", "relay hkg") → problème confirmé
+
+# 2. Mesurer la latence vers le serveur NFS
+tailscale ping 100.64.0.6
+# Attendu : < 1ms en direct, > 100ms via relay
+
+# 3. Tester le débit NFS depuis le pod PostgreSQL
+kubectl exec -n soludev <pod> -- sh -c \
+  'dd if=/dev/zero of=/var/lib/postgresql/data/test_io bs=1M count=10 conv=fsync 2>&1; rm /var/lib/postgresql/data/test_io'
+# Attendu : > 20 MB/s. Si ~1.6 MB/s → NFS via relay
+
+# 4. Vérifier la ControlURL des clients
+# Sur chaque noeud :
+cat /var/lib/tailscale/prefs | grep -o '"ControlURL":"[^"]*"'
+# Doit pointer vers l'IP actuelle du Headscale
+
+# 5. Vérifier un conflit de port WireGuard (Mac Mini avec colima)
+sudo lsof -i UDP:41641
+# Si limactl occupe le port → conflit avec Tailscale macOS
+```
+
+**Solution :**
+
+1. **Ré-authentifier les clients Tailscale** vers la bonne IP Headscale :
+   ```bash
+   # Sur chaque noeud (bignode, colima, jetson-desktop, baus-mac-mini) :
+   tailscale up --login-server http://192.168.1.13:8080 --force-reauth
+   ```
+   Puis approuver côté Headscale :
+   ```bash
+   docker exec headscale headscale nodes approve --identifier <ID>
+   ```
+
+2. **Résoudre le conflit de port WireGuard** (si colima sur le même Mac Mini) :
+   ```bash
+   # Dans la VM colima :
+   colima ssh
+   sudo sed -i 's/PORT="41641"/PORT="41643"/' /etc/default/tailscaled
+   sudo systemctl restart tailscaled
+   ```
+
+3. **Redémarrer tailscaled sur bignode** pour rafraîchir le network map :
+   ```bash
+   # Sur bignode :
+   sudo systemctl restart tailscaled
+   ```
+
+4. **Vérifier** :
+   ```bash
+   tailscale status
+   # Tous les peers doivent être "direct" sans mention de relay
+
+   tailscale ping 100.64.0.6
+   # pong < 1ms
+   ```
+
+**Résultat attendu :**
+- Débit NFS restauré à 80-92 MB/s
+- Tous les peers Tailscale en connexion directe
+- PostgreSQL stable, plus de readiness probe failures
+
 ### Useful Commands
 
 ```bash
