@@ -27,6 +27,9 @@ spec:
       containers:
         - name: postgres
           image: postgres:17-alpine
+          securityContext:
+            runAsUser: 70
+            runAsGroup: 70
           args: ["-c", "max_connections=500", "-c", "shared_buffers=512MB"]
           ports:
             - containerPort: 5432
