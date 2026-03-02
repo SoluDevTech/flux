@@ -30,7 +30,7 @@ spec:
           securityContext:
             runAsUser: 70
             runAsGroup: 70
-          args: ["-c", "max_connections=500", "-c", "shared_buffers=512MB"]
+          args: ["-c", "max_connections=500", "-c", "shared_buffers=512MB", "-c", "tcp_keepalives_idle=60", "-c", "tcp_keepalives_interval=10", "-c", "tcp_keepalives_count=6"]
           ports:
             - containerPort: 5432
           envFrom:
