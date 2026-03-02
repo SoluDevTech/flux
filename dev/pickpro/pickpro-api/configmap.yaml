@@ -22,5 +22,6 @@ data:
   INDEXING_API_URL: http://pickpro-indexing-api.pickpro.svc.cluster.local:8000/pickpro/rest/v1
   LOGTO_URL: https://logto.soludev.tech
   LOGTO_GOOGLE_CONNECTOR_ID: cfw668egqtdjweu6oxhxk
+  LOGTO_M2M_APP_ID: s44irlst66e578jqdyeaq
 
 
