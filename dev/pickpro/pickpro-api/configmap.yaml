@@ -23,5 +23,7 @@ data:
   LOGTO_URL: https://logto.soludev.tech
   LOGTO_GOOGLE_CONNECTOR_ID: cfw668egqtdjweu6oxhxk
   LOGTO_M2M_APP_ID: s44irlst66e578jqdyeaq
+  RECALL_AI_REGION: eu-central-1
+  RECALL_AI_BOT_NAME: PickPro
 
 
