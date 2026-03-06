@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pickpro-indexing-api-webhooks-ingress
+  namespace: pickpro
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  rules:
+    - host: pickpro-indexing-api.soludev.tech
+      http:
+        paths:
+          - path: /webhooks
+            pathType: Prefix
+            backend:
+              service:
+                name: pickpro-indexing-api
+                port:
+                  number: 8000

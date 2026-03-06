@@ -13,6 +13,6 @@ data:
   MAX_WORKERS: "5"
   MINIO_HOST: minio.pickpro.svc.cluster.local:9000
   PHOENIX_HOST: https://phoenix.soludev.tech
-
-
-
+  RECALL_AI_REGION: eu-central-1
+  SUMMARY_MODEL: google/gemini-2.5-flash:nitro
+  TRANSCRIPT_BUCKET: transcripts
