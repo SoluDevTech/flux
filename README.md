@@ -3293,6 +3293,111 @@ sudo lsof -i UDP:41641
 - Tous les peers Tailscale en connexion directe
 - PostgreSQL stable, plus de readiness probe failures
 
+### NFS : access denied - conflit entre nfs-kernel-server de Colima et nfsd macOS
+
+**Symptômes :**
+- Pods minio en `ContainerCreating` indéfiniment
+- OpenObserve en `CrashLoopBackOff` (dépend de minio pour le stockage S3)
+- `kubectl describe pod` montre : `mount.nfs: access denied by server while mounting 100.64.0.6:/Volumes/NFSStorage/...`
+- `showmount -e localhost` sur le Mac Mini affiche `/home/lima.linux/k3s-storage` au lieu de `/Volumes/NFSStorage`
+- Les montages NFS existants (ex: postgres) fonctionnent encore car déjà établis
+
+**Cause root :**
+Le `nfs-kernel-server` à l'intérieur de la VM Colima écoute sur le port 2049 et intercepte les requêtes NFS destinées au `nfsd` de macOS. Colima utilise `virtiofs` pour ses montages (pas NFS), donc ce serveur NFS interne est inutile mais entre en conflit avec le nfsd macOS du host. Les montages déjà établis (comme postgres) continuent de fonctionner car la connexion NFS est maintenue, mais tout nouveau montage échoue.
+
+**Diagnostic :**
+
+```bash
+# Sur le Mac Mini - vérifier quel serveur NFS répond
+showmount -e localhost
+# Si le résultat montre /home/lima.linux/k3s-storage → le NFS de colima intercepte
+
+# Vérifier que le nfsd macOS a les bons exports configurés
+cat /etc/exports
+# Doit contenir : /Volumes/NFSStorage -alldirs -maproot=root -network 100.64.0.0 -mask 255.192.0.0
+
+# Vérifier le conflit de port
+sudo lsof -i :2049
+```
+
+**Solution :**
+
+1. **Désactiver le serveur NFS inutile dans la VM Colima :**
+   ```bash
+   colima ssh -- sudo systemctl stop nfs-kernel-server
+   colima ssh -- sudo systemctl disable nfs-kernel-server
+   ```
+
+2. **Redémarrer le nfsd macOS :**
+   ```bash
+   sudo nfsd restart
+   ```
+
+3. **Vérifier les exports :**
+   ```bash
+   showmount -e localhost
+   # Doit afficher : /Volumes/NFSStorage
+   ```
+
+**Note :** si Colima est recréée (pas juste redémarrée), le `nfs-kernel-server` pourrait être réinstallé. Vérifier après une recréation de la VM.
+
+### Tailscale : connexion DERP relay causée par les changements d'interfaces K8s
+
+**Symptômes :**
+- `tailscale status` montre un peer en "relay" (ex: `relay "sin"`)
+- 502 Bad Gateway sur tous les services (si Traefik est sur le noeud affecté)
+- Flannel VXLAN overlay cassé entre les noeuds (`No route to host` vers les pods)
+
+**Cause root :**
+Kubernetes crée/supprime dynamiquement des interfaces réseau virtuelles (`veth`, `cni`, `flannel`) à chaque démarrage/arrêt de pod. Tailscale détecte ces changements comme des `LinkChange: major` et rebind ses sockets réseau. Sur un noeud derrière un NAT symétrique, ce rebinding peut faire perdre la connexion directe et forcer un fallback sur les relais DERP publics.
+
+**Diagnostic :**
+
+```bash
+# Vérifier les connexions Tailscale
+tailscale status
+# Chercher "relay" dans la sortie
+
+# Dans la VM Colima, vérifier les logs tailscaled
+colima ssh -- journalctl -u tailscaled --no-pager -n 50 | grep -E "LinkChange|rebind|DERP"
+```
+
+**Solution préventive :**
+Configurer tailscaled pour ignorer les interfaces dynamiques K8s :
+
+```bash
+# Dans la VM Colima
+colima ssh
+
+# Créer un override systemd
+sudo mkdir -p /etc/systemd/system/tailscaled.service.d
+sudo tee /etc/systemd/system/tailscaled.service.d/override.conf <<EOF
+[Service]
+Environment="TS_DEBUG_NETMON_SKIP_INTERFACE_PREFIXES=veth,cni,docker,flannel"
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl restart tailscaled
+```
+
+**Si la connexion est déjà en relay :**
+
+1. **Redémarrer flannel sur les noeuds affectés :**
+   ```bash
+   # Identifier les pods flannel
+   kubectl get pods -n kube-flannel -o wide
+
+   # Supprimer le pod flannel sur le noeud affecté (le DaemonSet le recréera)
+   kubectl delete pod <flannel-pod> -n kube-flannel
+   ```
+
+2. **Vérifier que la connexion est redevenue directe :**
+   ```bash
+   tailscale status
+   tailscale ping <peer-ip>
+   # pong < 1ms = connexion directe
+   ```
+
 ### Useful Commands
 
 ```bash
