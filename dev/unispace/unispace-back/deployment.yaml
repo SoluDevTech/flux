@@ -27,13 +27,13 @@ spec:
                 name: unispace-back-secret
           livenessProbe:
             httpGet:
-              path: /health
+              path: /docs
               port: 80
             initialDelaySeconds: 90
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /health
+              path: /docs
               port: 80
             initialDelaySeconds: 60
             periodSeconds: 5
