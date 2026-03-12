@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: unispace-back-config
+  namespace: unispace
+data:
+  CORS_ORIGINS: '["https://unispace.soludev.tech"]'
+  DEV_MODE: "false"

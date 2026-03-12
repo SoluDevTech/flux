@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: unispace-postgres-pvc
+  namespace: unispace
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-unispace-postgres
+  resources:
+    requests:
+      storage: 5Gi

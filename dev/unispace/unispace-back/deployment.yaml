@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unispace-back
+  namespace: unispace
+  labels:
+    app: unispace-back
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unispace-back
+  template:
+    metadata:
+      labels:
+        app: unispace-back
+    spec:
+      containers:
+        - name: unispace-back
+          image: kaiohz/unispace:unispace-back-latest
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: unispace-back-config
+            - secretRef:
+                name: unispace-back-secret
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 90
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 60
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      imagePullSecrets:
+        - name: unispace-docker-secret

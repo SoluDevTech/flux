@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unispace-landing
+  namespace: unispace
+  labels:
+    app: unispace-landing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unispace-landing
+  template:
+    metadata:
+      labels:
+        app: unispace-landing
+    spec:
+      tolerations:
+        - key: "klipperlb-exclude"
+          value: "true"
+          effect: "NoSchedule"
+          operator: "Equal"
+      containers:
+        - name: unispace-landing
+          image: kaiohz/unispace:unispace-landing-latest
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "96Mi"
+              cpu: "100m"
+      imagePullSecrets:
+        - name: unispace-docker-secret

@@ -94,6 +94,16 @@ data:
         originRequest:
           noTLSVerify: true      
 
+      - hostname: unispace.soludev.tech
+        service: https://traefik.kube-system.svc.cluster.local:443
+        originRequest:
+          noTLSVerify: true
+
+      - hostname: unispace-back.soludev.tech
+        service: https://traefik.kube-system.svc.cluster.local:443
+        originRequest:
+          noTLSVerify: true
+
       - hostname: "*.soludev.tech"
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:

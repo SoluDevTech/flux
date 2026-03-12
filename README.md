@@ -3401,7 +3401,7 @@ sudo systemctl restart tailscaled
 ### Useful Commands
 
 ```bash
-# Check cluster status
+# Check cluster status 
 kubectl get nodes
 
 # Check all pods

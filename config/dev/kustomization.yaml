@@ -97,3 +97,19 @@ spec:
     name: kaiohz-repo
   path: "dev/liame"
   prune: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: unispace-kustomization
+  namespace: flux-system
+spec:
+  interval: 2m
+  timeout: 90s
+  wait: true
+  targetNamespace: unispace
+  sourceRef:
+    kind: GitRepository
+    name: kaiohz-repo
+  path: "dev/unispace"
+  prune: true
