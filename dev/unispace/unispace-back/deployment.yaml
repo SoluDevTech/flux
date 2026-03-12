@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: unispace-back
-          image: kaiohz/unispace:unispace-back-latest
+          image: kaiohz/pickpro:unispace-back-latest
           ports:
             - containerPort: 80
           envFrom:
