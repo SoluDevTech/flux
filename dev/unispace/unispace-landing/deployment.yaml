@@ -22,7 +22,7 @@ spec:
           operator: "Equal"
       containers:
         - name: unispace-landing
-          image: kaiohz/pickpro:unispace-landing-latest
+          image: kaiohz/pickpro:unispace-landing-736f55d3a9355b1f08b04aaecd293906f0871574
           ports:
             - containerPort: 80
           livenessProbe:
