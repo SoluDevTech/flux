@@ -4,5 +4,5 @@ metadata:
   name: unispace-back-config
   namespace: unispace
 data:
-  CORS_ORIGINS: '["https://unispace.soludev.tech"]'
+  CORS_ORIGINS: '["http://localhost:5173"]'
   DEV_MODE: "false"
