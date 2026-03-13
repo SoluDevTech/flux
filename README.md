@@ -3398,6 +3398,98 @@ sudo systemctl restart tailscaled
    # pong < 1ms = connexion directe
    ```
 
+### Disque NFS non monté après reboot du Mac Mini
+
+**Symptômes :**
+- Tous les pods avec volumes NFS en `Readiness probe failed` ou `CrashLoopBackOff`
+- OpenBao readiness probe timeout → `ClusterSecretStore "openbao-backend"` not ready
+- Tous les ExternalSecrets en erreur (`UpdateFailed`) dans tous les namespaces
+- Flux kustomizations bloquées en `Reconciliation in progress` ou `HealthCheckFailed`
+- `tailscale status` depuis bignode montre `baus-mac-mini` en `offline`
+
+**Cause root :**
+Le Mac Mini a redémarré suite à un **kernel panic provoqué par `tailscaled`**. Le bug se situe dans le sous-système réseau du kernel macOS (Sonoma 14.2 / `23C71`) : le compteur de références d'une interface réseau fait un overflow (`dlil_if_ref: wraparound refcnt`). Tailscale crée/détruit des interfaces réseau en réaction aux changements d'interfaces K8s (veth, cni, flannel), ce qui finit par déclencher le crash.
+
+Rapport de panic : `/Library/Logs/DiagnosticReports/panic-full-2026-03-12-212017.0002.panic`
+```
+panic(cpu 0): dlil_if_ref: wraparound refcnt for ifp=...
+Panicked task: pid 6020: tailscaled
+```
+
+Après le reboot :
+1. Le disque externe 1TB contenant `/Volumes/NFSStorage/` n'est pas remonté automatiquement au boot
+2. Tailscale (installé via Homebrew) n'est pas relancé automatiquement en mode SSH-only (`brew services` utilise le domaine `user/*` au lieu de `gui/*`, qui ne démarre pas au boot sans session console)
+3. Sans NFS → OpenBao ne peut pas accéder à son storage → tous les secrets sont bloqués → cascade complète
+
+**Chaîne causale :**
+```
+Reboot Mac Mini
+    ↓
+Disque NFSStorage non monté + Tailscale arrêté
+    ↓
+NFS inaccessible depuis le cluster
+    ↓
+OpenBao readiness probe timeout (storage NFS absent)
+    ↓
+ClusterSecretStore "openbao-backend" not ready
+    ↓
+Tous les ExternalSecrets échouent (tous les namespaces)
+    ↓
+Apps sans secrets → pods en erreur
+    ↓
+Flux health checks échouent → réconciliation bloquée
+```
+
+**Diagnostic :**
+
+```bash
+# 1. Depuis bignode, vérifier l'état Tailscale
+tailscale status
+# Si baus-mac-mini est "offline" → problème confirmé
+
+# 2. Sur le Mac Mini (SSH), vérifier le disque
+diskutil list
+ls /Volumes/NFSStorage/
+
+# 3. Vérifier si Tailscale tourne
+tailscale status
+# Si "failed to connect to local Tailscale service" → tailscaled ne tourne pas
+
+# 4. Vérifier les PVs
+kubectl get pv | grep Terminating
+```
+
+**Solution :**
+
+1. **Monter le disque NFS :**
+   ```bash
+   # Sur le Mac Mini
+   diskutil mount disk5s1
+   ls /Volumes/NFSStorage/  # vérifier que les dossiers sont là
+   ```
+
+2. **Relancer Tailscale :**
+   ```bash
+   sudo brew services restart tailscale
+   tailscale status
+   # Vérifier que baus-mac-mini est "direct" et non "relay"
+   ```
+
+3. **Vérifier la reprise :**
+   ```bash
+   # Depuis bignode
+   tailscale status  # baus-mac-mini doit être "direct"
+   kubectl get pods -A | grep -v Running  # les pods doivent redémarrer
+   ```
+
+**Prévention (TODO) :**
+- **Mettre à jour macOS** au-delà de Sonoma 14.2 (`23C71`) — le bug kernel `dlil_if_ref` wraparound a été corrigé dans des versions ultérieures (`softwareupdate --list`)
+- **Mettre à jour Tailscale** (`brew upgrade tailscale`) — les versions récentes contournent ce bug réseau
+- Configurer le disque externe pour un montage automatique au boot (`/etc/fstab` ou `diskutil` avec automount)
+- Remplacer `brew services` par des LaunchDaemons système (`/Library/LaunchDaemons/`) pour Tailscale, afin qu'il démarre au boot indépendamment de la session utilisateur
+- Configurer `sudo pmset -a autorestart 1` pour redémarrer automatiquement après une coupure de courant
+- Désactiver la mise en veille : `sudo pmset -a sleep 0 displaysleep 0 disksleep 0`
+
 ### Useful Commands
 
 ```bash

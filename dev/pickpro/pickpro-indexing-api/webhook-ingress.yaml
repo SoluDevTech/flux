@@ -10,7 +10,7 @@ spec:
     - host: pickpro-indexing-api.soludev.tech
       http:
         paths:
-          - path: /webhooks
+          - path: /pickpro/rest/v1/webhooks
             pathType: Prefix
             backend:
               service:
