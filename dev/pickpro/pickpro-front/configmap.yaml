@@ -9,6 +9,7 @@ data:
         "backendUrl": "https://pickpro-api.soludev.tech",
         "oauth2ProxyUrl": "https://pickpro.soludev.tech",
         "logtoUrl": "https://logto.soludev.tech",
+        "logtoAppId": "sazp1vx8ah3pwv56rqm9v",
         "useMock": false,
         "devMode": false
     }
