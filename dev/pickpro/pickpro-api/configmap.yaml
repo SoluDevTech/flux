@@ -25,5 +25,6 @@ data:
   LOGTO_M2M_APP_ID: s44irlst66e578jqdyeaq
   RECALL_AI_REGION: eu-central-1
   RECALL_AI_BOT_NAME: PickPro
+  JWT_AUDIENCE: sazp1vx8ah3pwv56rqm9v
 
 
