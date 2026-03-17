@@ -26,5 +26,7 @@ data:
   RECALL_AI_REGION: eu-central-1
   RECALL_AI_BOT_NAME: PickPro
   JWT_AUDIENCE: sazp1vx8ah3pwv56rqm9v
+  ENVIRONMENT: "production"
+  ALLOWED_REDIRECT_URIS: '["https://pickpro.soludev.tech"]'
 
 
