@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headlamp
+  namespace: soludev
+  labels:
+    app: headlamp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: headlamp
+  template:
+    metadata:
+      labels:
+        app: headlamp
+    spec:
+      serviceAccountName: headlamp
+      tolerations:
+        - key: "klipperlb-exclude"
+          value: "true"
+          effect: "NoSchedule"
+          operator: "Equal"
+      containers:
+        - name: headlamp
+          image: ghcr.io/headlamp-k8s/headlamp:v0.40.1
+          ports:
+            - containerPort: 4466
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 4466
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 4466
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"

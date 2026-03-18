@@ -17,6 +17,7 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [OpenObserve Installation](#openobserve-installation)
 - [Inference API Services](#inference-api-services)
 - [OpenClaw Installation](#openclaw-installation)
+- [Headlamp Installation](#headlamp-installation)
 - [Storage Maintenance](#storage-maintenance)
 - [Troubleshooting](#troubleshooting)
 
@@ -2966,6 +2967,39 @@ kubectl rollout restart deployment/openclaw -n openclaw
 1. Update secrets in OpenBao
 2. Wait for ExternalSecret to sync (60s) or force sync
 3. Restart deployment: `kubectl rollout restart deployment/openclaw -n openclaw`
+
+## Headlamp Installation
+
+Headlamp is a Kubernetes web dashboard deployed via Flux GitOps (manifests in `dev/soludev/headlamp/`).
+
+- **URL**: `https://headlamp.soludev.tech`
+- **Image**: `ghcr.io/headlamp-k8s/headlamp:v0.40.1`
+
+### Authentication with Non-Expiring Token
+
+After Flux deploys the manifests (~2 minutes after push), retrieve the auto-generated token:
+
+```bash
+kubectl get secret headlamp-token -n soludev -o jsonpath='{.data.token}' | base64 -d
+```
+
+### Store Token in OpenBao
+
+```bash
+HEADLAMP_TOKEN=$(kubectl get secret headlamp-token -n soludev -o jsonpath='{.data.token}' | base64 -d)
+OPENBAO_POD=$(kubectl get pods -n soludev -l app.kubernetes.io/name=openbao -o jsonpath='{.items[0].metadata.name}')
+
+kubectl exec -n soludev "$OPENBAO_POD" -- \
+    env VAULT_TOKEN="$VAULT_TOKEN" bao kv put kv/soludev/headlamp \
+    token="$HEADLAMP_TOKEN"
+```
+
+### Login
+
+1. Navigate to `https://headlamp.soludev.tech`
+2. Select **Token** authentication
+3. Paste the token retrieved from OpenBao or from the kubectl command above
+4. Click **Authenticate**
 
 ## Storage Maintenance
 
