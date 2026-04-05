@@ -12,8 +12,14 @@ database:
 
 auth:
   enableAuth: true
-
-# Secrets are injected via auth.secret by the install script (no additionalEnv needed in chart 5.x)
+  createSecret: false                   # Do NOT let the chart create/overwrite the secret
+  name: "soludev-phoenix-secret"        # Use the pre-existing OpenBao-managed K8s secret
+  secret:
+    - key: "PHOENIX_SECRET"
+    - key: "PHOENIX_ADMIN_SECRET"
+    - key: "PHOENIX_POSTGRES_PASSWORD"
+    - key: "PHOENIX_SMTP_PASSWORD"
+    - key: "PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD"
 
 persistence:
   enabled: false
