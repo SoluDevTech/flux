@@ -75,7 +75,7 @@ spec:
 
       containers:
         - name: openclaw
-          image: ghcr.io/openclaw/openclaw:2026.4.5
+          image: ghcr.io/openclaw/openclaw:2026.3.28
           imagePullPolicy: Always
 
           command: ["node", "dist/index.js", "gateway", "--port", "18789", "--bind", "lan"]
