@@ -140,14 +140,14 @@ spec:
             httpGet:
               path: /health
               port: gateway
-            initialDelaySeconds: 60
+            initialDelaySeconds: 90
             periodSeconds: 30
 
           readinessProbe:
             httpGet:
               path: /health
               port: gateway
-            initialDelaySeconds: 60
+            initialDelaySeconds: 90
             periodSeconds: 30
 
       volumes:
