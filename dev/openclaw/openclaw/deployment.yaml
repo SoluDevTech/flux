@@ -147,8 +147,8 @@ spec:
             httpGet:
               path: /health
               port: gateway
-            initialDelaySeconds: 30
-            periodSeconds: 10
+            initialDelaySeconds: 60
+            periodSeconds: 30
 
       volumes:
         - name: config
