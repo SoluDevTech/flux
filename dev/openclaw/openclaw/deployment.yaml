@@ -120,7 +120,7 @@ spec:
             - name: OPENCLAW_WORKSPACE_DIR
               value: "/home/node/workspace"
             - name: XDG_DATA_HOME
-              value: "/home/node/.local/share"
+              value: "/tmp/opencode-data"
 
           volumeMounts:
             - name: data
