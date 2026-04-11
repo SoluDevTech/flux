@@ -121,12 +121,17 @@ spec:
               value: "/home/node/.openclaw"
             - name: OPENCLAW_WORKSPACE_DIR
               value: "/home/node/workspace"
+            - name: NPM_CONFIG_CACHE
+              value: "/home/node/.npm"
 
           volumeMounts:
             - name: config
               mountPath: /home/node/.openclaw
             - name: workspace
               mountPath: /home/node/workspace
+            - name: workspace
+              mountPath: /home/node/.npm
+              subPath: .npm
 
           resources:
             requests:
