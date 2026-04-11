@@ -26,8 +26,8 @@ spec:
             - sh
             - -c
             - |
-              if [ ! -f /state/openclaw.json ]; then
-                cat > /state/openclaw.json << EOF
+              if [ ! -f /data/config/openclaw.json ]; then
+                cat > /data/config/openclaw.json << EOF
               {
                 "gateway": {
                   "mode": "local",
@@ -56,8 +56,8 @@ spec:
               }
               EOF
               fi
-              if [ ! -f /workspace/SOUL.md ]; then
-                cp /init-soul/SOUL.md /workspace/SOUL.md
+              if [ ! -f /data/workspace/SOUL.md ]; then
+                cp /init-soul/SOUL.md /data/workspace/SOUL.md
               fi
           env:
             - name: GATEWAY_TOKEN
@@ -66,10 +66,8 @@ spec:
                   name: openclaw-secret
                   key: GATEWAY_TOKEN
           volumeMounts:
-            - name: config
-              mountPath: /state
-            - name: workspace
-              mountPath: /workspace
+            - name: data
+              mountPath: /data
             - name: init-soul
               mountPath: /init-soul
 
@@ -121,17 +119,17 @@ spec:
               value: "/home/node/.openclaw"
             - name: OPENCLAW_WORKSPACE_DIR
               value: "/home/node/workspace"
-            - name: NPM_CONFIG_CACHE
-              value: "/home/node/.npm"
 
           volumeMounts:
-            - name: config
+            - name: data
+              mountPath: /home/node
+              subPath: home
+            - name: data
               mountPath: /home/node/.openclaw
-            - name: workspace
+              subPath: config
+            - name: data
               mountPath: /home/node/workspace
-            - name: workspace
-              mountPath: /home/node/.npm
-              subPath: .npm
+              subPath: workspace
 
           resources:
             requests:
@@ -156,12 +154,9 @@ spec:
             periodSeconds: 30
 
       volumes:
-        - name: config
+        - name: data
           persistentVolumeClaim:
-            claimName: openclaw-config
-        - name: workspace
-          persistentVolumeClaim:
-            claimName: openclaw-workspace
+            claimName: openclaw-data
         - name: init-soul
           configMap:
             name: openclaw-config
