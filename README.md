@@ -1341,10 +1341,10 @@ Phoenix is an open-source AI observability platform for LLM applications. This s
 
 **Chart Version Limitations:**
 
-- Phoenix Helm chart version 4.0.6 does NOT support the `additionalEnv` parameter for injecting external secrets
-- The chart always creates its own secret for authentication credentials
-- Cannot use `auth.name` to point directly to an external secret (causes ownership conflicts with External Secrets Operator)
-- Secrets must be provided at Helm upgrade time via command-line or temporary values file
+- Phoenix Helm chart version 6.0.2 supports the `additionalEnv` parameter for injecting external env vars
+- The chart creates its own secret by default, but `createSecret: false` + `name` works to reference an existing secret
+- The `auth.secret` format changed to support `value` and `valueFrom` for referencing existing secrets
+- Secrets from the pre-existing K8s secret (`soludev-phoenix-secret`) are used when `value` is empty
 
 **Secret Requirements:**
 
@@ -1543,7 +1543,7 @@ EOF
 
 # Install Phoenix
 helm install phoenix oci://registry-1.docker.io/arizephoenix/phoenix-helm \
-  --version 4.0.6 \
+  --version 6.0.2 \
   -n soludev \
   -f config/dev/phoenix/values.yaml \
   -f /tmp/phoenix-secrets.yaml
@@ -1578,7 +1578,7 @@ EOF
 
 # Upgrade Phoenix
 helm upgrade phoenix oci://registry-1.docker.io/arizephoenix/phoenix-helm \
-  --version 4.0.6 \
+  --version 6.0.2 \
   -n soludev \
   -f config/dev/phoenix/values.yaml \
   -f /tmp/phoenix-secrets.yaml
@@ -1706,10 +1706,9 @@ ValueError: Phoenix secret must be at least 32 characters long
 
 If you see that `additionalEnv` is not being applied:
 
-- Chart version 4.0.6 doesn't support `additionalEnv` parameter
-- This feature exists in the GitHub main branch but hasn't been released
-- Use the temporary values file method shown above as a workaround
-- Watch for future chart versions that support external secrets natively
+- Chart version 6.0.2 supports `additionalEnv` for injecting environment variables
+- Use `createSecret: false` with `auth.name` to reference an existing K8s secret
+- The `auth.secret` items now support `value` and `valueFrom` fields
 
 **5. Pod Stuck in CrashLoopBackOff**
 
@@ -1817,7 +1816,7 @@ set -e
 
 NAMESPACE="soludev"
 RELEASE="phoenix"
-CHART_VERSION="4.0.6"
+CHART_VERSION="6.0.2"
 
 echo "Creating temporary values file with secrets..."
 cat > /tmp/phoenix-secrets.yaml <<EOF
@@ -1862,13 +1861,13 @@ chmod +x deploy-phoenix.sh
 
 ### 13. Future Improvements
 
-**Watch for chart updates** that add native support for:
+**Watch for chart updates** that may add:
 
-- External secret references via `additionalEnv`
-- Support for `existingSecret` parameter
-- Direct integration with External Secrets Operator
+- Direct `valueFrom.secretKeyRef` support in `auth.secret` items to eliminate temporary secret files entirely
+- Native integration with External Secrets Operator (auto-detect existing secrets)
+- Improved schema migration handling for major version upgrades
 
-Once these features are available, you can simplify the deployment by updating values.yaml to reference the external secret directly, eliminating the need for temporary files during upgrades.
+Chart 6.0.2 already supports `additionalEnv`, `createSecret: false` with `auth.name`, and the new `auth.secret` format with `value`/`valueFrom` fields.
 
 ## OpenObserve Installation
 

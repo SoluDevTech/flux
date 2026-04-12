@@ -7,8 +7,8 @@ database:
     port: 5432
     db: "phoenix"
     user: "phoenix"
-    password: ""  # Password comes from external secret via additionalEnv
-  defaultRetentionPolicyDays: 10  # Automatically delete traces older than 10 days
+    password: ""
+  defaultRetentionPolicyDays: 10
 
 auth:
   enableAuth: true
@@ -16,10 +16,15 @@ auth:
   name: "soludev-phoenix-secret"        # Use the pre-existing OpenBao-managed K8s secret
   secret:
     - key: "PHOENIX_SECRET"
+      value: ""
     - key: "PHOENIX_ADMIN_SECRET"
+      value: ""
     - key: "PHOENIX_POSTGRES_PASSWORD"
+      value: ""
     - key: "PHOENIX_SMTP_PASSWORD"
+      value: ""
     - key: "PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD"
+      value: ""
 
 persistence:
   enabled: false
@@ -29,3 +34,6 @@ ingress:
 
 server:
   port: 6006
+
+service:
+  type: "ClusterIP"

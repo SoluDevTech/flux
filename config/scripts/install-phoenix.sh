@@ -13,7 +13,7 @@ set -e
 # =============================================================================
 
 NAMESPACE="soludev"
-PHOENIX_VERSION="5.0.3"
+PHOENIX_VERSION="6.0.2"
 VALUES_FILE="config/dev/phoenix/values.yaml"
 EXTERNAL_SECRET_FILE="dev/soludev/phoenix/external-secret.yaml"
 SECRET_NAME="soludev-phoenix-secret"
@@ -68,7 +68,7 @@ Commands:
 
 Options (install):
   -n, --namespace NAME        Target namespace (default: soludev)
-  -V, --version VERSION       Phoenix Helm chart version (default: 4.0.6)
+  -V, --version VERSION       Phoenix Helm chart version (default: 6.0.2)
   -f, --values-file FILE      Custom values file (default: config/dev/phoenix/values.yaml)
       --skip-external-secret  Skip ExternalSecret creation
 
@@ -90,7 +90,7 @@ Prerequisites:
 
 Examples:
   ./install-phoenix.sh install
-  ./install-phoenix.sh install -n soludev -V 4.0.6
+  ./install-phoenix.sh install -n soludev -V 6.0.2
   ./install-phoenix.sh install --skip-external-secret
   ./install-phoenix.sh uninstall
   ./install-phoenix.sh uninstall --purge
