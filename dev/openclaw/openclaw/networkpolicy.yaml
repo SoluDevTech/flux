@@ -24,7 +24,7 @@ spec:
         - namespace: kube-system
           podSelector:
             matchLabels:
-              app: traefik
+              app.kubernetes.io/name: traefik
       ports:
         - protocol: TCP
           port: 18789
@@ -45,7 +45,7 @@ spec:
         - namespace: kube-system
           podSelector:
             matchLabels:
-              app: traefik
+              app.kubernetes.io/name: traefik
       ports:
         - protocol: TCP
           port: 18789
