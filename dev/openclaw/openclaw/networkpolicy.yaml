@@ -19,6 +19,15 @@ spec:
       ports:
         - protocol: TCP
           port: 18789
+    # Traefik reverse proxy
+    - from:
+        - namespace: kube-system
+          podSelector:
+            matchLabels:
+              app: traefik
+      ports:
+        - protocol: TCP
+          port: 18789
   egress:
     # DNS
     - to:
@@ -31,6 +40,15 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+    # Traefik
+    - to:
+        - namespace: kube-system
+          podSelector:
+            matchLabels:
+              app: traefik
+      ports:
+        - protocol: TCP
+          port: 18789
     # Internet (exclude private IPs)
     - to:
         - ipBlock:
