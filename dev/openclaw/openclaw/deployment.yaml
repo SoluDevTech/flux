@@ -26,8 +26,8 @@ spec:
             - sh
             - -c
             - |
-              if [ ! -f /data/config/openclaw.json ]; then
-                cat > /data/config/openclaw.json << EOF
+              if [ ! -f /home/node/.openclaw/openclaw.json ]; then
+                cat > /home/node/.openclaw/openclaw.json << EOF
               {
                 "gateway": {
                   "mode": "local",
@@ -50,13 +50,22 @@ spec:
                 "channels": {
                   "telegram": {
                     "enabled": true,
+                    "dmPolicy": "pairing",
                     "allowFrom": ["1988394825","8607935693"],
+                    "groupPolicy": "allowlist",
                     "groups": {
                       "-5176636516": {
                         "requireMention": false
                       }
-                    }
+                    },
+                    "streaming": "partial"
                   }
+                },
+                "hooks": {
+                  "enabled": true,
+                  "token": "${OPENCLAW_WEBHOOK_TOKEN}",
+                  "path": "/hooks",
+                  "defaultSessionKey": "hook:ingress"
                 }
               }
               EOF
@@ -70,6 +79,11 @@ spec:
                 secretKeyRef:
                   name: openclaw-secret
                   key: GATEWAY_TOKEN
+            - name: OPENCLAW_WEBHOOK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secret
+                  key: OPENCLAW_WEBHOOK_TOKEN
           volumeMounts:
             - name: data
               mountPath: /data
@@ -120,6 +134,11 @@ spec:
                 secretKeyRef:
                   name: openclaw-secret
                   key: GATEWAY_TOKEN
+            - name: OPENCLAW_WEBHOOK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secret
+                  key: OPENCLAW_WEBHOOK_TOKEN
             - name: OPENCLAW_STATE_DIR
               value: "/home/node/.openclaw"
             - name: OPENCLAW_WORKSPACE_DIR
