@@ -50,7 +50,7 @@ spec:
                 "channels": {
                   "telegram": {
                     "enabled": true,
-                    "allowFrom": ["1988394825"]
+                    "allowFrom": ["1988394825","5285842682"]
                   }
                 }
               }
