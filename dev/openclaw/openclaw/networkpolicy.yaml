@@ -21,7 +21,9 @@ spec:
           port: 18789
     # Traefik reverse proxy
     - from:
-        - namespace: kube-system
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
           podSelector:
             matchLabels:
               app.kubernetes.io/name: traefik
@@ -42,7 +44,9 @@ spec:
           port: 53
     # Traefik
     - to:
-        - namespace: kube-system
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
           podSelector:
             matchLabels:
               app.kubernetes.io/name: traefik
