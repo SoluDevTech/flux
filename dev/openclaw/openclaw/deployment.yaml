@@ -50,7 +50,12 @@ spec:
                 "channels": {
                   "telegram": {
                     "enabled": true,
-                    "allowFrom": ["1988394825","8607935693"]
+                    "allowFrom": ["1988394825","8607935693"],
+                    "groups": {
+                      "-5176636516": {
+                        "requireMention": false
+                      }
+                    }
                   }
                 }
               }
