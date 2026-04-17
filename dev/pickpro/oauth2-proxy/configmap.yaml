@@ -37,3 +37,5 @@ data:
     
     skip_provider_button = true
     silence_ping_logging = true
+
+    login_url_parameters = ["one_time_token", "login_hint"]
