@@ -3,6 +3,10 @@ config:
   existingConfig: "oauth2-proxy-config"
   cookieName: "oauth2-proxy-pickpro"
 
+alphaConfig:
+  enabled: true
+  existingConfig: "oauth2-proxy-alpha-config"
+
 sessionStorage:
   type: cookie
 
