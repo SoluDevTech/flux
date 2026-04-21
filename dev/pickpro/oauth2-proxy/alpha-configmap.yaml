@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-alpha-config
+  namespace: pickpro
+data:
+  oauth2_proxy.yml: |
+    server:
+      BindAddress: "0.0.0.0:4180"
+
+    upstreamConfig:
+      upstreams:
+      - id: pickpro-front
+        path: /
+        uri: "http://pickpro-front.pickpro.svc.cluster.local:5173"
+        passHostHeader: true
+        proxyWebSockets: true
+
+    providers:
+    - id: pickpro-oidc
+      provider: oidc
+      clientID: ${OAUTH2_PROXY_CLIENT_ID}
+      clientSecret: ${OAUTH2_PROXY_CLIENT_SECRET}
+      oidcConfig:
+        issuerURL: "https://logto.soludev.tech/oidc"
+      scope: "openid email profile identities roles urn:logto:scope:organizations urn:logto:scope:organization_roles"
+      loginURLParameters:
+        - name: one_time_token
+          allow:
+            - pattern: '^.+$'
+        - name: login_hint
+          allow:
+            - pattern: '^.+$'
+
+    injectRequestHeaders:
+    - name: Authorization
+      values:
+      - claimSource:
+          claim: id_token
+          prefix: "Bearer "
+
+    injectResponseHeaders:
+    - name: X-Auth-Request-User
+      values:
+      - claimSource:
+          claim: user
+    - name: X-Auth-Request-Email
+      values:
+      - claimSource:
+          claim: email
+    - name: X-Auth-Request-Preferred-Username
+      values:
+      - claimSource:
+          claim: preferred_username
+    - name: X-Auth-Request-Groups
+      values:
+      - claimSource:
+          claim: groups
+    - name: X-Auth-Request-Access-Token
+      values:
+      - claimSource:
+          claim: access_token
+    - name: Authorization
+      values:
+      - claimSource:
+          claim: id_token
+          prefix: "Bearer "
