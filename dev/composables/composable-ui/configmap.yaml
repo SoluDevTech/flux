@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: composable-ui-config
+  namespace: composables
+data:
+  config.json: |
+    {
+      "apiBaseUrl": "http://composable-agents:8000",
+      "ragAnythingUrl": "http://raganything:8000"
+    }

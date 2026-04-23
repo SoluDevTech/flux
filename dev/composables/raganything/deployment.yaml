@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: raganything
+  namespace: composables
+  labels:
+    app: raganything
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: raganything
+  template:
+    metadata:
+      labels:
+        app: raganything
+    spec:
+      tolerations:
+        - key: "klipperlb-exclude"
+          value: "true"
+          effect: "NoSchedule"
+          operator: "Equal"
+      containers:
+        - name: raganything
+          image: kaiohz/pickpro:raganything-latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: raganything-config
+            - secretRef:
+                name: raganything-secret
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 120
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 90
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"

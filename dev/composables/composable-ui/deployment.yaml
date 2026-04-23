@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: composable-ui
+  namespace: composables
+  labels:
+    app: composable-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: composable-ui
+  template:
+    metadata:
+      labels:
+        app: composable-ui
+    spec:
+      tolerations:
+        - key: "klipperlb-exclude"
+          value: "true"
+          effect: "NoSchedule"
+          operator: "Equal"
+      containers:
+        - name: composable-ui
+          image: kaiohz/pickpro:composable-ui-latest
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: config-volume
+              mountPath: /usr/share/nginx/html/config.json
+              subPath: config.json
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "96Mi"
+              cpu: "100m"
+      volumes:
+        - name: config-volume
+          configMap:
+            name: composable-ui-config
