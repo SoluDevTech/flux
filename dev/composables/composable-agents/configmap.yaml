@@ -11,12 +11,12 @@ data:
   HOST: "0.0.0.0"
   PORT: "8000"
   # === MinIO (object storage) ===
-  MINIO_ENDPOINT: "bricks-minio:9000"
+  MINIO_ENDPOINT: "minio:9000"
   MINIO_ACCESS_KEY: "minioadmin"
   MINIO_BUCKET: "composable-agents"
   MINIO_SECURE: "false"
   # === PostgreSQL (metadata) ===
-  POSTGRES_HOST: "bricks-db"
+  POSTGRES_HOST: "postgres"
   POSTGRES_PORT: "5432"
   POSTGRES_USER: "raganything"
   POSTGRES_DATABASE: "raganything"
@@ -27,7 +27,7 @@ data:
   LANGFUSE_HOST: "https://cloud.langfuse.com"
   LANGFUSE_PUBLIC_KEY: ""
   LANGFUSE_SECRET_KEY: ""
-  PHOENIX_COLLECTOR_ENDPOINT: "http://bricks-phoenix:6006"
+  PHOENIX_COLLECTOR_ENDPOINT: "http://phoenix:6006"
   PHOENIX_API_KEY: ""
   LANGCHAIN_API_KEY: ""
   LANGCHAIN_PROJECT: "composable-agents"

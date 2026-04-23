@@ -15,6 +15,7 @@ spec:
       labels:
         app: raganything
     spec:
+      enableServiceLinks: false
       tolerations:
         - key: "klipperlb-exclude"
           value: "true"

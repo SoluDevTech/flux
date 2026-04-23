@@ -15,6 +15,7 @@ spec:
       labels:
         app: composable-agents
     spec:
+      enableServiceLinks: false
       tolerations:
         - key: "klipperlb-exclude"
           value: "true"
@@ -26,6 +27,8 @@ spec:
           ports:
             - containerPort: 8000
           envFrom:
+            - configMapRef:
+                name: composable-agents-config
             - secretRef:
                 name: composable-agents-secret
           livenessProbe:
