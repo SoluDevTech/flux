@@ -25,3 +25,11 @@ data:
 
     skip_provider_button = true
     silence_ping_logging = true
+
+    skip_auth_routes = [
+      "^/auth/invite",
+      "^/assets/",
+      "^/config\\.json",
+      "^/pickpro/rest/v1/verify-invite",
+      "^/pickpro/rest/v1/set-password-public",
+    ]
