@@ -11,7 +11,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs-composables-postgres
   nfs:
-    server: 100.64.0.6
+    server: 100.64.0.3
     path: /Volumes/NFSStorage/composables/postgres
   mountOptions:
     - nfsvers=3
