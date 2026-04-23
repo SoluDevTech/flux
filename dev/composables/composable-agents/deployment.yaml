@@ -22,7 +22,7 @@ spec:
           operator: "Equal"
       containers:
         - name: composable-agents
-          image: kaiohz/pickpro:composable-agents-latest
+          image: kaiohz/pickpro:composable-agents-98b73a85134c9ae7d5a52b8472286a4dd17e5816
           ports:
             - containerPort: 8000
           envFrom:
