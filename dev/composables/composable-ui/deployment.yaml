@@ -52,3 +52,5 @@ spec:
         - name: config-volume
           configMap:
             name: composable-ui-config
+      imagePullSecrets:
+        - name: pickpro-docker-secret
