@@ -23,7 +23,7 @@ data:
   POSTGRES_USER: "raganything"
   POSTGRES_DATABASE: "raganything"
   # === Tracing ===
-  ENABLED: true
-  PROVIDER: phoenix # or "langfuse" or "none"
-  PROJECT_NAME: composables
-  PHOENIX_COLLECTOR_ENDPOINT: http://host.docker.internal:6016
+  ENABLED: "true"
+  PROVIDER: "phoenix" # or "langfuse" or "none"
+  PROJECT_NAME: "composables"
+  PHOENIX_COLLECTOR_ENDPOINT: "http://host.docker.internal:6016"
