@@ -26,4 +26,4 @@ data:
   ENABLED: "true"
   PROVIDER: "phoenix" # or "langfuse" or "none"
   PROJECT_NAME: "composables"
-  PHOENIX_COLLECTOR_ENDPOINT: "http://host.docker.internal:6016"
+  PHOENIX_COLLECTOR_ENDPOINT: "https://pheonix.soludev.tech"
