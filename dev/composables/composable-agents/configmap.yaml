@@ -22,14 +22,8 @@ data:
   POSTGRES_PORT: "5432"
   POSTGRES_USER: "raganything"
   POSTGRES_DATABASE: "raganything"
-  # === Tracing (optional) ===
-  TRACING_PROVIDER: "none"
-  TRACING_ENABLED: "false"
-  TRACING_PROJECT_NAME: "composable-agents"
-  LANGFUSE_HOST: "https://cloud.langfuse.com"
-  LANGFUSE_PUBLIC_KEY: ""
-  LANGFUSE_SECRET_KEY: ""
-  PHOENIX_COLLECTOR_ENDPOINT: "http://phoenix:6006"
-  PHOENIX_API_KEY: ""
-  LANGCHAIN_API_KEY: ""
-  LANGCHAIN_PROJECT: "composable-agents"
+  # === Tracing ===
+  ENABLED: true
+  PROVIDER: phoenix # or "langfuse" or "none"
+  PROJECT_NAME: composables
+  PHOENIX_COLLECTOR_ENDPOINT: http://host.docker.internal:6016
