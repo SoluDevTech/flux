@@ -7,5 +7,6 @@ data:
   config.json: |
     {
       "apiBaseUrl": "http://composable-agents:8000",
-      "ragAnythingUrl": "http://raganything:8000"
+      "wsBaseUrl": "ws://composable-agents:8000",
+      "ragApiBaseUrl": "http://raganything:8000"
     }
