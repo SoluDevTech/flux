@@ -23,7 +23,7 @@ spec:
           operator: "Equal"
       containers:
         - name: raganything
-          image: kaiohz/pickpro:raganything-37895d06050de314f52e6a7196ed6b66ba394441
+          image: kaiohz/pickpro:raganything-d287e1733c6e92bfc8feecdb47cd891afe4d2854
           ports:
             - containerPort: 8000
           envFrom:
