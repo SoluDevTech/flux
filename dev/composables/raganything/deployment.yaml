@@ -46,9 +46,9 @@ spec:
           resources:
             requests:
               memory: "512Mi"
-              cpu: "4000m"
+              cpu: "2000m"
             limits:
               memory: "2Gi"
-              cpu: "5000m"
+              cpu: "3000m"
       imagePullSecrets:
         - name: pickpro-docker-secret
