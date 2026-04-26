@@ -25,5 +25,5 @@ data:
   # === Tracing ===
   ENABLED: "true"
   PROVIDER: "phoenix" # or "langfuse" or "none"
-  PROJECT_NAME: "composables"
+  PROJECT_NAME: "composable-agents"
   PHOENIX_COLLECTOR_ENDPOINT: "https://pheonix.soludev.tech"
