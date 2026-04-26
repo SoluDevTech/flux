@@ -1,27 +1,20 @@
-# values.yaml
+# values.yaml - OpenObserve v0.70.3 (chart 0.70.4)
 
 image:
-  tag: "v0.60.1"
+  oss:
+    tag: "v0.70.3"
 
-# Pas de credentials en dur
+# Using existing secret from ExternalSecret/OpenBao
 auth:
-  ZO_ROOT_USER_EMAIL: ""
-  ZO_ROOT_USER_PASSWORD: ""
+  existingRootUserSecret:
+    name: "soludev-openobserve-secret"
+    emailKey: "ZO_ROOT_USER_EMAIL"
+    passwordKey: "ZO_ROOT_USER_PASSWORD"
   ZO_S3_ACCESS_KEY: ""
   ZO_S3_SECRET_KEY: ""
 
-# Injecter les credentials depuis le secret
+# Credentials injected via auth.existingRootUserSecret (ZO_ROOT_USER_EMAIL, ZO_ROOT_USER_PASSWORD)
 extraEnv:
-  - name: ZO_ROOT_USER_EMAIL
-    valueFrom:
-      secretKeyRef:
-        name: soludev-openobserve-secret
-        key: ZO_ROOT_USER_EMAIL
-  - name: ZO_ROOT_USER_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: soludev-openobserve-secret
-        key: ZO_ROOT_USER_PASSWORD
   - name: ZO_S3_ACCESS_KEY
     valueFrom:
       secretKeyRef:
@@ -37,22 +30,26 @@ extraEnv:
       secretKeyRef:
         name: soludev-openobserve-secret
         key: ZO_META_POSTGRES_DSN
-  
+
   # Debug
   - name: RUST_BACKTRACE
     value: "full"
 
-  # Configuration variables
+  # PostgreSQL metadata store
   - name: ZO_META_STORE
     value: "postgres"
   - name: ZO_META_CONNECTION_POOL_MIN_SIZE
     value: "5"
   - name: ZO_META_CONNECTION_POOL_MAX_SIZE
     value: "20"
+
+  # Local mode with S3/MinIO storage
   - name: ZO_LOCAL_MODE
     value: "true"
   - name: ZO_LOCAL_MODE_STORAGE
     value: "s3"
+
+  # MinIO configuration
   - name: ZO_S3_PROVIDER
     value: "minio"
   - name: ZO_S3_SERVER_URL
@@ -71,24 +68,32 @@ extraEnv:
     value: "false"
   - name: ZO_S3_FEATURE_HTTP2_ONLY
     value: "false"
+  # S3 connection robustness
+  - name: ZO_S3_CONNECT_TIMEOUT
+    value: "30"
+  - name: ZO_S3_REQUEST_TIMEOUT
+    value: "3600"
+
+  # Data retention & compaction
   - name: ZO_COMPACT_DATA_RETENTION_DAYS
     value: "10"
   - name: ZO_COMPACT_ENABLED
     value: "true"
   - name: ZO_COMPACT_INTERVAL
     value: "3600"
-  # Reduce data latency - make data queryable faster
   - name: ZO_FILE_PUSH_INTERVAL
     value: "10"
   - name: ZO_MAX_FILE_RETENTION_TIME
     value: "60"
   - name: ZO_MEM_PERSIST_INTERVAL
     value: "1"
-  # Enable memory cache for faster queries
+
+  # Memory cache
   - name: ZO_MEMORY_CACHE_ENABLED
     value: "true"
   - name: ZO_MEMORY_CACHE_MAX_SIZE
     value: "512"
+  # Disk cache
   - name: ZO_DISK_CACHE_ENABLED
     value: "true"
   - name: ZO_DISK_CACHE_MAX_SIZE
@@ -99,14 +104,14 @@ extraEnv:
     value: "500"
   - name: ZO_DISK_CACHE_STRATEGY
     value: "time_lru"
+  # Result cache
   - name: ZO_RESULT_CACHE_ENABLED
     value: "true"
-  # Increase dashboard series limit
+
+  # Dashboard series limit
   - name: ZO_MAX_DASHBOARD_SERIES
     value: "500"
 
-# NOTE: Config section is not used by this chart, all configuration is in extraEnv above
-# Kept for documentation purposes only
 config: {}
 
 resources:
@@ -117,7 +122,7 @@ resources:
     cpu: 500m
     memory: 1Gi
 
-# Persistence désactivée - le NFS bloque le runtime async
+# Persistence disabled - NFS blocks async runtime
 persistence:
   enabled: false
 

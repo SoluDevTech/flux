@@ -2258,6 +2258,37 @@ helm upgrade openobserve openobserve/openobserve-standalone \
   -f config/dev/openobserve/values.yml
 ```
 
+#### Major Version Upgrade (e.g., v0.60 → v0.70)
+
+For major version upgrades that include database migrations, use the upgrade script with built-in backup and rollback:
+
+```bash
+# Full upgrade with backup + rollback option
+./config/scripts/upgrade-openobserve.sh upgrade
+
+# Backup only (run before manual upgrade)
+./config/scripts/upgrade-openobserve.sh backup-only
+
+# Verify after upgrade
+./config/scripts/upgrade-openobserve.sh verify
+
+# Rollback if something goes wrong
+./config/scripts/upgrade-openobserve.sh rollback ./backups/openobserve/20260425_140000
+```
+
+**Before any major upgrade:**
+
+1. Back up dashboards via API: `./config/scripts/backup-openobserve.sh`
+2. Back up PostgreSQL metadata: `kubectl exec -n soludev <postgres-pod> -- pg_dump -U openobserve openobserve > backup.sql`
+3. Read the release notes for breaking changes and DB migration notes
+4. Test with `helm template` first: `helm template openobserve openobserve/openobserve-standalone --version <chart-version> -f config/dev/openobserve/values.yml`
+
+**Dashboard & RUM preservation:**
+
+- Dashboards are stored in PostgreSQL and auto-migrated by OpenObserve during startup
+- RUM data (session replays, errors) is stored in MinIO and preserved across upgrades
+- The backup script exports dashboards via API as a safety net for rollback scenarios
+
 ### 8. Verify OpenObserve Installation
 
 ```bash

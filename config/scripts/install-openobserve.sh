@@ -12,6 +12,7 @@ RELEASE_NAME="openobserve"
 CHART_REPO="openobserve"
 CHART_REPO_URL="https://charts.openobserve.ai"
 CHART_NAME="openobserve/openobserve-standalone"
+CHART_VERSION="0.70.4"
 VALUES_FILE="./config/dev/openobserve/values.yml"
 
 # MinIO Configuration
@@ -211,11 +212,20 @@ install_openobserve() {
     fi
     
     # Install or upgrade
-    helm upgrade --install "$RELEASE_NAME" "$CHART_NAME" \
-        --namespace "$NAMESPACE" \
-        -f "$VALUES_FILE" \
-        --wait \
-        --timeout 5m
+    if [ -n "${CHART_VERSION:-}" ]; then
+        helm upgrade --install "$RELEASE_NAME" "$CHART_NAME" \
+            --version "$CHART_VERSION" \
+            --namespace "$NAMESPACE" \
+            -f "$VALUES_FILE" \
+            --wait \
+            --timeout 5m
+    else
+        helm upgrade --install "$RELEASE_NAME" "$CHART_NAME" \
+            --namespace "$NAMESPACE" \
+            -f "$VALUES_FILE" \
+            --wait \
+            --timeout 5m
+    fi
     
     log_success "OpenObserve installed successfully"
 }

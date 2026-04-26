@@ -28,4 +28,4 @@ data:
   MAX_TOKEN_SIZE: "8192"
   VISION_MODEL: "openai/gpt-4o"
   OPEN_ROUTER_API_URL: "https://openrouter.ai/api/v1"
-  UVICORN_LOG_LEVEL: "critical"
+  UVICORN_LOG_LEVEL: "info"
