@@ -22,7 +22,7 @@ spec:
           operator: "Equal"
       containers:
         - name: composable-ui
-          image: kaiohz/pickpro:composable-ui-0a656d63d814b79e35cd07dd637718c11bacd411
+          image: kaiohz/pickpro:composable-ui-2c0ecc89036c31e5630f5bc1afd9c4a6daaec36f
           ports:
             - containerPort: 80
           volumeMounts:
