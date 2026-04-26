@@ -22,7 +22,7 @@ spec:
           operator: "Equal"
       containers:
         - name: pickpro-front
-          image: kaiohz/pickpro:pickpro-front-3b2a885aa370c1c9ddd66fa41bc94bca2a356c1b
+          image: kaiohz/pickpro:pickpro-front-3382f14dfb37efe18f0d78ea32375f8a5ba02217
           ports:
             - containerPort: 80
           volumeMounts:
