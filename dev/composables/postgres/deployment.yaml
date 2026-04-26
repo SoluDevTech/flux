@@ -6,7 +6,7 @@ metadata:
   labels:
     app: postgres
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: postgres
@@ -41,7 +41,7 @@ spec:
               mountPath: /var/lib/postgresql/data
           readinessProbe:
             exec:
-              command: ["pg_isready", "-U", "composable_agents", "-d", "composable_agents"]
+              command: ["pg_isready", "-U", "raganything", "-d", "raganything"]
             initialDelaySeconds: 5
             periodSeconds: 5
           resources:
