@@ -28,7 +28,7 @@ spec:
             claimName: composables-postgres-pvc
       containers:
         - name: postgres
-          image: kaiohz/pickpro:postgres-raganything-c8b5422893b8f10820a621d8b8e943a650d6a532
+          image: kaiohz/pickpro:postgres-raganything-e6cb6a51abeeba1133a05af6f1a2616bfbf9aa0c
           imagePullPolicy: Always
           args: ["postgres", "-c", "shared_preload_libraries=pg_textsearch"]
           ports:
