@@ -20,6 +20,8 @@ spec:
           value: "true"
           effect: "NoSchedule"
           operator: "Equal"
+      imagePullSecrets:
+        - name: pickpro-docker-secret
       volumes:
         - name: postgres-data
           persistentVolumeClaim:
