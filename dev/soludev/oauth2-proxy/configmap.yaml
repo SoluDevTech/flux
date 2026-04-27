@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-config
+  namespace: soludev
+data:
+  oauth2_proxy.cfg: |
+    provider = "oidc"
+    oidc_issuer_url = "https://logto.soludev.tech/oidc"
+    redirect_url = "https://opencode.soludev.tech/oauth2/callback"
+    scope = "openid email profile"
+
+    cookie_domains = [".soludev.tech"]
+    whitelist_domains = [".soludev.tech"]
+    cookie_name = "oauth2-proxy-opencode"
+    cookie_secure = true
+    cookie_httponly = true
+    cookie_samesite = "lax"
+    cookie_refresh = "1h"
+
+    upstreams = ["http://opencode.soludev.svc.cluster.local:4096"]
+    http_address = "0.0.0.0:4180"
+    reverse_proxy = true
+
+    pass_authorization_header = true
+    set_authorization_header = true
+    pass_access_token = true
+
+    skip_provider_button = true
+    silence_ping_logging = true
+
+    email_domains = ["*"]
