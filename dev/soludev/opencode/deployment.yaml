@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencode
+  namespace: soludev
+  labels:
+    app: opencode
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: opencode
+  template:
+    metadata:
+      labels:
+        app: opencode
+    spec:
+      automountServiceAccountToken: false
+
+      initContainers:
+        - name: init-config
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              if [ ! -f /config/opencode.json ]; then
+                cat > /config/opencode.json << EOF
+              {
+                "server": {
+                  "port": 4096,
+                  "hostname": "0.0.0.0"
+                },
+                "data": {
+                  "directory": "/data"
+                },
+                "providers": {
+                  "openrouter": {
+                    "apiKey": "${OPENROUTER_API_KEY}"
+                  }
+                },
+                "agents": {
+                  "coder": {
+                    "model": "anthropic/claude-sonnet-4-20250514"
+                  }
+                }
+              }
+              EOF
+              fi
+          env:
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: opencode-secret
+                  key: OPENROUTER_API_KEY
+          volumeMounts:
+            - name: config
+              mountPath: /config
+
+      containers:
+        - name: opencode
+          image: ghcr.io/opencode-ai/opencode:v0.0.55
+          imagePullPolicy: Always
+
+          command: ["opencode", "web", "--port", "4096", "--hostname", "0.0.0.0"]
+
+          ports:
+            - name: http
+              containerPort: 4096
+
+          env:
+            - name: OPENCODE_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opencode-secret
+                  key: OPENCODE_SERVER_PASSWORD
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: opencode-secret
+                  key: OPENROUTER_API_KEY
+
+          volumeMounts:
+            - name: config
+              mountPath: /home/node/.config/opencode
+            - name: data
+              mountPath: /data
+
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+
+          livenessProbe:
+            httpGet:
+              path: /global/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+
+          readinessProbe:
+            httpGet:
+              path: /global/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+      volumes:
+        - name: config
+          emptyDir: {}
+        - name: data
+          persistentVolumeClaim:
+            claimName: opencode-data
