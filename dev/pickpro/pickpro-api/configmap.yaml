@@ -30,10 +30,6 @@ data:
   ALLOWED_REDIRECT_URIS: '["https://pickpro.soludev.tech"]'
   PROTOCOL: https
   OAUTH2_PROXY_URL: https://pickpro.soludev.tech
-  SMTP_HOST: ""
-  SMTP_PORT: "587"
-  SMTP_USER: ""
-  SMTP_FROM_EMAIL: ""
-  SMTP_USE_TLS: "true"
+  PICKPRO_ORGANIZATION_ID: m9qqyvmp8xyc
 
 
