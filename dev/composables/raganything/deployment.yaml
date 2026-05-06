@@ -16,8 +16,6 @@ spec:
         app: raganything
     spec:
       enableServiceLinks: false
-      nodeSelector:
-        kubernetes.io/hostname: bignode
       tolerations:
         - key: "klipperlb-exclude"
           value: "true"
