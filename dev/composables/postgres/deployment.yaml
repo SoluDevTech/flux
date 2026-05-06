@@ -42,12 +42,21 @@ spec:
           readinessProbe:
             exec:
               command: ["pg_isready", "-U", "raganything", "-d", "raganything"]
-            initialDelaySeconds: 5
-            periodSeconds: 5
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "raganything", "-d", "raganything"]
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "300m"
-            limits:
               memory: "512Mi"
               cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
