@@ -200,6 +200,9 @@ install_collector() {
         --set gateway.service.pipelines.logs/k8s_pods.exporters='{otlphttp/openobserve}' \
         --set gateway.service.pipelines.metrics.exporters='{otlphttp/openobserve}' \
         --set gateway.service.pipelines.traces.exporters='{servicegraph,otlphttp/openobserve}' \
+        --set gateway.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].key=kubernetes.io/hostname \
+        --set gateway.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].operator=NotIn \
+        --set gateway.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].values[0]=jetson-desktop \
         --wait \
         --timeout 5m
     
