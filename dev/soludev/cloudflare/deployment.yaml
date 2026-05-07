@@ -12,9 +12,9 @@ spec:
     metadata:
       labels:
         app: cloudflared
-     spec:
-       nodeSelector:
-         kubernetes.io/hostname: bignode
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: bignode
       tolerations:
         - key: "klipperlb-exclude"
           value: "true"
