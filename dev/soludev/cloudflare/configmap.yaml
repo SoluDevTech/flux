@@ -13,105 +13,168 @@ data:
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: bao.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: logto.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: logto-admin.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: pickpro.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: pickpro-api.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: pickpro-indexing-api.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: openobserve.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: phoenix.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: headlamp.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: pickpro-oauth2-proxy.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: ubby.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: ubby-back.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: ubby-mcp-api.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: ubby-oauth2-proxy.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: openclaw.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: hooks-openclaw.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: liame.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
-          noTLSVerify: true      
+          noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: unispace.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: unispace-back.soludev.tech
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
 
       - hostname: "*.soludev.tech"
         service: https://traefik.kube-system.svc.cluster.local:443
         originRequest:
           noTLSVerify: true
+          keepAliveTimeout: 30s
+          connectTimeout: 10s
+          tcpKeepAlive: 10s
       
       - service: http_status:404
