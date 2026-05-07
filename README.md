@@ -20,6 +20,7 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [Headlamp Installation](#headlamp-installation)
 - [Storage Maintenance](#storage-maintenance)
 - [Troubleshooting](#troubleshooting)
+- [Network Architecture & Known Issues](#network-architecture--known-issues)
 
 ## Mesh VPN for mac os workers
 
@@ -3598,3 +3599,79 @@ After completing this setup, you can:
 2. Set up Vault policies and authentication
 3. Deploy applications using GitOps workflows
 4. Configure ingress for external access to services
+
+## Network Architecture & Known Issues
+
+### Architecture Overview
+
+The cluster spans 4 nodes connected via Tailscale/Headscale mesh VPN:
+
+```
+Internet → Cloudflare Edge → cloudflared (bignode) → Traefik → Pods
+                                        ↓
+                               flannel.1 (VXLAN over Tailscale)
+                                        ↓
+                    bignode ←→ colima ←→ jetson-desktop ←→ lenovo
+                    (control)    (VM)      (ARM/Jetson)     (worker)
+```
+
+- **bignode**: Control plane, 8 CPU, 16GB RAM, HDD (IO pressure ~91%)
+- **jetson-desktop**: ARM/Jetson Nano, 6 CPU, Tegra kernel 5.15
+- **lenovo**: 4 CPU, 8GB RAM (recent addition)
+- **colima**: macOS VM, 4 CPU
+
+- **Flannel**: VXLAN backend over Tailscale (MTU 1230)
+- **External access**: Cloudflare Tunnel (cloudflared) → Traefik ingress
+- **DNS**: Single CoreDNS replica on bignode
+
+### Known Issue: jetson-desktop VXLAN Instability
+
+**Symptom**: Intermittent 15-30s timeouts on requests to pods on jetson-desktop, especially after idle periods. First request after pause is slow, subsequent requests are fast.
+
+**Root cause**: The Flannel VXLAN bridge (`cni0`) on jetson-desktop has persistent issues:
+- 10,000+ TX dropped packets and 459 TX errors on `flannel.1`
+- Stale neighbor entries pointing to DERP relay IPs instead of Tailscale IPs
+- `iptables-legacy` FORWARD chain with policy DROP — the `FLANNEL-FWD` chain (which ACCEPTs pod traffic) is at the bottom and sometimes doesn't get reached
+- The bridge MAC table loses learned entries, causing cross-node packets to be dropped
+
+**Mitigation (applied)**:
+1. **cloudflared pinned to bignode** via `nodeSelector` — avoids cross-node traffic to jetson-desktop
+2. **cloudflared `originRequest` tuning**: `keepAliveTimeout: 30s`, `connectTimeout: 10s`, `tcpKeepAlive: 10s`
+3. **OTel collectors use internal service endpoint** instead of public Cloudflare URL
+
+**Open items for jetson-desktop**:
+- Investigate why VXLAN drops are so high (possibly Tegra kernel driver issue)
+- Consider restarting Tailscale on jetson-desktop periodically
+- Long-term: evaluate if `wireguard` native backend or Cilium with WireGuard would be more stable than Flannel VXLAN
+
+### cloudflared Configuration Notes
+
+- **Protocol**: `http2` (QUIC doesn't work — UDP buffer too small on jetson-desktop, and Tailscale MTU causes QUIC timeout)
+- **Node placement**: Must be on bignode (or lenovo) to avoid jetson-desktop VXLAN issues
+- **keepAliveTimeout**: Set to 30s (default 90s) to avoid stale connections to Traefik origin
+- **QUIC**: Do NOT enable — Tailscale's MTU (1280) and UDP buffer limits prevent QUIC from working
+
+### Diagnostic Commands
+
+```bash
+# Check flannel interface errors (look for TX dropped/errors)
+kubectl debug node/jetson-desktop --image=nicolaka/netshoot --profile=sysadmin -- \
+  nsenter -t 1 -m -u -i -n -- ip -s link show flannel.1
+
+# Check iptables FORWARD chain (look for policy DROP + FLANNEL-FWD position)
+kubectl debug node/jetson-desktop --image=nicolaka/netshoot --profile=sysadmin -- \
+  nsenter -t 1 -m -u -i -n -- iptables-legacy -t filter -L FORWARD -n -v
+
+# Check bridge MAC table (look for missing learned entries)
+kubectl debug node/jetson-desktop --image=nicolaka/netshoot --profile=sysadmin -- \
+  nsenter -t 1 -m -u -i -n -- brctl showmacs cni0
+
+# Test cross-node connectivity
+kubectl run test --image=nicolaka/netshoot --rm -it --restart=Never -- \
+  curl -sk -o /dev/null -w "%{time_total}s\n" --max-time 10 \
+  https://10.43.78.220:443/api/v1/health -H "Host: raganything.soludev.tech"
+
+# Test public endpoint with pauses (should be <1s consistently)
+for i in 1 2 3 4 5; do sleep 30; curl -s -w "%{time_total}s\n" \
+  -o /dev/null --max-time 15 https://raganything.soludev.tech/api/v1/health; done
+```
