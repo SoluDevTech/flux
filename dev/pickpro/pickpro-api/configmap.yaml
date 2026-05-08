@@ -31,5 +31,11 @@ data:
   PROTOCOL: https
   OAUTH2_PROXY_URL: https://pickpro.soludev.tech
   PICKPRO_ORGANIZATION_ID: m9qqyvmp8xyc
+  SMTP_HOST: smtp.gmail.com
+  SMTP_PORT: "587"
+  SMTP_USERNAME: soludevtech@gmail.com
+  SMTP_FROM: soludevtech@gmail.com
+  SMTP_SECURE: "true"
+  APP_BASE_URL: https://pickpro.soludev.tech
 
 
