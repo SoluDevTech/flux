@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: pickpro-front
+        app.kubernetes.io/part-of: soludev-workload
     spec:
       tolerations:
         - key: "klipperlb-exclude"
@@ -26,7 +27,7 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app: pickpro-front
+              app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: pickpro-front
           image: kaiohz/pickpro:pickpro-front-89794b2bad67266109a47713adc88c508d594142

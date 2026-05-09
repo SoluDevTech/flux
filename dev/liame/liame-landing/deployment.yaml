@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: liame-landing
+        app.kubernetes.io/part-of: soludev-workload
     spec:
       tolerations:
         - key: "klipperlb-exclude"
@@ -26,7 +27,7 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app: liame-landing
+              app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: liame-landing
           image: kaiohz/liam-landing:latest

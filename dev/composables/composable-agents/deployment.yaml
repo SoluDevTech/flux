@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: composable-agents
+        app.kubernetes.io/part-of: soludev-workload
     spec:
       enableServiceLinks: false
       tolerations:
@@ -27,7 +28,7 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app: composable-agents
+              app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: composable-agents
           image: kaiohz/pickpro:composable-agents-001734baebc8eab17ec6669d65fa7fdeb5acaf4d

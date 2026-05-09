@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: cloudflared
+        app.kubernetes.io/part-of: soludev-workload
     spec:
       tolerations:
         - key: "klipperlb-exclude"
@@ -24,7 +25,7 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app: cloudflared
+              app.kubernetes.io/part-of: soludev-workload
       containers:
       - name: cloudflared
         image: cloudflare/cloudflared:latest

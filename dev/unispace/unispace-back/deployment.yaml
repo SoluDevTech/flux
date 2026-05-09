@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: unispace-back
+        app.kubernetes.io/part-of: soludev-workload
     spec:
       topologySpreadConstraints:
         - maxSkew: 1
@@ -21,7 +22,7 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app: unispace-back
+              app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: unispace-back
           image: kaiohz/pickpro:unispace-back-e4537a94a67849bcdd0653544d89bebfc15170a5

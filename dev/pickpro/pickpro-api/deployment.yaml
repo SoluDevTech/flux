@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: pickpro-api
+        app.kubernetes.io/part-of: soludev-workload
     spec:
       topologySpreadConstraints:
         - maxSkew: 1
@@ -21,7 +22,7 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app: pickpro-api
+              app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: pickpro-api
           image: kaiohz/pickpro:pickpro-back-2a74f2eb7e4746f8ec4618c4411c115c4d5f5d8e

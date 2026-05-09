@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: unispace-landing
+        app.kubernetes.io/part-of: soludev-workload
     spec:
       tolerations:
         - key: "klipperlb-exclude"
@@ -26,7 +27,7 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app: unispace-landing
+              app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: unispace-landing
           image: kaiohz/pickpro:unispace-landing-736f55d3a9355b1f08b04aaecd293906f0871574

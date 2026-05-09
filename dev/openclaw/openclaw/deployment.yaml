@@ -16,6 +16,7 @@ spec:
     metadata:
       labels:
         app: openclaw
+        app.kubernetes.io/part-of: soludev-workload
     spec:
       automountServiceAccountToken: false
 
@@ -25,7 +26,7 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app: openclaw
+              app.kubernetes.io/part-of: soludev-workload
 
       initContainers:
         - name: init-config

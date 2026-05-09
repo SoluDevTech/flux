@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: ubby-mcp-api
+        app.kubernetes.io/part-of: soludev-workload
     spec:
       topologySpreadConstraints:
         - maxSkew: 1
@@ -21,7 +22,7 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app: ubby-mcp-api
+              app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: ubby-mcp-api
           image: kaiohz/pickpro:ubby-mcp-api-9805b8d12681c47753f8dea891f419dc547c5003

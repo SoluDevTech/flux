@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: composable-ui
+        app.kubernetes.io/part-of: soludev-workload
     spec:
       tolerations:
         - key: "klipperlb-exclude"
@@ -26,7 +27,7 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app: composable-ui
+              app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: composable-ui
           image: kaiohz/pickpro:composable-ui-211359e9f94b76ef6d4770ea768531a6a929b59e

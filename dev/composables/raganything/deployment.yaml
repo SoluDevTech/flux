@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: raganything
+        app.kubernetes.io/part-of: soludev-workload
     spec:
       enableServiceLinks: false
       tolerations:
@@ -27,7 +28,7 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app: raganything
+              app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: raganything
           image: kaiohz/pickpro:raganything-01b7e961646169e55e536b82fe2962208bada266
