@@ -15,6 +15,13 @@ spec:
       labels:
         app: unispace-back
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: unispace-back
       containers:
         - name: unispace-back
           image: kaiohz/pickpro:unispace-back-e4537a94a67849bcdd0653544d89bebfc15170a5

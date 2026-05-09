@@ -20,6 +20,13 @@ spec:
           value: "true"
           effect: "NoSchedule"
           operator: "Equal"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: pickpro-front
       containers:
         - name: pickpro-front
           image: kaiohz/pickpro:pickpro-front-89794b2bad67266109a47713adc88c508d594142

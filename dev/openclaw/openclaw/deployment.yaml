@@ -19,6 +19,14 @@ spec:
     spec:
       automountServiceAccountToken: false
 
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: openclaw
+
       initContainers:
         - name: init-config
           image: busybox:latest

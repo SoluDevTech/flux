@@ -15,6 +15,13 @@ spec:
       labels:
         app: pickpro-api
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: pickpro-api
       containers:
         - name: pickpro-api
           image: kaiohz/pickpro:pickpro-back-2a74f2eb7e4746f8ec4618c4411c115c4d5f5d8e

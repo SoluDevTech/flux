@@ -20,6 +20,13 @@ spec:
           value: "true"
           effect: "NoSchedule"
           operator: "Equal"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: composable-ui
       containers:
         - name: composable-ui
           image: kaiohz/pickpro:composable-ui-211359e9f94b76ef6d4770ea768531a6a929b59e

@@ -13,13 +13,18 @@ spec:
       labels:
         app: cloudflared
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: bignode
       tolerations:
         - key: "klipperlb-exclude"
           value: "true"
           effect: "NoSchedule"
           operator: "Equal"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: cloudflared
       containers:
       - name: cloudflared
         image: cloudflare/cloudflared:latest

@@ -15,6 +15,13 @@ spec:
       labels:
         app: ubby-mcp-api
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: ubby-mcp-api
       containers:
         - name: ubby-mcp-api
           image: kaiohz/pickpro:ubby-mcp-api-9805b8d12681c47753f8dea891f419dc547c5003

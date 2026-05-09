@@ -20,6 +20,13 @@ spec:
           value: "true"
           effect: "NoSchedule"
           operator: "Equal"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: minio
       containers:
         - name: minio
           image: minio/minio:latest

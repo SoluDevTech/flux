@@ -15,6 +15,13 @@ spec:
       labels:
         app: logto
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: logto
       containers:
         - name: logto
           image: svhd/logto:1.38.0

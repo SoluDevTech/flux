@@ -20,6 +20,13 @@ spec:
           value: "true"
           effect: "NoSchedule"
           operator: "Equal"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: unispace-landing
       containers:
         - name: unispace-landing
           image: kaiohz/pickpro:unispace-landing-736f55d3a9355b1f08b04aaecd293906f0871574

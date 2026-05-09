@@ -15,6 +15,13 @@ spec:
       labels:
         app: ubby-back
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: ubby-back
       containers:
         - name: ubby-back
           image: kaiohz/pickpro:ubby-back-b74041e0543a92ec9cc6bb54f4e6b6b40f4f108a
