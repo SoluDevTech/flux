@@ -37,5 +37,7 @@ data:
   SMTP_FROM: soludevtech@gmail.com
   SMTP_SECURE: "true"
   APP_BASE_URL: https://pickpro.soludev.tech
+  NOTIFICATION_CRON_TIME: 12:00
+  NOTIFICATION_MAIL_CRON_TIME: 12:00
 
 
