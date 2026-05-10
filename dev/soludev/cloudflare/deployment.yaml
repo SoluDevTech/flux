@@ -48,7 +48,7 @@ spec:
         - tunnel
         - --no-autoupdate
         - --protocol
-        - quic
+        - http2
         - --config
         - /etc/cloudflared/config.yml
         - run
