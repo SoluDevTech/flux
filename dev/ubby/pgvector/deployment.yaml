@@ -38,6 +38,7 @@ spec:
       containers:
         - name: pgvector
           image: pgvector/pgvector:0.8.0-pg17
+          args: ["postgres", "-c", "tcp_keepalives_idle=30", "-c", "tcp_keepalives_interval=10", "-c", "tcp_keepalives_count=6", "-c", "idle_in_transaction_session_timeout=60000"]
           ports:
             - containerPort: 5432
           envFrom:
@@ -49,11 +50,18 @@ spec:
               subPath: init.sql
             - name: pgvector-data
               mountPath: /var/lib/postgresql/data
-          readinessProbe:
-            exec:
-              command: ["pg_isready", "-U", "ubby", "-d", "ubby"]
-            initialDelaySeconds: 5
+          startupProbe:
+            tcpSocket:
+              port: 5432
+            failureThreshold: 30
             periodSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             requests:
               memory: "256Mi"

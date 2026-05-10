@@ -16,5 +16,5 @@ spec:
   mountOptions:
     - nfsvers=3
     - hard
-    - timeo=600
-    - retrans=2
+    - timeo=10
+    - retrans=3

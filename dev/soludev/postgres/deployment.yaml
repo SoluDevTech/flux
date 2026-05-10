@@ -38,17 +38,24 @@ spec:
           securityContext:
             runAsUser: 70
             runAsGroup: 70
-          args: ["-c", "max_connections=500", "-c", "shared_buffers=512MB", "-c", "tcp_keepalives_idle=60", "-c", "tcp_keepalives_interval=10", "-c", "tcp_keepalives_count=6"]
+          args: ["-c", "max_connections=500", "-c", "shared_buffers=512MB", "-c", "tcp_keepalives_idle=30", "-c", "tcp_keepalives_interval=10", "-c", "tcp_keepalives_count=6", "-c", "idle_in_transaction_session_timeout=60000"]
           ports:
             - containerPort: 5432
           envFrom:
             - secretRef:
                 name: postgres-secret
-          readinessProbe:
-            exec:
-              command: ["pg_isready", "-U", "logto", "-d", "logto"]
-            initialDelaySeconds: 5
+          startupProbe:
+            tcpSocket:
+              port: 5432
+            failureThreshold: 30
             periodSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             requests:
               memory: "1Gi"

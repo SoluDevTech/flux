@@ -14,6 +14,6 @@ spec:
     path: /Volumes/NFSStorage/openclaw
   mountOptions:
     - nfsvers=3
-    - hard
-    - timeo=600
-    - retrans=2
+    - soft
+    - timeo=10
+    - retrans=3

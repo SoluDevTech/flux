@@ -47,16 +47,21 @@ spec:
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
+          startupProbe:
+            tcpSocket:
+              port: 5432
+            failureThreshold: 30
+            periodSeconds: 5
           readinessProbe:
-            exec:
-              command: ["pg_isready", "-U", "raganything", "-d", "raganything"]
-            initialDelaySeconds: 30
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
-            failureThreshold: 6
+            failureThreshold: 3
           livenessProbe:
-            exec:
-              command: ["pg_isready", "-U", "raganything", "-d", "raganything"]
+            tcpSocket:
+              port: 5432
             initialDelaySeconds: 60
             periodSeconds: 15
             timeoutSeconds: 5

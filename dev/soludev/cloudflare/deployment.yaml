@@ -26,6 +26,20 @@ spec:
           labelSelector:
             matchLabels:
               app.kubernetes.io/part-of: soludev-workload
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 10.43.0.10
+        searches:
+          - svc.cluster.local
+          - cluster.local
+        options:
+          - name: ndots
+            value: "5"
+          - name: timeout
+            value: "3"
+          - name: attempts
+            value: "2"
       containers:
       - name: cloudflared
         image: cloudflare/cloudflared:latest
