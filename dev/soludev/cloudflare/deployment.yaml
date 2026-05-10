@@ -30,16 +30,17 @@ spec:
       dnsConfig:
         nameservers:
           - 10.43.0.10
+          - 1.1.1.1
         searches:
           - svc.cluster.local
           - cluster.local
         options:
           - name: ndots
-            value: "5"
-          - name: timeout
-            value: "3"
-          - name: attempts
             value: "2"
+          - name: timeout
+            value: "2"
+          - name: attempts
+            value: "1"
       containers:
       - name: cloudflared
         image: cloudflare/cloudflared:latest
@@ -77,20 +78,20 @@ spec:
             cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /metrics
+            path: /ready
             port: 20241
-          initialDelaySeconds: 30
+          initialDelaySeconds: 120
           periodSeconds: 30
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /metrics
+            path: /ready
             port: 20241
-          initialDelaySeconds: 10
-          periodSeconds: 10
+          initialDelaySeconds: 30
+          periodSeconds: 5
           timeoutSeconds: 5
-          failureThreshold: 3
+          failureThreshold: 30
       volumes:
       - name: config
         configMap:
