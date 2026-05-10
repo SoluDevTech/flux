@@ -19,13 +19,20 @@ spec:
           value: "true"
           effect: "NoSchedule"
           operator: "Equal"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: cloudflared
+              topologyKey: kubernetes.io/hostname
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app.kubernetes.io/part-of: soludev-workload
+              app: cloudflared
       dnsPolicy: None
       dnsConfig:
         nameservers:
