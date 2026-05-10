@@ -4,7 +4,7 @@ metadata:
   name: cloudflared
   namespace: soludev
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: cloudflared
@@ -48,7 +48,7 @@ spec:
         - tunnel
         - --no-autoupdate
         - --protocol
-        - http2
+        - quic
         - --config
         - /etc/cloudflared/config.yml
         - run
