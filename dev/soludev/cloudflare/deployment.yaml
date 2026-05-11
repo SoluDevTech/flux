@@ -55,6 +55,10 @@ spec:
         - --no-autoupdate
         - --protocol
         - http2
+        - --edge-ip-version
+        - "4"
+        - --retries
+        - "5"
         - --config
         - /etc/cloudflared/config.yml
         - run
@@ -96,7 +100,7 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 5
           timeoutSeconds: 5
-          failureThreshold: 30
+          failureThreshold: 10
       volumes:
       - name: config
         configMap:
