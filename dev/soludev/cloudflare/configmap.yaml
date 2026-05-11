@@ -10,7 +10,7 @@ data:
     ingress:
 
       - hostname: soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -18,7 +18,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: bao.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -26,7 +26,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: logto.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -34,7 +34,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: logto-admin.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -42,7 +42,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: pickpro.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -50,7 +50,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: pickpro-api.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -58,7 +58,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: pickpro-indexing-api.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -66,7 +66,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: openobserve.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -74,7 +74,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: phoenix.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -82,7 +82,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: headlamp.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -90,7 +90,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: pickpro-oauth2-proxy.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -98,7 +98,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: ubby.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -106,7 +106,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: ubby-back.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -114,7 +114,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: ubby-mcp-api.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -122,7 +122,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: ubby-oauth2-proxy.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -130,7 +130,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: openclaw.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -138,7 +138,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: hooks-openclaw.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -146,7 +146,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: liame.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -154,7 +154,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: unispace.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -162,7 +162,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: unispace-back.soludev.tech
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
@@ -170,7 +170,7 @@ data:
           tcpKeepAlive: 30s
 
       - hostname: "*.soludev.tech"
-        service: https://traefik.kube-system.svc.cluster.local:443
+        service: https://10.43.78.220:443
         originRequest:
           noTLSVerify: true
           keepAliveTimeout: 5m
