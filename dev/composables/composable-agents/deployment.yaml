@@ -57,6 +57,5 @@ spec:
               cpu: "200m"
             limits:
               memory: "512Mi"
-              cpu: "500m"
       imagePullSecrets:
         - name: pickpro-docker-secret
