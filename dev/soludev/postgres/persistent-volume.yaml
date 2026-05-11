@@ -18,3 +18,4 @@ spec:
     - hard
     - timeo=600
     - retrans=3
+    - actimeo=60

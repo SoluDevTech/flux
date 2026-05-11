@@ -17,3 +17,4 @@ spec:
     - soft
     - timeo=100
     - retrans=3
+    - actimeo=10
