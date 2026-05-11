@@ -14,7 +14,5 @@ spec:
     server: 100.64.0.3
     path: /Volumes/NFSStorage/pickpro/pgvector
   mountOptions:
-    - nfsvers=3
+    - nfsvers=4
     - hard
-    - timeo=10
-    - retrans=3
