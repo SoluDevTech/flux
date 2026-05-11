@@ -55,7 +55,7 @@ spec:
         - tunnel
         - --no-autoupdate
         - --protocol
-        - http2
+        - auto
         - --config
         - /etc/cloudflared/config.yml
         - run
