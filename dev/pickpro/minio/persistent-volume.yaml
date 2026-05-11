@@ -14,5 +14,7 @@ spec:
     server: 100.64.0.3
     path: /Volumes/NFSStorage/pickpro/minio
   mountOptions:
-    - nfsvers=4
+    - nfsvers=3
     - soft
+    - timeo=100
+    - retrans=3
