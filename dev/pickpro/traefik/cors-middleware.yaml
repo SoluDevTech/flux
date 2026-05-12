@@ -9,6 +9,7 @@ spec:
       - "GET"
       - "POST"
       - "PUT"
+      - "PATCH"
       - "DELETE"
       - "OPTIONS"
     accessControlAllowHeaders:
