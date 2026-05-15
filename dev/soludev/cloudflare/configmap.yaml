@@ -9,9 +9,9 @@ data:
     
     originRequest:
       noTLSVerify: true
-      keepAliveTimeout: 5m
-      connectTimeout: 30s
-      tcpKeepAlive: 30s
+      keepAliveTimeout: 2m
+      connectTimeout: 5s
+      tcpKeepAlive: 10s
       keepAliveConnections: 100
 
     ingress:
