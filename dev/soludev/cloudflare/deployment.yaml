@@ -45,6 +45,8 @@ spec:
       dnsConfig:
         nameservers:
           - 10.43.0.10
+          - 1.1.1.1
+          - 8.8.8.8
         searches:
           - svc.cluster.local
           - cluster.local
@@ -52,9 +54,9 @@ spec:
           - name: ndots
             value: "2"
           - name: timeout
-            value: "5"
+            value: "10"
           - name: attempts
-            value: "2"
+            value: "3"
           - name: single-request-reopen
       containers:
       - name: cloudflared
