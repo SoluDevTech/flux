@@ -61,7 +61,7 @@ spec:
           - name: single-request-reopen
       containers:
       - name: cloudflared
-        image: cloudflare/cloudflared:latest
+        image: cloudflare/cloudflared:2026.5.0
         args:
         - tunnel
         - --no-autoupdate
