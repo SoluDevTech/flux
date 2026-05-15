@@ -37,6 +37,7 @@ spec:
       dnsConfig:
         nameservers:
           - 10.43.0.10
+          - 1.1.1.1
         searches:
           - svc.cluster.local
           - cluster.local
@@ -46,7 +47,7 @@ spec:
           - name: timeout
             value: "2"
           - name: attempts
-            value: "2"
+            value: "3"
       containers:
       - name: cloudflared
         image: cloudflare/cloudflared:latest
