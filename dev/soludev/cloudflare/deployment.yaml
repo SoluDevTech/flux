@@ -67,6 +67,8 @@ spec:
         - --no-autoupdate
         - --protocol
         - http2
+        - --loglevel
+        - debug
         - --edge-ip-version
         - "4"
         - --retries
