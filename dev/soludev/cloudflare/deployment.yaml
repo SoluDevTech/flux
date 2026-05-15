@@ -66,7 +66,7 @@ spec:
         - tunnel
         - --no-autoupdate
         - --protocol
-        - auto
+        - http2
         - --edge-ip-version
         - "4"
         - --retries
