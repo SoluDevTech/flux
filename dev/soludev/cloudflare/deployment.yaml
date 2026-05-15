@@ -28,7 +28,6 @@ spec:
                   operator: NotIn
                   values:
                     - jetson-desktop
-                    - colima
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
