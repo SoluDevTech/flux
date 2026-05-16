@@ -25,7 +25,7 @@ spec:
               app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: ubby-back
-          image: kaiohz/pickpro:ubby-back-0e14aefba7d7101a819371ef671414d8d8902b32
+          image: kaiohz/pickpro:ubby-back-97a9afaa5461d2f867b202648b3b1c6fa1638aa8
           ports:
             - containerPort: 8000
           envFrom:
