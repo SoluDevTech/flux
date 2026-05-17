@@ -30,7 +30,7 @@ spec:
               app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: ubby-front
-          image: kaiohz/pickpro:ubby-front-e209dfb1dff6253137c154898b13f71fdada3502
+          image: kaiohz/pickpro:ubby-front-5d1fad491dfa7664c86e0bc451717d3a4332afae
           ports:
             - containerPort: 80
           volumeMounts:
