@@ -6,7 +6,7 @@ metadata:
 data:
   config.yml: |
     tunnel: a67e25e7-bae5-4a2d-a46e-fc05d0c1f84e
-    
+
     originRequest:
       noTLSVerify: true
       keepAliveTimeout: 2m

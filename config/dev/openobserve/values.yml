@@ -93,11 +93,11 @@ extraEnv:
     value: "true"
   - name: ZO_MEMORY_CACHE_MAX_SIZE
     value: "512"
-  # Disk cache
+  # Disk cache (reduced from 5000 to 2000MB to speed up restarts on NFS)
   - name: ZO_DISK_CACHE_ENABLED
     value: "true"
   - name: ZO_DISK_CACHE_MAX_SIZE
-    value: "5000"
+    value: "2000"
   - name: ZO_DISK_CACHE_GC_INTERVAL
     value: "30"
   - name: ZO_DISK_CACHE_GC_SIZE
@@ -114,13 +114,38 @@ extraEnv:
 
 config: {}
 
+# Avoid recursive chown on NFS volumes (263k+ files)
+securityContext:
+  fsGroupChangePolicy: "OnRootMismatch"
+
 resources:
   limits:
     cpu: 1500m
-    memory: 2Gi
+    memory: 4Gi
   requests:
     cpu: 500m
-    memory: 1Gi
+    memory: 2Gi
+
+livenessProbe:
+  failureThreshold: 6
+  initialDelaySeconds: 60
+  periodSeconds: 15
+  successThreshold: 1
+  timeoutSeconds: 5
+
+readinessProbe:
+  failureThreshold: 6
+  initialDelaySeconds: 60
+  periodSeconds: 15
+  successThreshold: 1
+  timeoutSeconds: 5
+
+startupProbe:
+  failureThreshold: 30
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 5
 
 # Persistence disabled - NFS blocks async runtime
 persistence:

@@ -19,3 +19,7 @@ spec:
     - timeo=100
     - retrans=3
     - actimeo=10
+    - rsize=1048576
+    - wsize=1048576
+    - noatime
+    - nodiratime

@@ -19,6 +19,9 @@ server:
       value: "true"
       effect: NoSchedule
       operator: Equal
+  # Avoid recursive chown on NFS volumes (263k+ files)
+  securityContext:
+    fsGroupChangePolicy: "OnRootMismatch"
   # Configuration du stockage NFS
   dataStorage:
     enabled: true
