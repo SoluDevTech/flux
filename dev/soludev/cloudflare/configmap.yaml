@@ -17,66 +17,66 @@ data:
     ingress:
 
       - hostname: soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: bao.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: logto.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: logto-admin.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: pickpro.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: pickpro-api.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: pickpro-indexing-api.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: openobserve.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: phoenix.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: headlamp.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: pickpro-oauth2-proxy.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: ubby.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: ubby-back.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: ubby-mcp-api.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: ubby-oauth2-proxy.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: openclaw.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: hooks-openclaw.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: liame.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: unispace.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: unispace-back.soludev.tech
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
 
       - hostname: "*.soludev.tech"
-        service: https://10.43.78.220:443
+        service: https://192.168.1.12:443
       
       - service: http_status:404
