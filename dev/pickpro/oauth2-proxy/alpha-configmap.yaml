@@ -24,9 +24,9 @@ data:
       oidcConfig:
         issuerURL: "https://logto.soludev.tech/oidc"
       loginURL: "https://logto.soludev.tech/oidc/auth"
-      redeemURL: "https://logto.soludev.tech/oidc/token"
-      profileURL: "https://logto.soludev.tech/oidc/me"
-      validateURL: "https://logto.soludev.tech/oidc/jwks"
+      redeemURL: "http://logto.soludev.svc.cluster.local:3001/oidc/token"
+      profileURL: "http://logto.soludev.svc.cluster.local:3001/oidc/me"
+      validateURL: "http://logto.soludev.svc.cluster.local:3001/oidc/jwks"
       scope: "openid email profile identities roles urn:logto:scope:organizations urn:logto:scope:organization_roles"
       loginURLParameters:
         - name: one_time_token
