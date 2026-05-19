@@ -67,8 +67,6 @@ spec:
         args:
         - tunnel
         - --no-autoupdate
-        - --protocol
-        - http2
         - --loglevel
         - debug
         - --edge-ip-version
