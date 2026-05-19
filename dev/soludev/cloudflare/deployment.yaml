@@ -55,7 +55,7 @@ spec:
         - --protocol
         - quic
         - --loglevel
-        - debug
+        - info
         - --edge-ip-version
         - "4"
         - --retries
