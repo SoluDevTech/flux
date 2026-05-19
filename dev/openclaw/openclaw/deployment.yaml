@@ -19,14 +19,16 @@ spec:
         app.kubernetes.io/part-of: soludev-workload
     spec:
       automountServiceAccountToken: false
-
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/part-of: soludev-workload
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - bignode
+                  - lenovo
 
       initContainers:
         - name: init-config
@@ -35,8 +37,9 @@ spec:
             - sh
             - -c
             - |
-              if [ ! -f /home/node/.openclaw/openclaw.json ]; then
-                cat > /home/node/.openclaw/openclaw.json << EOF
+              mkdir -p /data/config /data/home /data/workspace
+              if [ ! -f /data/config/openclaw.json ]; then
+                cat > /data/config/openclaw.json << EOF
               {
                 "gateway": {
                   "mode": "local",
@@ -177,15 +180,19 @@ spec:
             httpGet:
               path: /health
               port: gateway
-            initialDelaySeconds: 90
+            initialDelaySeconds: 120
             periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
 
           readinessProbe:
             httpGet:
               path: /health
               port: gateway
-            initialDelaySeconds: 90
+            initialDelaySeconds: 120
             periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
 
       volumes:
         - name: data
