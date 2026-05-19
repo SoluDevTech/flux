@@ -16,13 +16,6 @@ spec:
         app: ubby-back
         app.kubernetes.io/part-of: soludev-workload
     spec:
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: ubby-back
           image: kaiohz/pickpro:ubby-back-f10887d30df756afe0c2b5021b83183c908873f4
