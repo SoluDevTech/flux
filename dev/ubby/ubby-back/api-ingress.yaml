@@ -4,7 +4,8 @@ metadata:
   name: ubby-back-api-ingress
   namespace: ubby
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
   rules:
     - host: ubby-back-api.soludev.tech
