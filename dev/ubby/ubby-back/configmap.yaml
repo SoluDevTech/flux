@@ -16,6 +16,4 @@ data:
   OPEN_ROUTER_API_URL: "https://openrouter.ai/api/v1"
   LOGTO_URL: https://logto.soludev.tech
   JWT_AUDIENCE: 939mmurgo2qma5ziod8ps
-  MCP_API_KEY: ""
-
 
