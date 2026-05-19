@@ -3,11 +3,23 @@ config:
   existingConfig: "oauth2-proxy-config"
   cookieName: "oauth2-proxy-openclaw"
 
+alphaConfig:
+  enabled: true
+  existingConfig: "oauth2-proxy-alpha-config"
+
 sessionStorage:
   type: cookie
 
 ingress:
   enabled: false
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "64Mi"
+  limits:
+    cpu: "1000m"
+    memory: "128Mi"
 
 service:
   type: ClusterIP
