@@ -26,3 +26,5 @@ data:
     skip_provider_button = true
     silence_ping_logging = true
 
+    skip_auth_routes = ["^/api/v1/mcp/details"]
+
