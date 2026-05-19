@@ -11,7 +11,7 @@ spec:
     - host: ubby-back.soludev.tech
       http:
         paths:
-          - path: /
+          - path: /api/v1/mcp/details
             pathType: Prefix
             backend:
               service:
