@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ubby-back-api-ingress
+  namespace: ubby
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/redirect-scheme: https
+spec:
+  rules:
+    - host: ubby-back-api.soludev.tech
+      http:
+        paths:
+          - path: /api/v1/mcp/details
+            pathType: Prefix
+            backend:
+              service:
+                name: ubby-back
+                port:
+                  number: 8000
