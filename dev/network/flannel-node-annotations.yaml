@@ -21,3 +21,15 @@ data:
       lenovo:          100.64.0.6
       jetson-desktop:  100.64.0.7
       colima:          100.64.0.4
+
+# FIX PERMANENT APPLIQUÉ:
+# Ajout de node-external-ip dans /etc/rancher/k3s/config.yaml sur tous les nodes
+# pour forcer Flannel à utiliser l'IP Tailscale comme VTEP IP.
+#
+# Commandes exécutées:
+#   bignode:   sudo sh -c 'echo node-external-ip: 100.64.0.1 >> /etc/rancher/k3s/config.yaml' && sudo systemctl restart k3s
+#   lenovo:    sudo sh -c 'echo node-external-ip: 100.64.0.6 >> /etc/rancher/k3s/config.yaml' && sudo systemctl restart k3s-agent
+#   jetson:    sudo sh -c 'echo node-external-ip: 100.64.0.7 >> /etc/rancher/k3s/config.yaml' && sudo systemctl restart k3s-agent
+#   colima:    sudo sh -c 'echo node-external-ip: 100.64.0.4 >> /etc/rancher/k3s/config.yaml' && sudo systemctl restart k3s-agent
+#
+# Cela rend le fix permanent car K3s relit ce fichier à chaque démarrage.
