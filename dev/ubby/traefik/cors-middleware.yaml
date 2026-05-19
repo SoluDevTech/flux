@@ -14,6 +14,7 @@ spec:
     accessControlAllowHeaders:
       - "Content-Type"
       - "Authorization"
+      - "X-Api-Key"
       - "X-Requested-With"
       - "Accept"
       - "Origin"
