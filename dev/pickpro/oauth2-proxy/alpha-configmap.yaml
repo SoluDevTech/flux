@@ -23,6 +23,8 @@ data:
       clientSecret: ${OAUTH2_PROXY_CLIENT_SECRET}
       oidcConfig:
         issuerURL: "https://logto.soludev.tech/oidc"
+      loginURL: "https://logto.soludev.tech/oidc/auth"
+      redeemURL: "https://logto.soludev.tech/oidc/auth"
       scope: "openid email profile identities roles urn:logto:scope:organizations urn:logto:scope:organization_roles"
       loginURLParameters:
         - name: one_time_token
