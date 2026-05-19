@@ -47,9 +47,9 @@ spec:
       dnsPolicy: None
       dnsConfig:
         nameservers:
-          - 10.43.0.10
           - 1.1.1.1
-          - 8.8.8.8
+          - 1.0.0.1
+          - 10.43.0.10
         searches:
           - svc.cluster.local
           - cluster.local
@@ -57,9 +57,9 @@ spec:
           - name: ndots
             value: "2"
           - name: timeout
-            value: "10"
-          - name: attempts
             value: "3"
+          - name: attempts
+            value: "2"
           - name: single-request-reopen
       containers:
       - name: cloudflared
