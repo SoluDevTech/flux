@@ -7,12 +7,12 @@ data:
   config.yml: |
     tunnel: a67e25e7-bae5-4a2d-a46e-fc05d0c1f84e
 
-originRequest:
-  noTLSVerify: true
-  keepAliveTimeout: 10m
-  connectTimeout: 30s
-  tcpKeepAlive: 10s
-  keepAliveConnections: 100
+    originRequest:
+      noTLSVerify: true
+      keepAliveTimeout: 10m
+      connectTimeout: 30s
+      tcpKeepAlive: 10s
+      keepAliveConnections: 100
 
     ingress:
 
@@ -78,5 +78,5 @@ originRequest:
 
       - hostname: "*.soludev.tech"
         service: http://10.43.78.220:80
-      
+
       - service: http_status:404
