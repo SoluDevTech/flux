@@ -44,23 +44,8 @@ spec:
           labelSelector:
             matchLabels:
               app: cloudflared
-      dnsPolicy: None
-      dnsConfig:
-        nameservers:
-          - 1.1.1.1
-          - 1.0.0.1
-          - 10.43.0.10
-        searches:
-          - svc.cluster.local
-          - cluster.local
-        options:
-          - name: ndots
-            value: "2"
-          - name: timeout
-            value: "3"
-          - name: attempts
-            value: "2"
-          - name: single-request-reopen
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: cloudflared
         image: cloudflare/cloudflared:2026.5.0
@@ -68,7 +53,7 @@ spec:
         - tunnel
         - --no-autoupdate
         - --protocol
-        - http2
+        - quic
         - --loglevel
         - debug
         - --edge-ip-version
