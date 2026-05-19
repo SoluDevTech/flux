@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flannel-node-annotations
+  namespace: kube-system
+data:
+  README: |
+    Flannel VTEP IP stabilization for cross-node VXLAN.
+    
+    These annotations must be present on all nodes to prevent Flannel
+    from switching between LAN and Tailscale IPs on restart.
+    
+    Apply manually if nodes are recreated:
+      kubectl annotate node bignode flannel.alpha.coreos.com/public-ip-overwrite=100.64.0.1 --overwrite
+      kubectl annotate node lenovo flannel.alpha.coreos.com/public-ip-overwrite=100.64.0.6 --overwrite
+      kubectl annotate node jetson-desktop flannel.alpha.coreos.com/public-ip-overwrite=100.64.0.7 --overwrite
+      kubectl annotate node colima flannel.alpha.coreos.com/public-ip-overwrite=100.64.0.4 --overwrite
+    
+    Current IPs (Tailscale):
+      bignode:         100.64.0.1
+      lenovo:          100.64.0.6
+      jetson-desktop:  100.64.0.7
+      colima:          100.64.0.4
