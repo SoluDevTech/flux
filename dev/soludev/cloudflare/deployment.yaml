@@ -68,7 +68,7 @@ spec:
         - tunnel
         - --no-autoupdate
         - --protocol
-        - quic
+        - http2
         - --loglevel
         - debug
         - --edge-ip-version
