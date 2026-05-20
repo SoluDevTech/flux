@@ -30,3 +30,5 @@ data:
   OPEN_ROUTER_API_URL: "https://openrouter.ai/api/v1"
   UVICORN_LOG_LEVEL: "info"
   KREUZBERG_OCR_MODE: "tesseract"
+  BRICKS_PUBLISH_DRY_RUN: "true"
+  BRICKS_API_BASE_URL: "https://project-analysis.up.railway.app"

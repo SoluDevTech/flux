@@ -21,6 +21,7 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [Storage Maintenance](#storage-maintenance)
 - [Troubleshooting](#troubleshooting)
 - [Network Architecture & Known Issues](#network-architecture--known-issues)
+  - [Incident: 14-30s Client-Facing Timeouts (May 2026)](#incident-14-30s-client-facing-timeouts-may-2026)
 
 ## Mesh VPN for mac os workers
 
@@ -3607,7 +3608,7 @@ After completing this setup, you can:
 The cluster spans 4 nodes connected via Tailscale/Headscale mesh VPN:
 
 ```
-Internet → Cloudflare Edge → cloudflared (bignode) → Traefik → Pods
+Internet → Cloudflare Edge → cloudflared (lenovo) → Traefik → Pods
                                         ↓
                                flannel.1 (VXLAN over Tailscale)
                                         ↓
@@ -3615,45 +3616,171 @@ Internet → Cloudflare Edge → cloudflared (bignode) → Traefik → Pods
                     (control)    (VM)      (ARM/Jetson)     (worker)
 ```
 
-- **bignode**: Control plane, 8 CPU, 16GB RAM, HDD (IO pressure ~91%)
-- **jetson-desktop**: ARM/Jetson Nano, 6 CPU, Tegra kernel 5.15
-- **lenovo**: 4 CPU, 8GB RAM (recent addition)
-- **colima**: macOS VM, 4 CPU
+| Node | LAN IP | Tailscale IP | Role | CPUs | RAM | Notes |
+|------|--------|-------------|------|------|-----|-------|
+| bignode | 192.168.1.12 | 100.64.0.1 | control-plane | 8 | 16GB | HDD, IO pressure ~91%, load ~20-28 |
+| jetson-desktop | 192.168.1.6 | 100.64.0.7 | worker | 6 | 4GB | ARM64, Tegra kernel 5.15 |
+| lenovo | 192.168.1.4 | 100.64.0.6 | worker | 4 | 8GB | Stable, runs cloudflared |
+| colima | (Mac Mini VM) | 100.64.0.4 | worker | 4 | 4GB | Disk 86% |
 
 - **Flannel**: VXLAN backend over Tailscale (MTU 1230)
-- **External access**: Cloudflare Tunnel (cloudflared) → Traefik ingress
-- **DNS**: Single CoreDNS replica on bignode
+- **kube-proxy**: iptables mode (not nftables — nftables caused latency spikes)
+- **External access**: Cloudflare Tunnel (cloudflared on lenovo) → Traefik ingress
+- **DNS**: CoreDNS (excluded from colima)
 
-### Known Issue: jetson-desktop VXLAN Instability
+### K3s Node Configuration (all nodes)
 
-**Symptom**: Intermittent 15-30s timeouts on requests to pods on jetson-desktop, especially after idle periods. First request after pause is slow, subsequent requests are fast.
+Each node has `/etc/rancher/k3s/config.yaml` with:
 
-**Root cause**: The Flannel VXLAN bridge (`cni0`) on jetson-desktop has persistent issues:
-- 10,000+ TX dropped packets and 459 TX errors on `flannel.1`
-- Stale neighbor entries pointing to DERP relay IPs instead of Tailscale IPs
-- `iptables-legacy` FORWARD chain with policy DROP — the `FLANNEL-FWD` chain (which ACCEPTs pod traffic) is at the bottom and sometimes doesn't get reached
-- The bridge MAC table loses learned entries, causing cross-node packets to be dropped
+```yaml
+kube-proxy-arg: "--proxy-mode=iptables"
+node-external-ip: "<Tailscale-IP>"   # e.g. 100.64.0.1 for bignode
+```
 
-**Mitigation (applied)**:
-1. **cloudflared pinned to bignode** via `nodeSelector` — avoids cross-node traffic to jetson-desktop
-2. **cloudflared `originRequest` tuning**: `keepAliveTimeout: 30s`, `connectTimeout: 10s`, `tcpKeepAlive: 10s`
-3. **OTel collectors use internal service endpoint** instead of public Cloudflare URL
+Colima additionally needs `node-ip` to prevent IP oscillation:
 
-**Open items for jetson-desktop**:
-- Investigate why VXLAN drops are so high (possibly Tegra kernel driver issue)
-- Consider restarting Tailscale on jetson-desktop periodically
-- Long-term: evaluate if `wireguard` native backend or Cilium with WireGuard would be more stable than Flannel VXLAN
+```yaml
+kube-proxy-arg: "--proxy-mode=iptables"
+node-external-ip: "100.64.0.4"
+node-ip: "100.64.0.4"
+```
+
+### Incident: 14-30s Client-Facing Timeouts (May 2026)
+
+**Symptom**: A client reported 10-30s timeouts on API calls to `*.soludev.tech` services. The issue was intermittent — some requests returned in <300ms, others hung for 14-30s before timing out.
+
+#### Root Cause #1 (PRIMARY): Duplicate Headscale Instances
+
+Two Docker installations ran simultaneously on bignode: **snap docker** (since May 4) and **apt docker** (since May 15). Each ran a headscale container, both listening on port 8080. Tailscale clients would randomly hit either instance, causing `PollNetMap: unexpected EOF` every 30-60s on ALL tailscaled nodes.
+
+When a Tailscale client received an EOF on its netmap poll:
+
+1. **Tailscale network torn down** — all 100.64.x.x interfaces briefly disappeared
+2. **Flannel lost its external interface** — "external interface not found, retrying in 30s"
+3. **colima NodeIP oscillated** between 100.64.0.4 (Tailscale) and 192.168.5.1 (internal) every 30-60s
+4. **k3s-agent watches broke** — `http2: client connection lost` to API server
+5. **colima went NodeNotReady** periodically — pods marked unreachable
+6. **CoreDNS on colima became unreachable** — 33% of DNS queries timed out for ~30s
+7. **cloudflared DNS lookups failed** — couldn't resolve `argotunnel.com` (Cloudflare tunnel endpoint)
+8. **Cloudflare tunnel degraded** → clients saw 14-30s timeouts
+
+**Fix**: Killed snap docker headscale (PID 346019) + parent shim, then disabled snap docker entirely:
+
+```bash
+kill -9 346019 345997
+sudo systemctl stop snap.docker.dockerd
+sudo systemctl disable snap.docker.dockerd
+```
+
+After fix: **30/30 requests under 250ms, zero timeouts.**
+
+> **Lesson**: Never run two Docker installations on the same host. Snap Docker and apt Docker create separate `containerd` instances that can both bind the same host ports. Always `snap remove docker` after deciding which Docker to use.
+
+#### Root Cause #2: Flannel VTEP IP Oscillation
+
+Without `node-external-ip` in K3s config, Flannel picked the wrong VTEP source IP — sometimes a LAN IP, sometimes Tailscale IP, depending on routing. This caused flannel.1 to use inconsistent endpoints, breaking cross-node pod networking.
+
+**Fix**: Set `node-external-ip: <Tailscale-IP>` in `/etc/rancher/k3s/config.yaml` on all 4 nodes.
+
+#### Root Cause #3: kube-proxy nftables Latency
+
+K3s defaults to `nftables` proxy mode, which added ~50-100ms latency per ClusterIP connection due to rule evaluation overhead on this heterogeneous cluster.
+
+**Fix**: `kube-proxy-arg: "--proxy-mode=iptables"` on all nodes.
+
+#### Root Cause #4: cloudflared QUIC Blocked by VXLAN MTU
+
+Flannel VXLAN gives pods MTU 1230. QUIC handshake requires frames >1230 bytes, so QUIC connections silently failed inside the pod network. A previous workaround added `hostNetwork: true` + `--protocol quic`, but this caused a worse problem — from the host namespace, ClusterIP traffic (10.43.x.x) was misrouted via the default gateway (192.168.1.1) instead of iptables DNAT, causing first-SYN timeouts after idle periods.
+
+**Fix**: Reverted to pod network + `--protocol http2`. No QUIC inside VXLAN with MTU 1230.
+
+#### Root Cause #5: cloudflared topologySpreadConstraints Misplaced
+
+`topologySpreadConstraints` was nested inside the `affinity` block — invalid YAML that silently failed, leaving both replicas on the same node.
+
+**Fix**: Moved to correct `spec.template.spec.topologySpreadConstraints` level.
+
+#### Root Cause #6: bignode Overloaded (Cascading Failures)
+
+29 pods on bignode (k3s-server at 40% CPU, tailscaled at 23%) vs 5 on lenovo. Previous nodeSelector/nodeAffinity pins clustered everything on bignode. Load hit 66 on 8 cores. 7 orphan containerd-shim processes from an old k3s version consumed additional resources.
+
+**Fix**:
+- Killed 7 orphan containerd-shim processes (load dropped from 66 to ~28)
+- Removed all nodeSelector/nodeAffinity pins (postgres, openbao, logto, openclaw)
+- Let the scheduler redistribute pods across nodes
+
+#### Root Cause #7: CoreDNS on Unstable Node
+
+CoreDNS ran on colima, which was going NodeNotReady every 30-60s due to Tailscale flaps. Each flap made CoreDNS endpoints stale, causing 33% of DNS queries to time out.
+
+**Fix**: Patched CoreDNS deployment to exclude colima via nodeAffinity.
+
+### Fixes Applied Summary
+
+| # | Fix | Impact | Status |
+|---|-----|--------|--------|
+| 1 | Killed duplicate headscale (snap docker) | Eliminated root cause of Tailscale instability | Done |
+| 2 | Disabled snap.docker.dockerd | Prevents recurrence | Done |
+| 3 | `node-external-ip` on all nodes | Stable Flannel VTEP endpoints | Done |
+| 4 | `kube-proxy-arg: --proxy-mode=iptables` | Lower ClusterIP latency | Done |
+| 5 | colima `node-ip: 100.64.0.4` | Prevents NodeIP oscillation | Done |
+| 6 | cloudflared: pod network + http2 | Working without MTU issues | Done |
+| 7 | cloudflared topologySpreadConstraints fix | Proper replica distribution | Done |
+| 8 | Removed nodeSelector/nodeAffinity pins | Scheduler rebalanced pods | Done |
+| 9 | Killed orphan containerd-shim processes | Load dropped 66→28 | Done |
+| 10 | CoreDNS excluded from colima | DNS no longer affected by colima flaps | Done |
+| 11 | cloudflared excluded from bignode/colima/jetson | Stable tunnel on lenovo only | Done |
+| 12 | Restarted docker.socket/docker.service | Restored docker.sock access | Done |
+
+### Remaining Items (Lower Priority)
+
+| Item | Priority | Notes |
+|------|----------|-------|
+| Fully remove snap docker (`snap remove docker`) | High | Currently just disabled; snapd may not be running |
+| Relax cloudflared nodeAffinity | Medium | NotIn bignode/colima/jetson was a workaround; may no longer be needed |
+| Relax CoreDNS NotIn colima | Medium | Same — was a workaround for Tailscale flaps |
+| Colima disk cleanup (86%) | Medium | containerd data = 5G; needs pruning |
+| NFS PVs use 100.64.0.3 (Tailscale) | Low | Could migrate to LAN IP 192.168.1.16 + update /etc/exports |
+| Resource requests audit | Low | bignode still has 27 pods; realistic requests needed |
+| bignode load still ~20-28 | Low | k3s-server 40% CPU is inherent to control plane + workloads |
 
 ### cloudflared Configuration Notes
 
-- **Protocol**: `http2` (QUIC doesn't work — UDP buffer too small on jetson-desktop, and Tailscale MTU causes QUIC timeout)
-- **Node placement**: Must be on bignode (or lenovo) to avoid jetson-desktop VXLAN issues
-- **keepAliveTimeout**: Set to 30s (default 90s) to avoid stale connections to Traefik origin
-- **QUIC**: Do NOT enable — Tailscale's MTU (1280) and UDP buffer limits prevent QUIC from working
+- **Protocol**: `http2` (QUIC doesn't work — VXLAN MTU 1230 is too small for QUIC handshakes)
+- **Node placement**: Currently on lenovo only (NotIn bignode/colima/jetson-desktop)
+- **Replicas**: 2 with podAntiAffinity soft + topologySpreadConstraints
+- **keepAliveTimeout**: 30s (default 90s) to avoid stale connections to Traefik origin
+- **keepAliveConnections**: 100
+- **dnsPolicy**: ClusterFirst
+- **QUIC**: Do NOT enable — Tailscale's MTU (1280) and VXLAN overhead prevent QUIC from working
+
+### jetson-desktop VXLAN Notes
+
+jetson-desktop still has higher VXLAN error rates than other nodes:
+- TX dropped packets and TX errors on `flannel.1`
+- `iptables-legacy` FORWARD chain with policy DROP — `FLANNEL-FWD` chain position matters
+- Bridge MAC table can lose learned entries
+
+**Long-term**: Evaluate Cilium with WireGuard as replacement for Flannel VXLAN.
 
 ### Diagnostic Commands
 
 ```bash
+# Quick latency test (should all be <1s)
+for i in 1 2 3 4 5; do curl -s -o /dev/null -w "%{time_total}s " --max-time 10 https://ubby.soludev.tech/api/v1/mcp/details; done; echo
+
+# Test with idle pauses (catches first-SYN-after-idle issues)
+for i in 1 2 3 4 5; do sleep 30; curl -s -w "%{time_total}s\n" \
+  -o /dev/null --max-time 15 https://raganything.soludev.tech/api/v1/health; done
+
+# Check for duplicate headscale / Docker instances on bignode
+ssh kaiohz@192.168.1.12 "ps aux | grep headscale | grep -v grep"
+ssh kaiohz@192.168.1.12 "sudo systemctl is-active snap.docker.dockerd"
+
+# Check Tailscale stability (look for PollNetMap EOFs)
+ssh kaiohz@192.168.1.12 "sudo journalctl -u tailscaled --since '10 min ago' | grep -c 'PollNetMap'"
+ssh kaiohz@192.168.1.12 "sudo journalctl -u tailscaled --since '10 min ago' | grep 'unexpected EOF'"
+
 # Check flannel interface errors (look for TX dropped/errors)
 kubectl debug node/jetson-desktop --image=nicolaka/netshoot --profile=sysadmin -- \
   nsenter -t 1 -m -u -i -n -- ip -s link show flannel.1
@@ -3671,7 +3798,10 @@ kubectl run test --image=nicolaka/netshoot --rm -it --restart=Never -- \
   curl -sk -o /dev/null -w "%{time_total}s\n" --max-time 10 \
   https://10.43.78.220:443/api/v1/health -H "Host: raganything.soludev.tech"
 
-# Test public endpoint with pauses (should be <1s consistently)
-for i in 1 2 3 4 5; do sleep 30; curl -s -w "%{time_total}s\n" \
-  -o /dev/null --max-time 15 https://raganything.soludev.tech/api/v1/health; done
+# Check node resource usage
+kubectl top nodes
+
+# Check pod distribution
+kubectl get pods -A -o wide --field-selector spec.nodeName=bignode | wc -l
+kubectl get pods -A -o wide --field-selector spec.nodeName=lenovo | wc -l
 ```
