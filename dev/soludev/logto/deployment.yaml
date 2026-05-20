@@ -15,8 +15,8 @@ spec:
       labels:
         app: logto
         app.kubernetes.io/part-of: soludev-workload
-     spec:
-       containers:
+    spec:
+      containers:
         - name: logto
           image: svhd/logto:1.38.0
           command: 
