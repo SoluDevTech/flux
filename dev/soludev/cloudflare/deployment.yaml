@@ -30,6 +30,7 @@ spec:
                   operator: NotIn
                   values:
                     - bignode
+                    - colima
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
             - weight: 100
