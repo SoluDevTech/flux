@@ -37,13 +37,13 @@ spec:
                 matchLabels:
                   app: cloudflared
               topologyKey: kubernetes.io/hostname
-        topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app: cloudflared
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: cloudflared
       dnsPolicy: ClusterFirst
       containers:
       - name: cloudflared
