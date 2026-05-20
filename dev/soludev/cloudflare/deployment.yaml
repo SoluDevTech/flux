@@ -4,7 +4,7 @@ metadata:
   name: cloudflared
   namespace: soludev
 spec:
-  replicas: 2
+  replicas: 1
   strategy:
     type: Recreate
   selector:
@@ -27,16 +27,9 @@ spec:
             nodeSelectorTerms:
               - matchExpressions:
                 - key: kubernetes.io/hostname
-                  operator: NotIn
+                  operator: In
                   values:
-                    - jetson-desktop
-                    - colima
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchLabels:
-                  app: cloudflared
-              topologyKey: kubernetes.io/hostname
+                    - lenovo
       topologySpreadConstraints:
       - maxSkew: 1
         topologyKey: kubernetes.io/hostname
