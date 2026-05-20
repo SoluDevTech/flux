@@ -114,9 +114,7 @@ extraEnv:
 
 config: {}
 
-# Avoid recursive chown on NFS volumes (263k+ files)
-securityContext:
-  fsGroupChangePolicy: "OnRootMismatch"
+securityContext: {}
 
 resources:
   limits:
