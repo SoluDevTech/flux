@@ -16,8 +16,6 @@ spec:
         app: postgres
         app.kubernetes.io/part-of: soludev-workload
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: bignode
       tolerations:
         - key: "klipperlb-exclude"
           value: "true"

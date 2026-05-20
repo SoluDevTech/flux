@@ -11,9 +11,6 @@ server:
     limits:
       memory: "512Mi"
       cpu: "500m"
-  # Force scheduling on bignode for NFS stability
-  nodeSelector:
-    kubernetes.io/hostname: bignode
   tolerations:
     - key: klipperlb-exclude
       value: "true"
