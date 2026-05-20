@@ -44,8 +44,7 @@ spec:
           labelSelector:
             matchLabels:
               app: cloudflared
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
+      dnsPolicy: ClusterFirst
       containers:
       - name: cloudflared
         image: cloudflare/cloudflared:2026.5.0
@@ -53,7 +52,7 @@ spec:
         - tunnel
         - --no-autoupdate
         - --protocol
-        - quic
+        - http2
         - --loglevel
         - info
         - --edge-ip-version
