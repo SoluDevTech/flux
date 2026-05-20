@@ -6,7 +6,7 @@ metadata:
   labels:
     app: composable-agents
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: composable-agents
