@@ -26,4 +26,4 @@ data:
   ENABLED: "true"
   PROVIDER: "phoenix" # or "langfuse" or "none"
   PROJECT_NAME: "composable-agents"
-  PHOENIX_COLLECTOR_ENDPOINT: "https://pheonix.soludev.tech"
+  PHOENIX_COLLECTOR_ENDPOINT: "https://phoenix.soludev.tech"
