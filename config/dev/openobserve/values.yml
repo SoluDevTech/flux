@@ -39,9 +39,9 @@ extraEnv:
   - name: ZO_META_STORE
     value: "postgres"
   - name: ZO_META_CONNECTION_POOL_MIN_SIZE
-    value: "5"
+    value: "1"
   - name: ZO_META_CONNECTION_POOL_MAX_SIZE
-    value: "20"
+    value: "5"
 
   # Local mode with S3/MinIO storage
   - name: ZO_LOCAL_MODE
