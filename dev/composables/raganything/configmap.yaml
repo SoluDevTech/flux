@@ -26,7 +26,7 @@ data:
   EMBEDDING_MODEL: "text-embedding-3-small"
   EMBEDDING_DIM: "1536"
   MAX_TOKEN_SIZE: "8192"
-  VISION_MODEL: "openai/gpt-4o"
+  VISION_MODEL: "google/gemini-2.5-flash-lite:nitro"
   OPEN_ROUTER_API_URL: "https://openrouter.ai/api/v1"
   UVICORN_LOG_LEVEL: "info"
   KREUZBERG_OCR_MODE: "vlm"
