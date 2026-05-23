@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: opencode-ingress
+  namespace: opencode
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: opencode-traefik-forward-auth@kubernetescrd,opencode-traefik-error-pages@kubernetescrd
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/redirect-scheme: https
+spec:
+  rules:
+    - host: opencode.soludev.tech
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: opencode
+                port:
+                  number: 4096

@@ -76,6 +76,12 @@ data:
       - hostname: unispace-back.soludev.tech
         service: http://10.43.78.220:80
 
+      - hostname: opencode.soludev.tech
+        service: http://10.43.78.220:80
+
+      - hostname: opencode-oauth2-proxy.soludev.tech
+        service: http://10.43.78.220:80
+
       - hostname: "*.soludev.tech"
         service: http://10.43.78.220:80
 

@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-config
+  namespace: opencode
+data:
+  oauth2_proxy.cfg: |
+    redirect_url = "https://opencode-oauth2-proxy.soludev.tech/oauth2/callback"
+
+    cookie_domains = [".soludev.tech"]
+    whitelist_domains = [".soludev.tech"]
+    cookie_name = "oauth2-proxy-opencode"
+    email_domains = ["*"]
+
+    reverse_proxy = true
+
+    cookie_secure = true
+    cookie_httponly = true
+    cookie_path = "/"
+    cookie_samesite = "lax"
+    cookie_refresh = "1h"
+    cookie_csrf_per_request = false
+    cookie_csrf_expire = "0s"
+
+    skip_provider_button = true
+    silence_ping_logging = true

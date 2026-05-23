@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencode
+  namespace: opencode
+  labels:
+    app: opencode
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: opencode
+  template:
+    metadata:
+      labels:
+        app: opencode
+        app.kubernetes.io/part-of: soludev-workload
+    spec:
+      tolerations:
+        - key: "klipperlb-exclude"
+          value: "true"
+          effect: "NoSchedule"
+          operator: "Equal"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: NotIn
+                  values:
+                    - bignode
+                    - colima
+                    - jetson-desktop
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: soludev-workload
+      initContainers:
+        - name: init-dirs
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /data/data /data/projects
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      containers:
+        - name: opencode
+          image: ghcr.io/anomalyco/opencode:1.15.10
+          imagePullPolicy: Always
+          command: ["opencode", "web", "--hostname", "0.0.0.0", "--port", "4096"]
+          ports:
+            - containerPort: 4096
+          envFrom:
+            - configMapRef:
+                name: opencode-config
+            - secretRef:
+                name: opencode-secret
+          env:
+            - name: OPENCODE_DISABLE_AUTOUPDATE
+              value: "true"
+          volumeMounts:
+            - name: data
+              mountPath: /home/opencode/.local/share/opencode
+              subPath: data
+            - name: data
+              mountPath: /home/opencode/projects
+              subPath: projects
+            - name: opencode-config-volume
+              mountPath: /home/opencode/.opencode/opencode.json
+              subPath: opencode.json
+          livenessProbe:
+            httpGet:
+              path: /global/health
+              port: 4096
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /global/health
+              port: 4096
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: opencode-data
+        - name: opencode-config-volume
+          configMap:
+            name: opencode-config
+            items:
+              - key: opencode.json
+                path: opencode.json
+      restartPolicy: Always

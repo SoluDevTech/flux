@@ -1,0 +1,127 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencode-config
+  namespace: opencode
+data:
+  OPENCODE_DISABLE_AUTOUPDATE: "true"
+  OPENCODE_DISABLE_PRUNE: "false"
+  opencode.json: |
+    {
+      "$schema": "https://opencode.ai/config.json",
+      "server": {
+        "port": 4096,
+        "hostname": "0.0.0.0",
+        "cors": ["https://opencode.soludev.tech"]
+      },
+      "autoupdate": false,
+      "model": "ollama-cloud/glm-5.1",
+      "small_model": "ollama-cloud/glm-5.1",
+      "permission": {
+        "external_directory": {
+          "../../../**": "allow"
+        }
+      },
+      "provider": {
+        "ollama-cloud": {
+          "options": {
+            "apiKey": "{env:OLLAMA_CLOUD_API_KEY}"
+          }
+        }
+      },
+      "agent": {
+        "build": {
+          "mode": "primary",
+          "model": "ollama-cloud/glm-5.1"
+        },
+        "plan": {
+          "mode": "primary",
+          "model": "ollama-cloud/glm-5.1"
+        },
+        "code-reviewer": {
+          "description": "Reviews code for best practices and potential issues",
+          "mode": "subagent",
+          "model": "ollama-cloud/kimi-k2.6",
+          "prompt": "{file:./agents/code-reviewer.md}",
+          "tools": { "write": false, "edit": false }
+        },
+        "code-simplifier": {
+          "description": "Simplifies and refines recently modified code for clarity and maintainability.",
+          "mode": "subagent",
+          "model": "ollama-cloud/kimi-k2.6",
+          "prompt": "{file:./agents/code-simplifier.md}",
+          "tools": { "write": false, "edit": true }
+        },
+        "documentation-writer": {
+          "description": "Writes and updates README documentation for the project as code changes.",
+          "mode": "subagent",
+          "model": "ollama-cloud/glm-5.1",
+          "prompt": "{file:./agents/documentation-writer.md}",
+          "tools": { "write": true, "edit": true }
+        },
+        "fastapi-hexagonal": {
+          "description": "Implements FastAPI backend using hexagonal architecture.",
+          "mode": "subagent",
+          "model": "ollama-cloud/glm-5.1",
+          "prompt": "{file:./agents/fastapi-hexagonal.md}",
+          "tools": { "write": true, "edit": true, "bash": true }
+        },
+        "test-writer-python": {
+          "description": "Writes unit tests with test doubles for hexagonal architectures (pytest).",
+          "mode": "subagent",
+          "model": "ollama-cloud/glm-5.1",
+          "prompt": "{file:./agents/test-writer-python.md}",
+          "tools": { "write": true, "edit": true }
+        },
+        "test-writer-nestjs": {
+          "description": "Writes unit tests with test doubles for hexagonal architectures (NestJS).",
+          "mode": "subagent",
+          "model": "ollama-cloud/glm-5.1",
+          "prompt": "{file:./agents/test-writer-nestjs.md}",
+          "tools": { "write": true, "edit": true }
+        },
+        "test-writer-react": {
+          "description": "Writes unit tests with test doubles for hexagonal architectures (React).",
+          "mode": "subagent",
+          "model": "ollama-cloud/glm-5.1",
+          "prompt": "{file:./agents/test-writer-react.md}",
+          "tools": { "write": true, "edit": true }
+        },
+        "product-owner": {
+          "description": "Clarifies and defines requirements before feature implementation.",
+          "mode": "subagent",
+          "model": "ollama-cloud/glm-5.1",
+          "prompt": "{file:./agents/product-owner.md}",
+          "tools": { "write": false, "edit": false }
+        },
+        "react-hexagonal": {
+          "description": "Implements React frontend using hexagonal architecture.",
+          "mode": "subagent",
+          "model": "ollama-cloud/glm-5.1",
+          "prompt": "{file:./agents/react-hexagonal.md}",
+          "tools": { "write": true, "edit": true, "bash": true },
+          "skills": [ "frontend-design" ]
+        },
+        "tester-qa": {
+          "description": "Performs manual and API QA testing after code and documentation changes.",
+          "mode": "subagent",
+          "model": "ollama-cloud/kimi-k2.6",
+          "prompt": "{file:./agents/tester-qa.md}",
+          "tools": { "write": false, "edit": true }
+        },
+        "k3s-devops": {
+          "description": "Handles infrastructure-as-code changes and GitOps for k3s clusters.",
+          "mode": "subagent",
+          "model": "ollama-cloud/glm-5.1",
+          "prompt": "{file:./agents/k3s-devops.md}",
+          "tools": { "write": true, "edit": true, "bash": true }
+        },
+        "nestjs-hexagonal": {
+          "description": "Implements NestJS backend using hexagonal architecture.",
+          "mode": "subagent",
+          "model": "ollama-cloud/glm-5.1",
+          "prompt": "{file:./agents/nestjs-hexagonal.md}",
+          "tools": { "write": true, "edit": true, "bash": true }
+        }
+      }
+    }
