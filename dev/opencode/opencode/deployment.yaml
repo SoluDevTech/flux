@@ -77,6 +77,9 @@ spec:
             - name: opencode-config-volume
               mountPath: /home/opencode/.opencode/opencode.json
               subPath: opencode.json
+            - name: opencode-auth-volume
+              mountPath: /home/opencode/.local/share/opencode/auth.json
+              subPath: auth.json
           livenessProbe:
             httpGet:
               path: /global/health
@@ -110,4 +113,10 @@ spec:
             items:
               - key: opencode.json
                 path: opencode.json
+        - name: opencode-auth-volume
+          secret:
+            secretName: opencode-secret
+            items:
+              - key: auth.json
+                path: auth.json
       restartPolicy: Always
