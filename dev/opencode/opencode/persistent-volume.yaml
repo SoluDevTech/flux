@@ -9,7 +9,7 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: nfs-opencode-opencode
+  storageClassName: ""
   nfs:
     server: 100.64.0.3
     path: /Volumes/NFSStorage/opencode/opencode
