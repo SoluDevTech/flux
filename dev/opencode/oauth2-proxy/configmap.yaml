@@ -5,7 +5,7 @@ metadata:
   namespace: opencode
 data:
   oauth2_proxy.cfg: |
-    redirect_url = "https://opencode-oauth2-proxy.soludev.tech/oauth2/callback"
+    redirect_url = "https://opencode.soludev.tech/oauth2/callback"
 
     cookie_domains = [".soludev.tech"]
     whitelist_domains = [".soludev.tech"]
