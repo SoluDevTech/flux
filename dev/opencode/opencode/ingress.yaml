@@ -4,7 +4,6 @@ metadata:
   name: opencode-ingress
   namespace: opencode
   annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: opencode-traefik-forward-auth@kubernetescrd,opencode-traefik-error-pages@kubernetescrd
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
@@ -16,6 +15,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: opencode
+                name: oauth2-proxy-service
                 port:
-                  number: 4096
+                  number: 4180
