@@ -48,8 +48,8 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              apk add --no-cache nodejs npm git github-cli
-              npm install -g sonar-scanner
+              echo 'https://dl-cdn.alpinelinux.org/alpine/edge/community' >> /etc/apk/repositories
+              apk add --no-cache nodejs npm git github-cli sonar-scanner gcompat
               exec opencode web --hostname 0.0.0.0 --port 4096 --print-logs
           envFrom:
             - configMapRef:

@@ -128,7 +128,7 @@ data:
       "mcp": {
         "context7": {
           "type": "local",
-          "command": ["npx", "-y", "@upstash/context7-mcp@latest"]
+          "command": ["npx", "-y", "@upstash/context7-mcp@2.3.0"]
         },
         "chrome-devtools": {
           "type": "local",
