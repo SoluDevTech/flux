@@ -42,7 +42,7 @@ spec:
             matchLabels:
               app.kubernetes.io/part-of: soludev-workload
       initContainers:
-        - name: init-dirs
+            - name: init-dirs
           image: busybox:latest
           command:
             - sh
