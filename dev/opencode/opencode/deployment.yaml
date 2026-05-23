@@ -50,6 +50,8 @@ spec:
             - |
               echo 'https://dl-cdn.alpinelinux.org/alpine/edge/community' >> /etc/apk/repositories
               apk add --no-cache nodejs npm git github-cli sonar-scanner gcompat
+              npx -y @upstash/context7-mcp@2.3.0 --help >/dev/null 2>&1 || true
+              npx -y chrome-devtools-mcp@latest --help >/dev/null 2>&1 || true
               exec opencode web --hostname 0.0.0.0 --port 4096 --print-logs
           envFrom:
             - configMapRef:
