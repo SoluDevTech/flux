@@ -59,16 +59,16 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /root/.local/share/opencode
-              subPath: data
-            - name: data
+            - name: projects
               mountPath: /root/projects
-              subPath: projects
             - name: opencode-config-volume
               mountPath: /root/.opencode/opencode.json
               subPath: opencode.json
             - name: opencode-auth-volume
               mountPath: /root/.local/share/opencode/auth.json
               subPath: auth.json
+            - name: opencode-agents-volume
+              mountPath: /root/.opencode/agents
           livenessProbe:
             httpGet:
               path: /global/health
@@ -94,6 +94,8 @@ spec:
               cpu: "1000m"
       volumes:
         - name: data
+          emptyDir: {}
+        - name: projects
           persistentVolumeClaim:
             claimName: opencode-data
         - name: opencode-config-volume
@@ -108,4 +110,7 @@ spec:
             items:
               - key: auth.json
                 path: auth.json
+        - name: opencode-agents-volume
+          configMap:
+            name: opencode-agents
       restartPolicy: Always
