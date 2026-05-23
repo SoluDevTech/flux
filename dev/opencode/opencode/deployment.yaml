@@ -69,16 +69,16 @@ spec:
               value: "true"
           volumeMounts:
             - name: data
-              mountPath: /home/opencode/.local/share/opencode
+              mountPath: /root/.local/share/opencode
               subPath: data
             - name: data
-              mountPath: /home/opencode/projects
+              mountPath: /root/projects
               subPath: projects
             - name: opencode-config-volume
-              mountPath: /home/opencode/.opencode/opencode.json
+              mountPath: /root/.opencode/opencode.json
               subPath: opencode.json
             - name: opencode-auth-volume
-              mountPath: /home/opencode/.local/share/opencode/auth.json
+              mountPath: /root/.local/share/opencode/auth.json
               subPath: auth.json
           livenessProbe:
             httpGet:
