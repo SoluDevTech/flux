@@ -9,6 +9,7 @@ data:
   opencode.json: |
     {
       "$schema": "https://opencode.ai/config.json",
+      "logLevel": "DEBUG",
       "server": {
         "port": 4096,
         "hostname": "0.0.0.0",
@@ -122,6 +123,16 @@ data:
           "model": "ollama-cloud/glm-5.1",
           "prompt": "{file:./agents/nestjs-hexagonal.md}",
           "tools": { "write": true, "edit": true, "bash": true }
+        }
+      },
+      "mcp": {
+        "context7": {
+          "type": "local",
+          "command": ["npx", "-y", "@upstash/context7-mcp@latest"]
+        },
+        "chrome-devtools": {
+          "type": "local",
+          "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
         }
       }
     }
