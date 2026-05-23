@@ -45,9 +45,12 @@ spec:
         - name: opencode
           image: ghcr.io/anomalyco/opencode:1.15.10
           imagePullPolicy: Always
-          command: ["opencode", "web", "--hostname", "0.0.0.0", "--port", "4096"]
-          ports:
-            - containerPort: 4096
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              apk add --no-cache nodejs npm git github-cli
+              npm install -g sonar-scanner
+              exec opencode web --hostname 0.0.0.0 --port 4096 --print-logs
           envFrom:
             - configMapRef:
                 name: opencode-config
@@ -74,7 +77,7 @@ spec:
             httpGet:
               path: /global/health
               port: 4096
-            initialDelaySeconds: 60
+            initialDelaySeconds: 120
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
@@ -82,7 +85,7 @@ spec:
             httpGet:
               path: /global/health
               port: 4096
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 5
