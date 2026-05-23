@@ -41,17 +41,6 @@ spec:
           labelSelector:
             matchLabels:
               app.kubernetes.io/part-of: soludev-workload
-      initContainers:
-            - name: init-dirs
-          image: busybox:latest
-          command:
-            - sh
-            - -c
-            - |
-              mkdir -p /data/data /data/projects
-          volumeMounts:
-            - name: data
-              mountPath: /data
       containers:
         - name: opencode
           image: ghcr.io/anomalyco/opencode:1.15.10
