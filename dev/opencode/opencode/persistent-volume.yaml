@@ -11,8 +11,8 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: ""
   nfs:
-    server: 100.64.0.3
-    path: /Volumes/NFSStorage/opencode/opencode
+    server: 37.60.225.137
+    path: /srv/nfs/opencode
   mountOptions:
     - nfsvers=3
     - soft

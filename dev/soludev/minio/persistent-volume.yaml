@@ -11,8 +11,8 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs-soludev-minio
   nfs:
-    server: 100.64.0.3
-    path: /Volumes/NFSStorage/soludev/minio
+    server: 37.60.225.137
+    path: /srv/nfs/soludev/minio
   mountOptions:
     - nfsvers=3
     - soft

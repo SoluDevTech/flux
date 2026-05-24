@@ -11,8 +11,8 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs-prospectio-pgvector
   nfs:
-    server: 100.64.0.3
-    path: /Volumes/NFSStorage/prospectio/pgvector
+    server: 37.60.225.137
+    path: /srv/nfs/prospectio/pgvector
   mountOptions:
     - nfsvers=3
     - soft

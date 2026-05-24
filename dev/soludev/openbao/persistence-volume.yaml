@@ -11,8 +11,8 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs-soludev-openbao
   nfs:
-    server: 100.64.0.3
-    path: /Volumes/NFSStorage/soludev/openbao
+    server: 37.60.225.137
+    path: /srv/nfs/soludev/openbao
   mountOptions:
     - nfsvers=3
     - soft

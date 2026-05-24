@@ -1,8 +1,8 @@
-# values.yaml - OpenObserve v0.70.3 (chart 0.70.4)
+# values.yaml - OpenObserve v0.80.2 (chart 0.80.3)
 
 image:
   oss:
-    tag: "v0.70.3"
+    tag: "v0.80.2"
 
 # Using existing secret from ExternalSecret/OpenBao
 auth:
@@ -53,7 +53,7 @@ extraEnv:
   - name: ZO_S3_PROVIDER
     value: "minio"
   - name: ZO_S3_SERVER_URL
-    value: "http://minio.soludev.svc.cluster.local:9000"
+    value: "http://minio-soludev.soludev.svc.cluster.local:9000"
   - name: ZO_S3_REGION_NAME
     value: "us-east-1"
   - name: ZO_S3_BUCKET_NAME

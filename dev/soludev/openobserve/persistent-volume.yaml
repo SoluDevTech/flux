@@ -11,8 +11,8 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs-soludev-openobserve
   nfs:
-    server: 100.64.0.3
-    path: /Volumes/NFSStorage/soludev/openobserve
+    server: 37.60.225.137
+    path: /srv/nfs/soludev/openobserve
   mountOptions:
     - nfsvers=3
     - soft
