@@ -102,18 +102,9 @@ spec:
         - name: projects
           persistentVolumeClaim:
             claimName: opencode-data
-        - name: opencode-config-volume
-          configMap:
-            name: opencode-config
-            items:
-              - key: opencode.json
-                path: opencode.json
-        - name: opencode-auth-volume
-          secret:
-            secretName: opencode-secret
-            items:
-              - key: auth.json
-                path: auth.json
+        - name: opencode-data
+          persistentVolumeClaim:
+            claimName: opencode-data
         - name: opencode-dotdir
           persistentVolumeClaim:
             claimName: opencode-data
