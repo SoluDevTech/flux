@@ -28,6 +28,10 @@ spec:
           labelSelector:
             matchLabels:
               app.kubernetes.io/part-of: soludev-workload
+      securityContext:
+        runAsUser: 70
+        runAsGroup: 70
+        fsGroup: 70
       imagePullSecrets:
         - name: pickpro-docker-secret
       volumes:
