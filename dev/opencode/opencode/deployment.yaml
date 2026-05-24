@@ -62,7 +62,7 @@ spec:
             - name: OPENCODE_DISABLE_AUTOUPDATE
               value: "true"
           volumeMounts:
-            - name: data
+            - name: opencode-data
               mountPath: /root/.local/share/opencode
             - name: projects
               mountPath: /root/projects
@@ -99,8 +99,6 @@ spec:
               memory: "3Gi"
               cpu: "2"
       volumes:
-        - name: data
-          emptyDir: {}
         - name: projects
           persistentVolumeClaim:
             claimName: opencode-data
