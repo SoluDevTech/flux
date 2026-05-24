@@ -17,72 +17,72 @@ data:
     ingress:
 
       - hostname: soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: bao.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: logto.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: logto-admin.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: pickpro.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: pickpro-api.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: pickpro-indexing-api.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: openobserve.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: phoenix.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: headlamp.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: pickpro-oauth2-proxy.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: ubby.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: ubby-back.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: ubby-mcp-api.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: ubby-oauth2-proxy.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: openclaw.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: hooks-openclaw.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: liame.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: unispace.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: unispace-back.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: opencode.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: opencode-oauth2-proxy.soludev.tech
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: "*.soludev.tech"
-        service: http://10.43.51.9:80
+        service: http://traefik.kube-system.svc.cluster.local:80
 
       - service: http_status:404
