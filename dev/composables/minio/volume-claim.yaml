@@ -4,6 +4,7 @@ metadata:
   name: minio
   namespace: composables
 spec:
+  volumeName: nfs-composables-minio
   accessModes:
     - ReadWriteMany
   storageClassName: nfs-composables-minio

@@ -4,6 +4,7 @@ metadata:
   name: minio
   namespace: soludev
 spec:
+  volumeName: nfs-soludev-minio
   accessModes:
     - ReadWriteMany
   storageClassName: nfs-soludev-minio

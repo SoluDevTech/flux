@@ -4,6 +4,7 @@ metadata:
   name: soludev-pgvector-pvc
   namespace: soludev
 spec:
+  volumeName: nfs-soludev-postgres
   accessModes:
     - ReadWriteMany
   storageClassName: nfs-soludev-postgres

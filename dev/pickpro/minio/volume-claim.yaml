@@ -4,6 +4,7 @@ metadata:
   name: minio
   namespace: pickpro
 spec:
+  volumeName: nfs-pickpro-minio
   accessModes:
     - ReadWriteMany
   storageClassName: nfs-pickpro-minio

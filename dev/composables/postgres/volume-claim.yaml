@@ -4,6 +4,7 @@ metadata:
   name: composables-postgres-pvc
   namespace: composables
 spec:
+  volumeName: nfs-composables-postgres
   accessModes:
     - ReadWriteMany
   storageClassName: nfs-composables-postgres

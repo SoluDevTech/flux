@@ -4,6 +4,7 @@ metadata:
   name: unispace-postgres-pvc
   namespace: unispace
 spec:
+  volumeName: nfs-unispace-postgres
   accessModes:
     - ReadWriteMany
   storageClassName: nfs-unispace-postgres

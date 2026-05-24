@@ -4,6 +4,7 @@ metadata:
   name: prospectio-pgvector-pvc
   namespace: prospectio
 spec:
+  volumeName: nfs-prospectio-pgvector
   accessModes:
     - ReadWriteMany
   storageClassName: nfs-prospectio-pgvector

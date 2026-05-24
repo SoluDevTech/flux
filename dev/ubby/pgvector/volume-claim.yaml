@@ -4,6 +4,7 @@ metadata:
   name: ubby-pgvector-pvc
   namespace: ubby
 spec:
+  volumeName: nfs-ubby-pgvector
   accessModes:
     - ReadWriteMany
   storageClassName: nfs-ubby-pgvector

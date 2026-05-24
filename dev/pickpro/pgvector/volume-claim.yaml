@@ -4,6 +4,7 @@ metadata:
   name: pickpro-pgvector-pvc
   namespace: pickpro
 spec:
+  volumeName: nfs-pickpro-pgvector
   accessModes:
     - ReadWriteMany
   storageClassName: nfs-pickpro-pgvector
