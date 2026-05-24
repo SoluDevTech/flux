@@ -67,6 +67,7 @@ spec:
               subPath: runtimedata
             - name: projects
               mountPath: /root/projects
+              subPath: projects
             - name: opencode-auth-volume
               mountPath: /root/.local/share/opencode/auth.json
               subPath: auth.json
