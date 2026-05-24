@@ -64,6 +64,7 @@ spec:
           volumeMounts:
             - name: opencode-data
               mountPath: /root/.local/share/opencode
+              subPath: runtimedata
             - name: projects
               mountPath: /root/projects
             - name: opencode-auth-volume
