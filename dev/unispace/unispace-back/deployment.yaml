@@ -6,7 +6,7 @@ metadata:
   labels:
     app: unispace-back
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: unispace-back
