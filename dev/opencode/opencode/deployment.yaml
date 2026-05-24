@@ -94,10 +94,10 @@ spec:
           resources:
             requests:
               memory: "1Gi"
-              cpu: "250m"
+              cpu: "1"
             limits:
               memory: "3Gi"
-              cpu: "1000m"
+              cpu: "2"
       volumes:
         - name: data
           emptyDir: {}
