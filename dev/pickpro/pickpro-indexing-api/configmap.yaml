@@ -11,7 +11,7 @@ data:
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
   PYTHONPATH: ./pickpro_indexing_api
   MAX_WORKERS: "5"
-  MINIO_HOST: minio.pickpro.svc.cluster.local:9000
+  MINIO_HOST: minio-pickpro.pickpro.svc.cluster.local:9000
   PHOENIX_HOST: https://phoenix.soludev.tech
   RECALL_AI_REGION: eu-central-1
   SUMMARY_MODEL: google/gemini-2.5-flash:nitro
