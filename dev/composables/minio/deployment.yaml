@@ -65,6 +65,7 @@ spec:
               cpu: "100m"
             limits:
               memory: "1Gi"
+              cpu: "200m"
       volumes:
         - name: minio-data
           persistentVolumeClaim:
