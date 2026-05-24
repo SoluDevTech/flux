@@ -33,6 +33,19 @@ spec:
                 name: unispace-back-config
             - secretRef:
                 name: unispace-back-secret
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 90
+            periodSeconds: 5
           resources:
              requests:
                memory: "128Mi"
