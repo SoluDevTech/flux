@@ -49,7 +49,11 @@ spec:
           args:
             - |
               echo 'https://dl-cdn.alpinelinux.org/alpine/edge/community' >> /etc/apk/repositories
-              apk add --no-cache nodejs npm git github-cli sonar-scanner gcompat
+              apk add --no-cache nodejs npm git github-cli sonar-scanner gcompat libstdc++
+              wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub
+              wget -q -O /tmp/glibc.apk https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.35-r1/glibc-2.35-r1.apk
+              apk add --allow-untrusted /tmp/glibc.apk
+              rm -f /tmp/glibc.apk
               npx -y @upstash/context7-mcp@2.3.0 --help >/dev/null 2>&1 || true
               npx -y chrome-devtools-mcp@latest --help >/dev/null 2>&1 || true
               exec opencode web --hostname 0.0.0.0 --port 4096 --print-logs
