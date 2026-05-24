@@ -14,11 +14,10 @@ spec:
     server: 37.60.225.137
     path: /srv/nfs/soludev/openbao
   mountOptions:
-    - nfsvers=3
-    - soft
-    - timeo=300
+    - hard
+    - nfsvers=4
+    - timeo=600
     - retrans=10
-    - actimeo=60
     - rsize=1048576
     - wsize=1048576
     - noatime
