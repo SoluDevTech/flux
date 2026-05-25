@@ -30,7 +30,7 @@ spec:
               app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: pickpro-front
-          image: kaiohz/pickpro:pickpro-front-afe69dc1ab978885749c02a22958ef323640af86
+          image: kaiohz/pickpro:pickpro-front-3a57c1b534a36d03312b2c2a0c73ec05607b7e3c
           ports:
             - containerPort: 80
           volumeMounts:
