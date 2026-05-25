@@ -37,20 +37,24 @@ spec:
             httpGet:
               path: /pickpro/rest/v1/health/status
               port: 8000
-            initialDelaySeconds: 90
+            initialDelaySeconds: 180
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /pickpro/rest/v1/health/status
               port: 8000
-            initialDelaySeconds: 60
+            initialDelaySeconds: 120
             periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 5
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "100m"
+              memory: "512Mi"
+              cpu: "500m"
             limits:
-              memory: "1024Mi"
-              cpu: "200m"
+              memory: "2Gi"
+              cpu: "1"
       imagePullSecrets:
         - name: pickpro-docker-secret
