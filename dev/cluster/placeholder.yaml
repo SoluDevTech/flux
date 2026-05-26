@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homelab-placeholder
+  namespace: kube-system
+data:
+  README: |
+    Homelab dev cluster - Flux GitOps placeholder.
+    Add K8s manifests to flux/dev/<namespace>/ and create
+    corresponding Kustomization entries in flux/config/dev/kustomization.yaml.
