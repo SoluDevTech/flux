@@ -9,7 +9,7 @@ data:
 
     originRequest:
       noTLSVerify: true
-      keepAliveTimeout: 10m
+      keepAliveTimeout: 30s
       connectTimeout: 30s
       tcpKeepAlive: 10s
       keepAliveConnections: 100
