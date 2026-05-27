@@ -39,18 +39,29 @@ spec:
                 name: composable-agents-config
             - secretRef:
                 name: composable-agents-secret
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 30
           livenessProbe:
             httpGet:
               path: /health
               port: 8000
             initialDelaySeconds: 90
-            periodSeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /health
               port: 8000
             initialDelaySeconds: 60
-            periodSeconds: 5
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3
           resources:
             requests:
               memory: "256Mi"
