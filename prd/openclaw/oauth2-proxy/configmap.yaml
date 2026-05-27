@@ -22,5 +22,8 @@ data:
     cookie_csrf_per_request = false
     cookie_csrf_expire = "0s"
 
+    oidc_groups_claim = "organizations"
+    allowed_group = "h6cwu2gjwkf7"
+
     skip_provider_button = true
     silence_ping_logging = true
