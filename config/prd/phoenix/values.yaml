@@ -35,6 +35,11 @@ ingress:
 server:
   port: 6006
 
+startupProbe:
+  timeoutSeconds: 5
+  periodSeconds: 5
+  failureThreshold: 60
+
 readinessProbe:
   timeoutSeconds: 10
   periodSeconds: 15
