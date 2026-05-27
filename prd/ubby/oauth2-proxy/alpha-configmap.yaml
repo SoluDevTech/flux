@@ -27,7 +27,7 @@ data:
       redeemURL: "http://logto.soludev.svc.cluster.local:3001/oidc/token"
       profileURL: "http://logto.soludev.svc.cluster.local:3001/oidc/me"
       validateURL: "http://logto.soludev.svc.cluster.local:3001/oidc/jwks"
-      scope: "openid email profile"
+      scope: "openid email profile offline_access"
 
     injectRequestHeaders:
     - name: Authorization
