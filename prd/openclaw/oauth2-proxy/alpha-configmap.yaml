@@ -28,6 +28,9 @@ data:
       profileURL: "http://logto.soludev.svc.cluster.local:3001/oidc/me"
       validateURL: "http://logto.soludev.svc.cluster.local:3001/oidc/jwks"
       scope: "openid email profile urn:logto:scope:organizations"
+      oidcGroupsClaim: "organizations"
+      allowedGroups:
+        - "h6cwu2gjwkf7"
 
     injectRequestHeaders:
     - name: Authorization
