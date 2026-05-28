@@ -18,7 +18,7 @@ data:
     cookie_httponly = true
     cookie_path = "/"
     cookie_samesite = "lax"
-    cookie_refresh = "1h"
+    cookie_refresh = "12h"
     cookie_csrf_per_request = false
     cookie_csrf_expire = "0s"
 
