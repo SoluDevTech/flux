@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flannel-node-annotations
+  namespace: kube-system
+data:
+  README: |
+    Flannel VTEP IP stabilization for cross-node VXLAN (dev cluster).
+    
+    These annotations must be present on all nodes to prevent Flannel
+    from switching between LAN and Tailscale IPs on restart.
+    
+    Apply manually if nodes are recreated:
+      kubectl annotate node lenovo flannel.alpha.coreos.com/public-ip-overwrite=100.64.0.6 --overwrite
+      kubectl annotate node colima flannel.alpha.coreos.com/public-ip-overwrite=100.64.0.4 --overwrite
+      kubectl annotate node jetson-desktop flannel.alpha.coreos.com/public-ip-overwrite=100.64.0.7 --overwrite
+    
+    Current IPs (Tailscale):
+      lenovo:          100.64.0.6 (control plane)
+      colima:          100.64.0.4 (Mac Mini VM)
+      jetson-desktop:  100.64.0.7 (ARM64 worker)
+    
+    IMPORTANT: The annotation alone is NOT enough.
+    Each physical node MUST also have /etc/rancher/k3s/config.yaml configured with:
+      node-ip: "<TAILSCALE_IP>"
+      flannel-iface: tailscale0
+    
+    See https://github.com/SoluDevTech/flux/blob/main/dev/network/README.md
+
+---
+# Job to re-trigger Flannel node reconciliation after annotation changes.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flannel-annotation-refresh
+  namespace: kube-system
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: hook-succeeded
+spec:
+  template:
+    metadata:
+      name: flannel-annotation-refresh
+    spec:
+      serviceAccountName: flannel-annotator
+      restartPolicy: OnFailure
+      containers:
+      - name: kubectl
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          echo "Overwriting Flannel public-ip annotations..."
+          kubectl annotate node lenovo flannel.alpha.coreos.com/public-ip-overwrite=100.64.0.6 --overwrite
+          kubectl annotate node colima flannel.alpha.coreos.com/public-ip-overwrite=100.64.0.4 --overwrite
+          kubectl annotate node jetson-desktop flannel.alpha.coreos.com/public-ip-overwrite=100.64.0.7 --overwrite
+          echo "Done. Flannel will pick these up on its next reconcilation."
+          echo "NOTE: Physical node reboots still require the /etc/rancher/k3s/config.yaml fix."
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+  backoffLimit: 2
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flannel-annotator
+  namespace: kube-system
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flannel-annotator
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: flannel-annotator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: flannel-annotator
+subjects:
+- kind: ServiceAccount
+  name: flannel-annotator
+  namespace: kube-system
