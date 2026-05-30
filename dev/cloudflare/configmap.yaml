@@ -16,7 +16,10 @@ data:
 
     ingress:
 
-      # Dev services — adjust hostnames as needed for your dev environment
+      # Dev services
+      - hostname: forgejo.soludev.tech
+        service: http://traefik.kube-system.svc.cluster.local:80
+
       - hostname: dev.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
 

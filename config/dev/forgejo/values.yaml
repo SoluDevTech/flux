@@ -1,0 +1,100 @@
+# Forgejo Helm chart values for dev cluster
+# Chart: oci://code.forgejo.org/forgejo-helm/forgejo
+# Version: 17.1.0
+# App Version: 15.0.2
+
+# Use SQLite instead of PostgreSQL (simpler for dev, no external DB needed)
+# For production, set up PostgreSQL separately and update database config
+postgresql:
+  enabled: false
+
+# Disable built-in Ingress — we use Traefik IngressRoute
+ingress:
+  enabled: false
+
+# Service configuration
+service:
+  http:
+    type: ClusterIP
+    port: 3000
+    clusterIP: ""
+  ssh:
+    type: ClusterIP
+    port: 22
+
+# Persistence
+persistence:
+  enabled: true
+  create: true
+  mount: true
+  size: 10Gi
+  accessModes:
+    - ReadWriteOnce
+
+# Forgejo / Gitea configuration (maps to app.ini)
+gitea:
+  config:
+    APP_NAME: 'Forgejo Dev'
+    RUN_MODE: prod
+
+    server:
+      DOMAIN: forgejo.soludev.tech
+      ROOT_URL: https://forgejo.soludev.tech
+      PROTOCOL: http
+      SSH_DOMAIN: forgejo.soludev.tech
+      SSH_PORT: 22
+      SSH_LISTEN_PORT: 2222
+      # Disable redirect for internal health checks
+      REDIRECT_OTHER_PORT: false
+
+    database:
+      DB_TYPE: sqlite3
+      PATH: /data/gitea/gitea.db
+
+    security:
+      # Generate a secret key — this should be changed in production
+      SECRET_KEY: change-me-in-production-use-random-string
+      INSTALL_LOCK: true
+
+    service:
+      DISABLE_REGISTRATION: false
+      REQUIRE_SIGNIN_VIEW: false
+
+    # Session / cache
+    session:
+      PROVIDER: memory
+
+    cache:
+      ADAPTER: memory
+
+    # Mailer (disabled in dev)
+    mailer:
+      ENABLED: false
+
+  # Admin user setup
+  admin:
+    username: forgejo_admin
+    # password: ''  # Leave empty to generate or set via secret
+    email: admin@soludev.tech
+    passwordMode: initialOnlyNoReset
+
+  # OAuth configuration (disabled for now — can integrate with Logto later)
+  oauth: []
+
+# Resource limits (dev cluster is small)
+resources:
+  requests:
+    memory: 256Mi
+    cpu: 100m
+  limits:
+    memory: 512Mi
+    cpu: 500m
+
+# Replica count (single instance for dev)
+replicaCount: 1
+
+# Image
+image:
+  # Use Docker Hub instead of code.forgejo.org OCI (which doesn't work with containerd)
+  fullOverride: codeberg.org/forgejo/forgejo:15.0.2-rootless
+  pullPolicy: IfNotPresent
