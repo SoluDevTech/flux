@@ -1,6 +1,13 @@
 # Dev Cluster Tailscale Networking Fix
 
-Ce dossier contient les manifests Flux pour sécuriser la configuration Flannel/Tailscale du cluster dev.
+Documentation du fix réseau Tailscale/Flannel pour le cluster dev.
+
+> **Pourquoi pas de manifests Kubernetes ?**
+> K3s exécute Flannel en mode **embedded** (pas comme un DaemonSet séparé). Les annotations
+> `flannel.alpha.coreos.com/public-ip-overwrite` sont ignorées par K3s — le VTEP IP est
+> déterminé par l'interface réseau sélectionnée via `--flannel-iface` ou l'auto-détection.
+> Le seul fix fiable est la configuration directe dans `/etc/rancher/k3s/config.yaml` sur
+> chaque node physique, puis restart du service k3s/k3s-agent.
 
 ## Problème constaté
 
@@ -105,11 +112,9 @@ ssh kaiohz@192.168.1.4 'bridge fdb show dev flannel.1'
 | colima | 192.168.5.1 | 100.64.0.4 |
 | jetson-desktop | 192.168.1.6 | 100.64.0.7 |
 
-## Fichiers Flux
+## Fichiers
 
-- `flannel-node-annotations.yaml` — ConfigMap + Job RBAC pour reappliquer les annotations
-- `kustomization.yaml` — Kustomization pour Flux
-- `README.md` — Ce fichier
+- `README.md` — Ce fichier (documentation + commandes SSH)
 
 ## Différence avec le cluster PRD
 
