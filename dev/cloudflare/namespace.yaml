@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: soludev
-  labels:
-    app.kubernetes.io/part-of: soludev-workload

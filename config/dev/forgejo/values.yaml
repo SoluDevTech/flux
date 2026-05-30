@@ -2,8 +2,7 @@
 # Chart: oci://code.forgejo.org/forgejo-helm/forgejo
 # Version: 17.1.0
 
-# Use SQLite instead of PostgreSQL (simpler for dev)
-# For production with external DB, update database section
+# External PostgreSQL in soludev namespace (see dev/soludev/postgres.yaml)
 
 # Image configuration
 image:
@@ -47,8 +46,12 @@ gitea:
       REDIRECT_OTHER_PORT: false
 
     database:
-      DB_TYPE: sqlite3
-      PATH: /data/gitea/gitea.db
+      DB_TYPE: postgres
+      HOST: postgres.soludev.svc.cluster.local:5432
+      NAME: forgejo
+      USER: forgejo
+      PASSWD: change-me-in-production
+      SSL_MODE: disable
 
     security:
       SECRET_KEY: change-me-in-production-use-random-string
