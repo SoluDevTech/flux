@@ -5,89 +5,111 @@ Ce dossier contient les manifests Flux pour sécuriser la configuration Flannel/
 ## Problème constaté
 
 Le cluster dev utilise `--node-external-ip` et `--node-ip` pointant vers les IPs Tailscale,
-mais **Flannel n'est pas configuré pour utiliser `tailscale0` comme interface VXLAN**.
+mais **Flannel n'etait pas configuré pour utiliser `tailscale0` comme interface VXLAN**.
 Résultat :
-- `flannel.alpha.coreos.com/public-ip` pointe vers les IPs LAN (192.168.x.x / 192.168.5.1)
-- lenovo (control plane) n'a même pas `--node-ip` — son INTERNAL-IP est `192.168.1.4`
-- Le VXLAN overlay passe par le réseau local au lieu de Tailscale
+- `flannel.alpha.coreos.com/public-ip` pointait vers les IPs LAN (192.168.x.x / 192.168.5.1)
+- lenovo (control plane) n'avait pas `--node-ip` — son INTERNAL-IP était `192.168.1.4`
+- Le VXLAN overlay passait par le réseau local au lieu de Tailscale
 
-## Fix appliqué (via Flux)
+## Fix appliqué (via SSH directe)
 
-1. **Annotations `flannel.alpha.coreos.com/public-ip-overwrite`** sur tous les nodes ✅
-2. **Job `flannel-annotation-refresh`** qui reapplique ces annotations si on re-crée un node
-3. **Kustomization** dans `config/dev/kustomization.yaml` pour que Flux reconcile
-
-## Fix PERSISTANT requis sur chaque node physique
-
-Ces configurations doivent être appliquées sur **chaque machine physique**. Sans cela,
-au redémarrage du node, K3s re-calculera `flannel.alpha.coreos.com/public-ip` en utilisant
-l'interface par défaut (eth0/wlan0) et repassera en LAN IP.
-
-### lenovo (control plane)
+### jetson-desktop (worker)
 
 ```bash
-ssh ton-user@lenovo
-
-# Vérifier la config actuelle
-cat /etc/rancher/k3s/config.yaml
-
-# Ajouter les directives manquantes
-sudo mkdir -p /etc/rancher/k3s
-sudo tee -a /etc/rancher/k3s/config.yaml <<EOF
-node-ip: 100.64.0.6
+ssh jetson@192.168.1.6
+sudo tee /etc/rancher/k3s/config.yaml <<'K3SCONFIG'
+server: https://100.64.0.6:6443
+token: K107fc78042caa752981f08e98525cbd7822bded4ea81763839530e0d69464da9f6::server:c0b297b777ec9d68161c0327a0eb1b8c
+node-external-ip: 100.64.0.7
+node-ip: 100.64.0.7
 flannel-iface: tailscale0
-EOF
-
-# Redémarrer k3s (control plane)
-sudo systemctl restart k3s
+kube-proxy-arg: --proxy-mode=iptables
+K3SCONFIG
+sudo systemctl restart k3s-agent
 ```
 
 ### colima (VM Mac Mini)
 
 ```bash
-# Depuis le Mac Mini
-ssh docker-user@colima  # ou via `colima ssh`
-
-# Dans la VM Colima :
-sudo mkdir -p /etc/rancher/k3s
-sudo tee -a /etc/rancher/k3s/config.yaml <<EOF
+# Via Tailscale IP
+ssh root@100.64.0.4
+sudo tee /etc/rancher/k3s/config.yaml <<'K3SCONFIG'
+server: https://100.64.0.6:6443
+token: K107fc78042caa752981f08e98525cbd7822bded4ea81763839530e0d69464da9f6::server:c0b297b777ec9d68161c0327a0eb1b8c
+node-external-ip: 100.64.0.4
+node-ip: 100.64.0.4
 flannel-iface: tailscale0
-EOF
-
-# Redémarrer l'agent
+kube-proxy-arg: --proxy-mode=iptables
+K3SCONFIG
 sudo systemctl restart k3s-agent
 ```
 
-### jetson-desktop 
+### lenovo (control plane)
+
+**Attention :** le changement de `node-ip` sur un control plane avec etcd existant **casse etcd**
+car l'URL du membre etcd est déjà enregistrée avec l'ancienne IP.
+
+**Prérequis :** mettre à jour l'URL du membre etcd AVANT le restart :
 
 ```bash
-ssh ton-user@jetson-desktop
+ssh kaiohz@192.168.1.4
 
-sudo mkdir -p /etc/rancher/k3s
-sudo tee -a /etc/rancher/k3s/config.yaml <<EOF
+# 1. Installer etcdctl
+sudo apt-get install -y etcd-client
+
+# 2. Mettre à jour l'URL du membre etcd
+sudo ETCDCTL_API=3 etcdctl \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt \
+  --cert=/var/lib/rancher/k3s/server/tls/etcd/server-client.crt \
+  --key=/var/lib/rancher/k3s/server/tls/etcd/server-client.key \
+  member update 21d2a2dba9df4b02 \
+  --peer-urls=https://100.64.0.6:2380
+
+# 3. Mettre à jour la config K3s
+sudo tee /etc/rancher/k3s/config.yaml <<'K3SCONFIG'
+cluster-init: true
+kube-proxy-arg: --proxy-mode=iptables
+node-external-ip: 100.64.0.6
+node-ip: 100.64.0.6
 flannel-iface: tailscale0
-EOF
+write-kubeconfig-mode: "0644"
+K3SCONFIG
 
-sudo systemctl restart k3s-agent
+# 4. Restart
+sudo systemctl restart k3s
 ```
 
 ## Vérification post-fix
-
-Après le redémarrage de chaque node, vérifier :
 
 ```bash
 # 1. Tous les nodes doivent avoir INTERNAL-IP = Tailscale IP
 kubectl get nodes -o wide
 
 # 2. Flannel public-ip doit être sur Tailscale
-for node in lenovo colima jetson-desktop; do
-  kubectl get node $node -o jsonpath='{.metadata.annotations.flannel\.alpha\.coreos\.com/public-ip}{"\n"}'
+for n in lenovo colima jetson-desktop; do
+  kubectl get node $n -o jsonpath='{.metadata.annotations.flannel\.alpha\.coreos\.com/public-ip}{"\n"}'
 done
 
-# 3. Les annotations public-ip-overwrite doivent être présentes
-kubectl get node lenovo -o jsonpath='{.metadata.annotations.flannel\.alpha\.coreos\.com/public-ip-overwrite}'
-# => 100.64.0.6
+# 3. Les VXLAN FDB entries doivent pointer vers Tailscale IPs
+# Depuis lenovo :
+ssh kaiohz@192.168.1.4 'bridge fdb show dev flannel.1'
+# Attendu : dst 100.64.0.4 (colima) et dst 100.64.0.7 (jetson)
 ```
+
+## Résultat
+
+| Node | Flannel VTEP IP (avant) | Flannel VTEP IP (après) |
+|------|------------------------|------------------------|
+| lenovo | 192.168.1.4 | 100.64.0.6 |
+| colima | 192.168.5.1 | 100.64.0.4 |
+| jetson-desktop | 192.168.1.6 | 100.64.0.7 |
+
+## Fichiers Flux
+
+- `flannel-node-annotations.yaml` — ConfigMap + Job RBAC pour reappliquer les annotations
+- `kustomization.yaml` — Kustomization pour Flux
+- `README.md` — Ce fichier
 
 ## Différence avec le cluster PRD
 
@@ -99,4 +121,5 @@ En dev, `colima` est derrière un bridge (192.168.5.0/24) et `jetson-desktop` es
 
 - [Flannel VXLAN docs](https://flannel-io.github.io/documentation/#vxlan)
 - [K3s networking docs](https://docs.k3s.io/networking/basic-network-options)
+- [etcd member update](https://etcd.io/docs/v3.5/op-guide/runtime-configuration/#update-a-member)
 - Issue historique : PostgreSQL timeouts via DERP relay (README.md § "PostgreSQL : performances dégradées via NFS over Tailscale DERP")
