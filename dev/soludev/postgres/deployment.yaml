@@ -25,9 +25,16 @@ spec:
           image: postgres:16-alpine
           ports:
             - containerPort: 5432
-          envFrom:
-            - secretRef:
-                name: postgres-secret
+          env:
+            - name: POSTGRES_USER
+              value: forgejo
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+            - name: POSTGRES_DB
+              value: forgejo
           readinessProbe:
             tcpSocket:
               port: 5432

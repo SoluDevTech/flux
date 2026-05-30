@@ -15,7 +15,7 @@ spec:
     path: /Volumes/NFSStorage/dev/postgres
   mountOptions:
     - hard
-    - nfsvers=4
+    - nfsvers=3
     - timeo=600
     - retrans=10
     - rsize=1048576
