@@ -47,10 +47,10 @@ spec:
             periodSeconds: 5
           resources:
             requests:
-              memory: "128Mi"
+              memory: "512Mi"
               cpu: "100m"
             limits:
-              memory: "512Mi"
-              cpu: "200m"
+              memory: "1Gi"
+              cpu: "500m"
       imagePullSecrets:
         - name: ubby-docker-secret
