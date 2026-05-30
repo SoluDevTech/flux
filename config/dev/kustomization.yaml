@@ -1,48 +1,15 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-kustomization
+  name: dev-soludev
   namespace: flux-system
 spec:
   interval: 2m
   timeout: 90s
-  wait: false
-  sourceRef:
-    kind: GitRepository
-    name: kaiohz-repo
-  path: "dev/cluster"
-  prune: false
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: dev-cloudflare
-  namespace: flux-system
-spec:
-  interval: 5m
-  timeout: 120s
   wait: true
+  targetNamespace: soludev
   sourceRef:
     kind: GitRepository
     name: kaiohz-repo
-  path: "dev/cloudflare"
+  path: "dev/soludev"
   prune: true
-  dependsOn:
-    - name: cluster-kustomization
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: dev-forgejo
-  namespace: flux-system
-spec:
-  interval: 5m
-  timeout: 120s
-  wait: true
-  sourceRef:
-    kind: GitRepository
-    name: kaiohz-repo
-  path: "dev/forgejo"
-  prune: true
-  dependsOn:
-    - name: dev-cloudflare

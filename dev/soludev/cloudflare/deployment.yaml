@@ -1,37 +1,3 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cloudflared-config
-  namespace: soludev
-data:
-  config.yml: |
-    tunnel: 7b69fce6-d4ee-4cc4-a9c1-a644cb5096d3
-
-    originRequest:
-      noTLSVerify: true
-      keepAliveTimeout: 30s
-      connectTimeout: 30s
-      tcpKeepAlive: 10s
-      keepAliveConnections: 100
-
-    ingress:
-      - hostname: forgejo.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-      - hostname: dev.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-      - hostname: "*.dev.soludev.tech"
-        service: http://traefik.kube-system.svc.cluster.local:80
-      - service: http_status:404
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: cloudflare-secret
-  namespace: soludev
-type: Opaque
-stringData:
-  TUNNEL_TOKEN: "eyJhIjoiZGI4YWNkYjZlZGI0YmFkOWY4N2ZjNDViMDgyNjI3MjEiLCJ0IjoiN2I2OWZjZTYtZDRlZS00Y2M0LWE5YzEtYTY0NGNiNTA5NmQzIiwicyI6Ik1qSmpNRGt6TlRFdE1UazNPQzAwTWpJM0xXRXhOMlF0TW1JNFltSTFOV1ptTXpWaiJ9"
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -104,9 +70,9 @@ spec:
             path: /ready
             port: 20241
           initialDelaySeconds: 10
-            periodSeconds: 5
-            timeoutSeconds: 5
-            failureThreshold: 5
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 5
       volumes:
       - name: config
         configMap:
