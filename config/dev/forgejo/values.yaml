@@ -33,7 +33,7 @@ persistence:
 # Forgejo / Gitea configuration (maps to app.ini)
 gitea:
   config:
-    APP_NAME: 'Forgejo Dev'
+    APP_NAME: 'SoluDevTech Forgejo'
     RUN_MODE: prod
 
     server:
