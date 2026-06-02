@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: composables-postgres-pvc
+  namespace: composables
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-composables-postgres
+  resources:
+    requests:
+      storage: 5Gi
