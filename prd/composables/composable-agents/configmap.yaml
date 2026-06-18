@@ -27,3 +27,5 @@ data:
   PROVIDER: "phoenix" # or "langfuse" or "none"
   PROJECT_NAME: "composable-agents"
   PHOENIX_COLLECTOR_ENDPOINT: "https://phoenix.soludev.tech"
+  # === MCP ===
+  MCP_TOOL_TIMEOUT: 120
