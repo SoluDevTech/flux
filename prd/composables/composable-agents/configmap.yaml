@@ -28,5 +28,5 @@ data:
   PROJECT_NAME: "composable-agents"
   PHOENIX_COLLECTOR_ENDPOINT: "https://phoenix.soludev.tech"
   # === MCP ===
-  MCP_TOOL_TIMEOUT: "300"
-  AGENT_STREAM_IDLE_TIMEOUT: "500"
+  MCP_TOOL_TIMEOUT: "650"
+  AGENT_STREAM_IDLE_TIMEOUT: "650"
