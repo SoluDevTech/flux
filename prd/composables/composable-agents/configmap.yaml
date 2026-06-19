@@ -29,3 +29,4 @@ data:
   PHOENIX_COLLECTOR_ENDPOINT: "https://phoenix.soludev.tech"
   # === MCP ===
   MCP_TOOL_TIMEOUT: "300"
+  AGENT_STREAM_IDLE_TIMEOUT: "500"
