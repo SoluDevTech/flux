@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio
+  namespace: composables
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-composables-minio
+  resources:
+    requests:
+      storage: 5Gi
