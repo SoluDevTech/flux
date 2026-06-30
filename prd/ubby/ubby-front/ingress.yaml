@@ -15,6 +15,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: oauth2-proxy-service
+                name: ubby-front
                 port:
-                  number: 4180
+                  number: 4000
