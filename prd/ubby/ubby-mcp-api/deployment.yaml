@@ -6,7 +6,7 @@ metadata:
   labels:
     app: ubby-mcp-api
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: ubby-mcp-api
