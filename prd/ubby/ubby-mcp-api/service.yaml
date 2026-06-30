@@ -5,6 +5,11 @@ metadata:
   namespace: ubby
   labels:
     app: ubby-mcp-api
+  annotations:
+    traefik.ingress.kubernetes.io/service.sticky.cookie.name: mcp-route
+    traefik.ingress.kubernetes.io/service.sticky.cookie.httpOnly: "true"
+    traefik.ingress.kubernetes.io/service.sticky.cookie.secure: "true"
+    traefik.ingress.kubernetes.io/service.sticky.cookie.samesite: "lax"
 spec:
   type: ClusterIP
   selector:

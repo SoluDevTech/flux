@@ -6,7 +6,6 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/redirect-scheme: https
-    traefik.ingress.kubernetes.io/router.middlewares: ubby-mcp-api-sticky@kubernetescrd
 spec:
   rules:
     # API principale
