@@ -4,11 +4,11 @@ metadata:
   name: ubby-mcp-api-config
   namespace: ubby
 data:
-  NODE_ENV: development
-  PORT: "3000"
-  MCP_DEFAULT_PORT: "3001"
-  MCP_USE_ANONYMIZED_TELEMETRY: "false"
-  MCP_BASE_URL: https://ubby-mcp-api.soludev.tech/{id}
-  BODY_SIZE_LIMIT: 10mb
-
-
+  UBBY_MCP_FACTORY_NODE_ENV: production
+  UBBY_MCP_FACTORY_PORT: "3000"
+  UBBY_MCP_FACTORY_MCP_DEFAULT_PORT: "3001"
+  UBBY_MCP_FACTORY_MCP_BASE_URL: "https://ubby-mcp-api.soludev.tech/{id}"
+  UBBY_MCP_FACTORY_BODY_SIZE_LIMIT: 10mb
+  UBBY_MCP_FACTORY_MCP_IDLE_TIMEOUT_MS: "300000"
+  UBBY_MCP_FACTORY_MCP_GRACE_PERIOD_MS: "5000"
+  UBBY_MCP_FACTORY_MCP_LAZY_START_ENABLED: "true"

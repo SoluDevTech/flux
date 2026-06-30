@@ -6,7 +6,7 @@ metadata:
   labels:
     app: ubby-mcp-api
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: ubby-mcp-api
@@ -25,7 +25,7 @@ spec:
               app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: ubby-mcp-api
-          image: kaiohz/pickpro:ubby-mcp-api-c892ed2832c774517a0af0e1dae7df761f9f121c
+          image: kaiohz/pickpro:ubby-mcp-api-22182ff06758386814cb76867226318391970c09
           ports:
             - containerPort: 3000
           envFrom:

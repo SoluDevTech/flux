@@ -7,6 +7,6 @@ data:
   config.json: |
     {
       "apiBaseUrl": "https://ubby-back.soludev.tech/api/v1",
-      "oauth2ProxyUrl": "https://ubby.soludev.tech",
-      "logtoUrl": "https://logto.soludev.tech"
+      "supabaseUrl": "https://cxjiiggphuhqgmqvjgcw.supabase.co",
+      "supabasePublishableKey": "sb_publishable_0A7hw0HI6aREf11jS7bk8w_-OCxQB1U"
     }
