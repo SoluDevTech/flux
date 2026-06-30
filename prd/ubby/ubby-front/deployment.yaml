@@ -33,10 +33,13 @@ spec:
           image: kaiohz/pickpro:ubby-front-f6a60d904b8425ccccceda45b017a5329ed645d9
           ports:
             - containerPort: 80
-          volumeMounts:
-            - name: config-volume
-              mountPath: /usr/share/nginx/html/config.json
-              subPath: config.json
+          env:
+            - name: UBBY_MCP_FACTORY_API_BASE_URL
+              value: "https://ubby-back.soludev.tech/api/v1"
+            - name: UBBY_MCP_FACTORY_SUPABASE_URL
+              value: "https://cxjiiggphuhqgmqvjgcw.supabase.co"
+            - name: UBBY_MCP_FACTORY_SUPABASE_PUBLISHABLE_KEY
+              value: "sb_publishable_0A7hw0HI6aREf11jS7bk8w_-OCxQB1U"
           livenessProbe:
             httpGet:
               path: /health
@@ -56,9 +59,5 @@ spec:
             limits:
               memory: "96Mi"
               cpu: "100m"
-      volumes:
-        - name: config-volume
-          configMap:
-            name: ubby-front-config
       imagePullSecrets:
         - name: ubby-docker-secret
