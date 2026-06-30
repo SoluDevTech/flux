@@ -30,7 +30,7 @@ data:
       validateURL: "http://logto.soludev.svc.cluster.local:3001/oidc/jwks"
       scope: "openid email profile offline_access urn:logto:scope:organizations"
       allowedGroups:
-        - "h6cwu2gjwkf7"
+        - "6khcfikyndsl"
 
     injectRequestHeaders:
     - name: Authorization
