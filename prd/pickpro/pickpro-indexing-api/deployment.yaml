@@ -25,7 +25,7 @@ spec:
               app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: pickpro-indexing-api
-          image: kaiohz/pickpro:pickpro-indexing-api-88edc64ccd0fe521d382b097429c518ef3c97156
+          image: kaiohz/pickpro:pickpro-indexing-api-80b9a03eac48b7f623d5049ad344230e8ed122f0
           ports:
             - containerPort: 8000
           envFrom:
