@@ -27,10 +27,10 @@ resources:
     cpu: "2000m"
 
 # Persistence pour data SonarQube (extensions, plugins)
+# PVC créé manuellement (PV NFS dédié nfs-soludev-sonarqube, accessModes ReadWriteMany)
 persistence:
   enabled: true
-  storageClass: ""
-  size: 5Gi
+  existingClaim: "sonarqube-sonarqube"
 
 # Service
 service:

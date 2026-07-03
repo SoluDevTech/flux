@@ -35,17 +35,24 @@ ingress:
 server:
   port: 6006
 
-startupProbe:
-  timeoutSeconds: 5
-  periodSeconds: 5
-  failureThreshold: 60
-
-readinessProbe:
-  timeoutSeconds: 10
-  periodSeconds: 15
-
-livenessProbe:
-  timeoutSeconds: 10
+# Probes (chart 9.x: déplacées sous healthChecks)
+healthChecks:
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 60
+  readinessProbe:
+    initialDelaySeconds: 60
+    periodSeconds: 15
+    timeoutSeconds: 10
+    failureThreshold: 10
+  livenessProbe:
+    initialDelaySeconds: 120
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 3
 
 service:
   type: "ClusterIP"
