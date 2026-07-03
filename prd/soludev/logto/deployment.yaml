@@ -18,13 +18,13 @@ spec:
     spec:
       containers:
         - name: logto
-          image: svhd/logto:1.38.0
+          image: svhd/logto:1.41.0
           command: 
             - "sh"
             - "-c"
             - |
               npm run cli db seed -- --swe
-              npm run cli db alteration deploy v1.38.0
+              npm run cli db alteration deploy v1.41.0
               exec npm start
           ports:
             - containerPort: 3002
