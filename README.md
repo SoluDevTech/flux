@@ -3805,3 +3805,135 @@ kubectl top nodes
 kubectl get pods -A -o wide --field-selector spec.nodeName=bignode | wc -l
 kubectl get pods -A -o wide --field-selector spec.nodeName=lenovo | wc -l
 ```
+
+### Logto / OAuth2 Proxy — Authentification Lente (callback OAuth2 ~2s)
+
+**Symptoms:**
+- La connexion à un service protégé par OAuth2 Proxy (ex: `pickpro.soludev.tech`) prend 1.5 à 9 secondes
+- Les logs OAuth2 Proxy montrent des callbacks `/oauth2/callback` lents:
+  ```
+  GET /oauth2/callback?code=... HTTP/1.1 302 24 2.083
+  ```
+  (le dernier chiffre est le temps en secondes — normal: < 0.5s)
+- Les logs Logto montrent des `POST /oidc/token` lents:
+  ```
+  POST /oidc/token 200 8,443ms   # anormal (> 8s)
+  POST /oidc/token 200 425ms     # lent (norme: < 80ms)
+  ```
+
+**Root Cause:**
+La table PostgreSQL `oidc_model_instances` de Logto accumule des enregistrements expirés sans jamais les nettoyer. Avec 16 000+ rows expirés sur 16 200 total (99% de déchets), et des statistiques PostgreSQL corrompues (`n_live_tup = 1` au lieu de 16 230), le query planner génère des plans catastrophiques:
+
+| Mesure | Stats corrompues | Après VACUUM ANALYZE |
+|---|---|---|
+| Planning Time | 178ms | 11ms |
+| Execution Time | 53ms | 0.4ms |
+| Total par query | 231ms | 11ms |
+
+Pendant un token exchange, oidc-provider fait 3-5 queries sur cette table (lookup AuthorizationCode, Session, Grant, write AccessToken, RefreshToken). Avec des stats corrompues: 5 × 231ms = ~1.15s rien qu'en DB.
+
+**Diagnostic:**
+
+```bash
+# 1. Vérifier les stats de la table
+kubectl exec -n soludev <postgres-pod> -- psql -U logto -d logto -c "
+SELECT relname, n_live_tup, n_dead_tup, last_vacuum, autovacuum_count
+FROM pg_stat_user_tables 
+WHERE relname = 'oidc_model_instances';"
+
+# Si n_live_tup est très différent du count réel → stats corrompues
+kubectl exec -n soludev <postgres-pod> -- psql -U logto -d logto -c "
+SELECT count(*) FROM oidc_model_instances;"
+
+# 2. Vérifier le nombre d'enregistrements expirés
+kubectl exec -n soludev <postgres-pod> -- psql -U logto -d logto -c "
+SELECT model_name, count(*) AS expired
+FROM oidc_model_instances
+WHERE expires_at < now()
+GROUP BY model_name
+ORDER BY expired DESC;"
+
+# 3. Mesurer le planning time (si > 50ms → problème)
+kubectl exec -n soludev <postgres-pod> -- psql -U logto -d logto -c "
+EXPLAIN ANALYZE SELECT * FROM oidc_model_instances 
+WHERE model_name = 'AuthorizationCode' 
+AND payload->>'uid' = 'nonexistent' 
+LIMIT 1;"
+
+# 4. Vérifier les logs Logto pour les token exchanges lents
+kubectl logs -n soludev <logto-pod> --tail=200 | grep "POST /oidc/token"
+```
+
+**Fix immédiat:**
+
+```bash
+# 1. Supprimer les enregistrements expirés
+kubectl exec -n soludev <postgres-pod> -- psql -U logto -d logto -c "
+DELETE FROM oidc_model_instances WHERE expires_at < now();"
+
+# 2. VACUUM ANALYZE pour corriger les stats et récupérer l'espace
+kubectl exec -n soludev <postgres-pod> -- psql -U logto -d logto -c "VACUUM ANALYZE;"
+
+# 3. Vérifier que les stats sont corrigées
+kubectl exec -n soludev <postgres-pod> -- psql -U logto -d logto -c "
+SELECT relname, n_live_tup, n_dead_tup, last_vacuum
+FROM pg_stat_user_tables 
+WHERE relname = 'oidc_model_instances';"
+```
+
+**Prévention — Tuning autovacuum:**
+
+```bash
+# Rendre l'autovacuum plus agressif sur oidc_model_instances
+kubectl exec -n soludev <postgres-pod> -- psql -U logto -d logto -c "
+ALTER TABLE oidc_model_instances SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02
+);"
+```
+
+**Prévention — CronJob de cleanup:**
+
+Créer un CronJob qui tourne toutes les heures pour nettoyer les enregistrements expirés:
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: logto-oidc-cleanup
+  namespace: soludev
+spec:
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: psql
+            image: postgres:17-alpine
+            env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: logto-secret
+                  key: DB_PASSWORD
+            command:
+            - sh
+            - -c
+            - |
+              psql -h postgres -U logto -d logto -c "
+                DELETE FROM oidc_model_instances WHERE expires_at < now();
+                VACUUM ANALYZE oidc_model_instances;
+              "
+```
+
+**Vérification après fix:**
+
+```bash
+# Les callbacks OAuth2 Proxy doivent être < 1s
+kubectl logs -n pickpro -l app.kubernetes.io/name=oauth2-proxy --tail=20 | grep "callback"
+
+# Les token exchanges Logto doivent être < 100ms
+kubectl logs -n soludev <logto-pod> --tail=50 | grep "POST /oidc/token"
+```
