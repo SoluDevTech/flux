@@ -50,7 +50,7 @@ gitea:
       HOST: postgres.soludev.svc.cluster.local:5432
       NAME: forgejo
       USER: forgejo
-      PASSWD: change-me-in-production
+      # PASSWD injected via deployment.env from postgres-secret (no secrets in Git)
       SSL_MODE: disable
 
     security:
@@ -76,6 +76,15 @@ gitea:
     passwordMode: initialOnlyNoReset
 
   oauth: []
+
+# Inject database password from existing Kubernetes secret (no secrets in Git)
+deployment:
+  env:
+    - name: GITEA__database__PASSWD
+      valueFrom:
+        secretKeyRef:
+          name: postgres-secret
+          key: password
 
 # Resource limits (dev cluster is small)
 resources:

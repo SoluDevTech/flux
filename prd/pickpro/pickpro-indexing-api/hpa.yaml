@@ -1,0 +1,45 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: pickpro-indexing-api
+  namespace: pickpro
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: pickpro-indexing-api
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    # Indexing API a un initialDelay de 180s sur le liveness/readiness probe.
+    # On stabilise plus longtemps pour éviter de scaler pendant le démarrage.
+    scaleUp:
+      stabilizationWindowSeconds: 120
+      selectPolicy: Max
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 60
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      selectPolicy: Min
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 120
