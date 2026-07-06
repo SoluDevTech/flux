@@ -7,7 +7,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
 spec:
   rules:
-    - host: pickpro-indexing-api.soludev.tech
+    - host: indexing-api.pickpro.io
       http:
         paths:
           - path: /pickpro/rest/v1/webhooks

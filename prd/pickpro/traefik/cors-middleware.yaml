@@ -19,7 +19,7 @@ spec:
       - "Accept"
       - "Origin"
     accessControlAllowOriginList:
-      - "https://pickpro.soludev.tech"
+      - "https://app.pickpro.io"
       - "http://localhost:5173"
     accessControlMaxAge: 100
     addVaryHeader: true

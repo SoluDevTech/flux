@@ -24,7 +24,13 @@ data:
 
       - hostname: api.pickpro.io
         service: http://traefik.kube-system.svc.cluster.local:80
-        
+
+      - hostname: indexing-api.pickpro.io
+        service: http://traefik.kube-system.svc.cluster.local:80
+
+      - hostname: oauth2-proxy.pickpro.io
+        service: http://traefik.kube-system.svc.cluster.local:80
+
       - hostname: "*.pickpro.io"
         service: http://traefik.kube-system.svc.cluster.local:80
 

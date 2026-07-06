@@ -10,4 +10,4 @@ spec:
     service:
       name: oauth2-proxy-service
       port: 4180
-    query: "/oauth2/sign_in?rd=https://pickpro.soludev.tech{url}"
+    query: "/oauth2/sign_in?rd=https://app.pickpro.io{url}"

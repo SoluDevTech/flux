@@ -9,7 +9,7 @@ metadata:
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
   rules:
-    - host: pickpro-api.soludev.tech
+    - host: api.pickpro.io
       http:
         paths:
           - path: /

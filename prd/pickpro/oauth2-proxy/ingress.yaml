@@ -8,7 +8,7 @@ metadata:
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
   rules:
-  - host: pickpro-oauth2-proxy.soludev.tech
+  - host: oauth2-proxy.pickpro.io
     http:
       paths:
       - path: /

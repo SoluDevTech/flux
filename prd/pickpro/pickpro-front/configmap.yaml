@@ -6,8 +6,8 @@ metadata:
 data:
   config.json: |
     {
-        "backendUrl": "https://pickpro-api.soludev.tech",
-        "oauth2ProxyUrl": "https://pickpro.soludev.tech",
+        "backendUrl": "https://api.pickpro.io",
+        "oauth2ProxyUrl": "https://app.pickpro.io",
         "logtoUrl": "https://logto.soludev.tech",
         "logtoAppId": "sazp1vx8ah3pwv56rqm9v",
         "useMock": false,

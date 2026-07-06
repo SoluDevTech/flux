@@ -4,7 +4,7 @@ metadata:
   name: pickpro-indexing-api-config
   namespace: pickpro
 data:
-  ALLOWED_ORIGINS: '["https://pickpro.soludev.tech"]'
+  ALLOWED_ORIGINS: '["https://app.pickpro.io"]'
   INDEXING_MODEL: google/gemini-2.5-flash:nitro
   EMBEDDING_CLIENT: openai/text-embedding-3-large
   TEMPERATURE: "0.0"

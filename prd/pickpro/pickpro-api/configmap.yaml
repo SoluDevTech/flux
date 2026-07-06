@@ -4,7 +4,7 @@ metadata:
   name: pickpro-api-config
   namespace: pickpro
 data:
-  ALLOWED_ORIGINS: '["https://pickpro.soludev.tech"]'
+  ALLOWED_ORIGINS: '["https://app.pickpro.io"]'
   DEV_MODE: "false"
   CHAT_MODEL: anthropic/claude-haiku-4.5
   TITLE_MODEL: anthropic/claude-haiku-4.5
@@ -27,16 +27,16 @@ data:
   RECALL_AI_BOT_NAME: PickPro
   JWT_AUDIENCE: sazp1vx8ah3pwv56rqm9v
   ENVIRONMENT: "production"
-  ALLOWED_REDIRECT_URIS: '["https://pickpro.soludev.tech"]'
+  ALLOWED_REDIRECT_URIS: '["https://app.pickpro.io"]'
   PROTOCOL: https
-  OAUTH2_PROXY_URL: https://pickpro.soludev.tech
+  OAUTH2_PROXY_URL: https://app.pickpro.io
   PICKPRO_ORGANIZATION_ID: m9qqyvmp8xyc
   SMTP_HOST: smtp.gmail.com
   SMTP_PORT: "587"
   SMTP_USERNAME: soludevtech@gmail.com
   SMTP_FROM: soludevtech@gmail.com
   SMTP_SECURE: "true"
-  APP_BASE_URL: https://pickpro.soludev.tech
+  APP_BASE_URL: https://app.pickpro.io
   NOTIFICATION_CRON_TIME: 12:00
   NOTIFICATION_MAIL_CRON_TIME: 12:00
 
