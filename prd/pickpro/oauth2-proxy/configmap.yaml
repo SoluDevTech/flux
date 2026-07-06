@@ -5,7 +5,7 @@ metadata:
   namespace: pickpro
 data:
   oauth2_proxy.cfg: |
-    redirect_url = "https://oauth2-proxy.pickpro.io/oauth2/callback"
+    redirect_url = "https://app.pickpro.io/oauth2/callback"
 
     cookie_domains = [".pickpro.io"]
     whitelist_domains = [".pickpro.io"]
