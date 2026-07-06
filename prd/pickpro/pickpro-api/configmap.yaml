@@ -28,6 +28,7 @@ data:
   JWT_AUDIENCE: sazp1vx8ah3pwv56rqm9v
   ENVIRONMENT: "production"
   ALLOWED_REDIRECT_URIS: '["https://app.pickpro.io"]'
+  DOMAIN: app.pickpro.io
   PROTOCOL: https
   OAUTH2_PROXY_URL: https://app.pickpro.io
   PICKPRO_ORGANIZATION_ID: m9qqyvmp8xyc
