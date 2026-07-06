@@ -18,7 +18,10 @@ data:
 
       - hostname: pickpro.io
         service: http://traefik.kube-system.svc.cluster.local:80
-
+        
+      - hostname: app.pickpro.io
+        service: http://traefik.kube-system.svc.cluster.local:80
+        
       - hostname: "*.pickpro.io"
         service: http://traefik.kube-system.svc.cluster.local:80
 
