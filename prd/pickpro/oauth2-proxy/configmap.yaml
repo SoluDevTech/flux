@@ -7,8 +7,8 @@ data:
   oauth2_proxy.cfg: |
     redirect_url = "https://app.pickpro.io/oauth2/callback"
 
-    cookie_domains = [".pickpro.io"]
-    whitelist_domains = [".pickpro.io"]
+    cookie_domains = [".pickpro.io", ".soludev.tech"]
+    whitelist_domains = [".pickpro.io", ".soludev.tech"]
 
     cookie_name = "oauth2-proxy-pickpro"
     email_domains = ["*"]
