@@ -5,7 +5,7 @@ metadata:
   namespace: pickpro
 data:
   config.yml: |
-    tunnel: 7d240cf1-d600-40c4-9d6f-72f1ebce26a7
+    tunnel: 60b43b21-46c0-4b91-a3f5-eb9b23a1217b
 
     originRequest:
       noTLSVerify: true
