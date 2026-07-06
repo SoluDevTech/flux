@@ -27,7 +27,7 @@ data:
   RECALL_AI_BOT_NAME: PickPro
   JWT_AUDIENCE: sazp1vx8ah3pwv56rqm9v
   ENVIRONMENT: "production"
-  ALLOWED_REDIRECT_URIS: '["https://app.pickpro.io"]'
+  ALLOWED_REDIRECT_URIS: '["https://logto.soludev.tech"]'
   DOMAIN: app.pickpro.io
   PROTOCOL: https
   OAUTH2_PROXY_URL: https://app.pickpro.io
