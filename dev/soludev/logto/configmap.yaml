@@ -4,9 +4,9 @@ metadata:
   name: logto-config
   namespace: soludev
 data:
-  ADMIN_ENDPOINT: http://logto.soludev.svc.cluster.local:3002
+  ADMIN_ENDPOINT: https://logto-dev-admin.soludev.tech
   ADMIN_PORT: "3002"
-  ENDPOINT: http://logto.soludev.svc.cluster.local:3001
+  ENDPOINT: https://logto-dev.soludev.tech
   NODE_ENV: production
   PORT: "3001"
   TRUST_PROXY_HEADER: "true"
