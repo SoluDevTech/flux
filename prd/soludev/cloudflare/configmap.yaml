@@ -28,15 +28,6 @@ data:
       - hostname: logto-admin.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
 
-      - hostname: pickpro.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-
-      - hostname: pickpro-api.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-
-      - hostname: pickpro-indexing-api.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-
       - hostname: openobserve.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
 
@@ -44,9 +35,6 @@ data:
         service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: headlamp.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-
-      - hostname: pickpro-oauth2-proxy.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: ubby.soludev.tech
