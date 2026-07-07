@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pickpro-front
+  namespace: pickpro
+  labels:
+    app: pickpro-front
+spec:
+  type: ClusterIP
+  selector:
+    app: pickpro-front
+  ports:
+    - port: 5173
+      targetPort: 80
+      protocol: TCP
+      name: http

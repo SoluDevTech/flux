@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgvector
+  namespace: pickpro
+  labels:
+    app: pgvector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgvector
+  template:
+    metadata:
+      labels:
+        app: pgvector
+        app.kubernetes.io/part-of: soludev-workload
+    spec:
+      volumes:
+        - name: init-sql
+          configMap:
+            name: pgvector-init
+        - name: pgvector-data
+          persistentVolumeClaim:
+            claimName: pickpro-pgvector-pvc
+      containers:
+        - name: pgvector
+          image: pgvector/pgvector:0.8.0-pg17
+          args: ["postgres", "-c", "tcp_keepalives_idle=30", "-c", "tcp_keepalives_interval=10", "-c", "tcp_keepalives_count=6", "-c", "idle_in_transaction_session_timeout=60000"]
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: pgvector-secret
+          volumeMounts:
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d/init.sql
+              subPath: init.sql
+            - name: pgvector-data
+              mountPath: /var/lib/postgresql/data
+          startupProbe:
+            tcpSocket:
+              port: 5432
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"

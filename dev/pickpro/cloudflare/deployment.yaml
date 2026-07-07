@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  namespace: pickpro
+  labels:
+    app: cloudflared
+    app.kubernetes.io/part-of: soludev-workload
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: cloudflared
+  template:
+    metadata:
+      labels:
+        app: cloudflared
+        app.kubernetes.io/part-of: soludev-workload
+    spec:
+      dnsPolicy: ClusterFirst
+      containers:
+      - name: cloudflared
+        image: cloudflare/cloudflared:2026.5.0
+        args:
+        - tunnel
+        - --no-autoupdate
+        - --protocol
+        - http2
+        - --loglevel
+        - info
+        - --edge-ip-version
+        - "4"
+        - --retries
+        - "5"
+        - --config
+        - /etc/cloudflared/config.yml
+        - run
+        - --token
+        - $(TUNNEL_TOKEN)
+        env:
+        - name: TUNNEL_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-secret
+              key: TUNNEL_TOKEN
+        volumeMounts:
+        - name: config
+          mountPath: /etc/cloudflared/config.yml
+          subPath: config.yml
+          readOnly: true
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "400m"
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 20241
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 20241
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 5
+      volumes:
+      - name: config
+        configMap:
+          name: cloudflared-config

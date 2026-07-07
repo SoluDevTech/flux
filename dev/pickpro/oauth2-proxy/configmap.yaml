@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-config
+  namespace: pickpro
+data:
+  oauth2_proxy.cfg: |-
+    redirect_url = "https://pickpro.soludev.tech/oauth2/callback"
+
+    cookie_domains = [".soludev.tech"]
+    whitelist_domains = [".soludev.tech"]
+
+    cookie_name = "oauth2-proxy-pickpro-dev"
+    email_domains = ["*"]
+
+    reverse_proxy = true
+
+    cookie_secure = true
+    cookie_httponly = true
+    cookie_path = "/"
+    cookie_samesite = "lax"
+    cookie_refresh = "12h"
+    cookie_csrf_per_request = true
+    cookie_csrf_expire = "15m"
+
+    skip_provider_button = true
+    silence_ping_logging = true
+
+    skip_auth_routes = [
+      "^/auth/invite",
+      "^/assets/",
+      "^/config\\.json",
+      "^/pickpro/rest/v1/verify-invite",
+      "^/pickpro/rest/v1/set-password-public",
+    ]

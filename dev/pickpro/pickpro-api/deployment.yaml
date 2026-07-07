@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pickpro-api
+  namespace: pickpro
+  labels:
+    app: pickpro-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pickpro-api
+  template:
+    metadata:
+      labels:
+        app: pickpro-api
+        app.kubernetes.io/part-of: soludev-workload
+    spec:
+      containers:
+        - name: pickpro-api
+          image: kaiohz/pickpro:pickpro-back-8fa06221792389813b1c28cdb46d5754923e35bc
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: pickpro-api-config
+            - secretRef:
+                name: pickpro-api-secret
+          livenessProbe:
+            httpGet:
+              path: /pickpro/rest/v1/health
+              port: 8000
+            initialDelaySeconds: 90
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /pickpro/rest/v1/health
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "768Mi"
+              cpu: "500m"
+      imagePullSecrets:
+        - name: pickpro-docker-secret

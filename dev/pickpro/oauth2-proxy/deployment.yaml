@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oauth2-proxy
+  namespace: pickpro
+  labels:
+    app: oauth2-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oauth2-proxy
+  template:
+    metadata:
+      labels:
+        app: oauth2-proxy
+        app.kubernetes.io/part-of: soludev-workload
+    spec:
+      containers:
+      - name: oauth2-proxy
+        image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.2
+        args:
+        - --alpha-config=/etc/oauth2_proxy/oauth2_proxy.yml
+        - --cookie-name=oauth2-proxy-pickpro-dev
+        - --config=/etc/oauth2_proxy/oauth2_proxy.cfg
+        env:
+        - name: OAUTH2_PROXY_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              key: client-id
+              name: oauth2-proxy-secret
+        - name: OAUTH2_PROXY_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: client-secret
+              name: oauth2-proxy-secret
+        - name: OAUTH2_PROXY_COOKIE_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: cookie-secret
+              name: oauth2-proxy-secret
+        ports:
+        - containerPort: 4180
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: alpha-config
+          mountPath: /etc/oauth2_proxy/oauth2_proxy.yml
+          subPath: oauth2_proxy.yml
+          readOnly: true
+        - name: config
+          mountPath: /etc/oauth2_proxy/oauth2_proxy.cfg
+          subPath: oauth2_proxy.cfg
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: http
+            scheme: HTTP
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+            scheme: HTTP
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "300m"
+      volumes:
+      - name: alpha-config
+        configMap:
+          name: oauth2-proxy-alpha-config
+      - name: config
+        configMap:
+          name: oauth2-proxy-config

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pickpro-indexing-api-config
+  namespace: pickpro
+data:
+  ALLOWED_ORIGINS: '["https://pickpro.soludev.tech"]'
+  ALLOWED_TRANSCRIPT_DOMAINS: '["recall.ai"]'
+  EMBEDDING_CLIENT: openai/text-embedding-3-large
+  ENVIRONMENT: development
+  INDEXING_MODEL: google/gemini-2.5-flash:nitro
+  MAX_WORKERS: "2"
+  MINIO_HOST: minio-pickpro.pickpro.svc.cluster.local:9000
+  OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
+  PHOENIX_HOST: ""
+  PYTHONPATH: ./pickpro_indexing_api
+  RECALL_AI_REGION: eu-central-1
+  SUMMARY_MODEL: google/gemini-2.5-flash:nitro
+  TEMPERATURE: "0.0"
+  TRANSCRIPT_BUCKET: transcripts

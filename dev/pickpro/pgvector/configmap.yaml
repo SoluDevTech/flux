@@ -1,0 +1,197 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgvector-init
+  namespace: pickpro
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS "threads" (
+    	"id" UUID NOT NULL UNIQUE,
+    	"title" TEXT,
+    	"created_at" BIGINT,
+    	"user_id" TEXT,
+    	PRIMARY KEY("id")
+    );
+
+
+
+
+    CREATE TABLE IF NOT EXISTS "messages" (
+    	"id" UUID NOT NULL UNIQUE,
+    	"message" TEXT,
+    	"role" TEXT,
+    	"thread_id" UUID,
+    	"created_at" BIGINT,
+    	PRIMARY KEY("id")
+    );
+
+
+
+
+    CREATE TABLE IF NOT EXISTS "users" (
+    	"id" TEXT UNIQUE,
+    	"created_at" BIGINT,
+    	PRIMARY KEY("id")
+    );
+
+
+
+
+    CREATE TABLE IF NOT EXISTS "resumes" (
+    	"id" SERIAL PRIMARY KEY,
+    	"hard_skills" JSONB,
+    	"soft_skills" JSONB,
+    	"companies" JSONB,
+    	"industries" JSONB,
+    	"degrees" JSONB,
+    	"location" TEXT,
+    	"zipcode" INTEGER,
+    	"contract_types" JSONB,
+    	"expected_salary_min" INTEGER,
+    	"expected_salary_max" INTEGER,
+    	"expected_daily_rate" INTEGER,
+    	"work_mode" JSONB,
+    	"years_of_experience" INTEGER,
+    	"seniority" TEXT,
+    	"updated_at" BIGINT,
+    	"is_active" BOOLEAN,
+    	"job_label" TEXT,
+    	"job_family" TEXT,
+    	"job_domain" TEXT,
+    	"lastname" TEXT,
+    	"firstname" TEXT,
+    	"phone" TEXT,
+    	"mail" TEXT,
+    	"bucket" TEXT,
+    	"object_path" TEXT
+    );
+
+    CREATE TABLE job_names (
+        id SERIAL PRIMARY KEY,
+        label VARCHAR(255) NOT NULL,
+        family VARCHAR(50) NOT NULL,
+        domain VARCHAR(50) NOT NULL
+    );
+
+    INSERT INTO job_names (label, family, domain) VALUES
+    ('Développeur backend', 'TECHNIQUE', 'DEV'),
+    ('Développeur frontend', 'TECHNIQUE', 'DEV'),
+    ('Développeur fullstack', 'TECHNIQUE', 'DEV'),
+    ('Développeur mobile', 'TECHNIQUE', 'DEV'),
+    ('Ingénieur DevOps', 'TECHNIQUE', 'INFRA'),
+    ('Ingénieur QA / Test automatique', 'TECHNIQUE', 'DEV'),
+    ('Architecte logiciel', 'TECHNIQUE', 'DEV'),
+    ('Data Engineer', 'TECHNIQUE', 'DATA'),
+    ('Data Scientist', 'TECHNIQUE', 'DATA'),
+    ('Data Analyst', 'TECHNIQUE', 'DATA'),
+    ('Développeur BI', 'TECHNIQUE', 'DATA'),
+    ('Administrateur systèmes & réseaux', 'TECHNIQUE', 'INFRA'),
+    ('Ingénieur cloud', 'TECHNIQUE', 'INFRA'),
+    ('Ingénieur sécurité', 'TECHNIQUE', 'SECURITE'),
+    ('Product Owner', 'FONCTIONNEL', 'PRODUIT'),
+    ('Product Manager', 'FONCTIONNEL', 'PRODUIT'),
+    ('Business Analyst', 'FONCTIONNEL', 'PRODUIT'),
+    ('Consultant AMOA', 'FONCTIONNEL', 'PROJET'),
+    ('Chef de projet IT', 'FONCTIONNEL', 'PROJET'),
+    ('Chef de projet digital', 'FONCTIONNEL', 'PROJET'),
+    ('Scrum Master', 'FONCTIONNEL', 'AGILE'),
+    ('Consultant fonctionnel ERP', 'FONCTIONNEL', 'ERP'),
+    ('Consultant fonctionnel CRM', 'FONCTIONNEL', 'CRM'),
+    ('Consultant métier Banque', 'FONCTIONNEL', 'METIER'),
+    ('Change Manager', 'FONCTIONNEL', 'CHANGE'),
+    ('UX Designer', 'CREATIF', 'DESIGN'),
+    ('UI Designer', 'CREATIF', 'DESIGN'),
+    ('UX/UI Designer', 'CREATIF', 'DESIGN'),
+    ('Product Designer', 'CREATIF', 'DESIGN'),
+    ('UX Writer / Content Designer', 'CREATIF', 'CONTENU'),
+    ('Graphic Designer', 'CREATIF', 'DESIGN');
+
+
+    CREATE TABLE industries (
+        id SERIAL PRIMARY KEY,
+        label VARCHAR(100) NOT NULL
+    );
+
+    INSERT INTO industries (label) VALUES
+    ('Banking'),
+    ('Insurance'),
+    ('Asset Management'),
+    ('Private Equity'),
+    ('Venture Capital'),
+    ('Software & SaaS'),
+    ('E-Commerce'),
+    ('FinTech'),
+    ('EdTech'),
+    ('HealthTech'),
+    ('Marketplace'),
+    ('Cybersecurity'),
+    ('Retail'),
+    ('Luxury'),
+    ('Fashion'),
+    ('Fast-Moving Consumer Goods'),
+    ('Food & Beverage'),
+    ('Automotive'),
+    ('Aerospace'),
+    ('Manufacturing'),
+    ('Construction'),
+    ('Energy'),
+    ('Utilities'),
+    ('Healthcare'),
+    ('Pharmaceuticals'),
+    ('Biotechnology'),
+    ('Medical Devices'),
+    ('Consulting'),
+    ('Audit'),
+    ('Legal'),
+    ('Real Estate'),
+    ('Logistics'),
+    ('Transportation'),
+    ('Media'),
+    ('Advertising'),
+    ('Entertainment'),
+    ('Gaming'),
+    ('Publishing'),
+    ('Telecom'),
+    ('Cloud Services'),
+    ('Public Sector'),
+    ('Education'),
+    ('Non-Profit'),
+    ('Defense'),
+    ('Agriculture'),
+    ('Environmental Services'),
+    ('Hospitality'),
+    ('Tourism'),
+    ('Travel');
+
+    ALTER TABLE "messages"
+    ADD FOREIGN KEY("thread_id") REFERENCES "threads"("id")
+    ON UPDATE NO ACTION ON DELETE CASCADE;
+    ALTER TABLE "threads"
+    ADD FOREIGN KEY("user_id") REFERENCES "users"("id")
+    ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+    CREATE INDEX idx_threads_user_id ON threads(user_id);
+    CREATE INDEX idx_threads_created_at ON threads(created_at);
+    CREATE INDEX idx_threads_user_created ON threads(user_id, created_at DESC);
+
+    CREATE INDEX idx_messages_thread_id ON messages(thread_id);
+    CREATE INDEX idx_messages_thread_created ON messages(thread_id, created_at);
+    CREATE INDEX idx_messages_role ON messages(role);
+
+    CREATE INDEX idx_users_created_at ON users(created_at);
+
+    CREATE INDEX idx_resumes_hard_skills ON resumes USING GIN (hard_skills);
+    CREATE INDEX idx_resumes_soft_skills ON resumes USING GIN (soft_skills);
+    CREATE INDEX idx_resumes_location ON resumes(location);
+    CREATE INDEX idx_resumes_experience ON resumes(years_of_experience, seniority);
+    CREATE INDEX idx_resumes_salary ON resumes(expected_salary_min, expected_salary_max);
+    CREATE INDEX idx_resumes_daily_rate ON resumes(expected_daily_rate);
+    CREATE INDEX idx_resumes_contract_types ON resumes USING GIN (contract_types);
+    CREATE INDEX idx_resumes_work_mode ON resumes USING GIN (work_mode);
+    CREATE INDEX idx_resumes_active ON resumes(is_active) WHERE is_active = true;
+    CREATE INDEX idx_resumes_updated_at ON resumes(updated_at);
+    CREATE INDEX idx_resumes_active_updated ON resumes(is_active, updated_at DESC) WHERE is_active = true;
+
+    CREATE INDEX idx_job_names_family ON job_names(family);
+    CREATE INDEX idx_job_names_domain ON job_names(domain);
+    CREATE INDEX idx_job_names_family_domain ON job_names(family, domain);

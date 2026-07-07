@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pickpro-indexing-api
+  namespace: pickpro
+  labels:
+    app: pickpro-indexing-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pickpro-indexing-api
+  template:
+    metadata:
+      labels:
+        app: pickpro-indexing-api
+        app.kubernetes.io/part-of: soludev-workload
+    spec:
+      containers:
+        - name: pickpro-indexing-api
+          image: kaiohz/pickpro:pickpro-indexing-api-80b9a03eac48b7f623d5049ad344230e8ed122f0
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: pickpro-indexing-api-config
+            - secretRef:
+                name: pickpro-indexing-api-secret
+          livenessProbe:
+            httpGet:
+              path: /pickpro/rest/v1/health/status
+              port: 8000
+            initialDelaySeconds: 180
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /pickpro/rest/v1/health/status
+              port: 8000
+            initialDelaySeconds: 120
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+      imagePullSecrets:
+        - name: pickpro-docker-secret
