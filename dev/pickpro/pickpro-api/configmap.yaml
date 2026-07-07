@@ -22,10 +22,10 @@ data:
   INDEXING_API_URL: http://pickpro-indexing-api.pickpro.svc.cluster.local:8000/pickpro/rest/v1
   LOGTO_URL: http://logto.soludev.svc.cluster.local:3001
   LOGTO_GOOGLE_CONNECTOR_ID: cfw668egqtdjweu6oxhxk
-  LOGTO_M2M_APP_ID: s44irlst66e578jqdyeaq
+  LOGTO_M2M_APP_ID: pickpro-dev-m2m
   RECALL_AI_REGION: eu-central-1
   RECALL_AI_BOT_NAME: PickPro-Dev
-  JWT_AUDIENCE: sazp1vx8ah3pwv56rqm9v
+  JWT_AUDIENCE: pickpro-dev
   ENVIRONMENT: "development"
   ALLOWED_REDIRECT_URIS: '["https://pickpro.soludev.tech"]'
   DOMAIN: pickpro.soludev.tech
