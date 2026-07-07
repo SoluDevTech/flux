@@ -1,3 +1,4 @@
 openbao-credentials.json
 secret.yaml
 .serena
+docker-secret.yaml
