@@ -17,6 +17,10 @@ data:
     ingress:
       - hostname: forgejo.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
+      - hostname: logto-dev.soludev.tech
+        service: http://traefik.kube-system.svc.cluster.local:80
+      - hostname: logto-dev-admin.soludev.tech
+        service: http://traefik.kube-system.svc.cluster.local:80
       - hostname: pickpro.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
       - hostname: pickpro-api.soludev.tech

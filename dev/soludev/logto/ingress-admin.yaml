@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: logto-ingress-admin
+  namespace: soludev
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/redirect-scheme: https
+    traefik.ingress.kubernetes.io/router.middlewares: soludev-forward-proto-https@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: logto-dev-admin.soludev.tech
+    http:
+      paths:
+      - backend:
+          service:
+            name: logto
+            port:
+              number: 3002
+        path: /
+        pathType: Prefix

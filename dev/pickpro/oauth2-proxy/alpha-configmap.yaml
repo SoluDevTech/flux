@@ -22,8 +22,8 @@ data:
       clientID: ${OAUTH2_PROXY_CLIENT_ID}
       clientSecret: ${OAUTH2_PROXY_CLIENT_SECRET}
       oidcConfig:
-        issuerURL: "https://logto.soludev.tech/oidc"
-      loginURL: "https://logto.soludev.tech/oidc/auth"
+        issuerURL: "https://logto-dev.soludev.tech/oidc"
+      loginURL: "https://logto-dev.soludev.tech/oidc/auth"
       redeemURL: "http://logto.soludev.svc.cluster.local:3001/oidc/token"
       profileURL: "http://logto.soludev.svc.cluster.local:3001/oidc/me"
       validateURL: "http://logto.soludev.svc.cluster.local:3001/oidc/jwks"
