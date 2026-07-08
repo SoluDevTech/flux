@@ -31,7 +31,7 @@ spec:
               app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: raganything
-          image: kaiohz/pickpro:raganything-5da33df46c6b351d2de091eb150e5e99ae2a21de
+          image: kaiohz/pickpro:raganything-a5c3b925716fd893e93ca29c3ac735c784decd65
           ports:
             - containerPort: 8000
           envFrom:
