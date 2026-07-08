@@ -33,10 +33,7 @@ spec:
             - |
               sysctl -w vm.max_map_count=524288
               sysctl -w fs.file-max=131072
-              echo "* soft nofile 131072" >> /etc/security/limits.conf
-              echo "* hard nofile 131072" >> /etc/security/limits.conf
-              echo "* soft nproc 8192" >> /etc/security/limits.conf
-              echo "* hard nproc 8192" >> /etc/security/limits.conf
+              echo "sysctl applied"
       containers:
         - name: sonarqube
           image: sonarqube:26.5.0.122743-community
