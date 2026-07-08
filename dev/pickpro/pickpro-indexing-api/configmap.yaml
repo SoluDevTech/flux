@@ -8,14 +8,14 @@ data:
   ALLOWED_TRANSCRIPT_DOMAINS: '["recall.ai"]'
   EMBEDDING_CLIENT: openai/text-embedding-3-large
   ENVIRONMENT: development
-  INDEXING_MODEL: google/gemini-2.5-flash:nitro
+  INDEXING_MODEL: anthropic/claude-haiku-4.5:nitro
   MAX_WORKERS: "2"
   MINIO_HOST: minio-pickpro.pickpro.svc.cluster.local:9000
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
   PHOENIX_HOST: https://phoenix.soludev.tech
   PYTHONPATH: ./pickpro_indexing_api
   RECALL_AI_REGION: eu-central-1
-  SUMMARY_MODEL: google/gemini-2.5-flash:nitro
+  SUMMARY_MODEL: anthropic/claude-haiku-4.5:nitro
   TEMPERATURE: "0.0"
   TRANSCRIPT_BUCKET: transcripts
   # KREUZBERG EXTRACTION
