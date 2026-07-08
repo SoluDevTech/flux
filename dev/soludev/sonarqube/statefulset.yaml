@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sonarqube-sonarqube
+  namespace: soludev
+  labels:
+    app: sonarqube
+    app.kubernetes.io/name: sonarqube
+    app.kubernetes.io/part-of: soludev-workload
+spec:
+  serviceName: sonarqube-sonarqube
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sonarqube
+  template:
+    metadata:
+      labels:
+        app: sonarqube
+        app.kubernetes.io/name: sonarqube
+        app.kubernetes.io/part-of: soludev-workload
+    spec:
+      initContainers:
+        - name: init-sysctl
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              sysctl -w vm.max_map_count=524288
+              sysctl -w fs.file-max=131072
+              echo "* soft nofile 131072" >> /etc/security/limits.conf
+              echo "* hard nofile 131072" >> /etc/security/limits.conf
+              echo "* soft nproc 8192" >> /etc/security/limits.conf
+              echo "* hard nproc 8192" >> /etc/security/limits.conf
+      containers:
+        - name: sonarqube
+          image: sonarqube:26.5.0.122743-community
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 9000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: sonarqube-sonarqube-jdbc-config
+            - secretRef:
+                name: sonarqube-secret
+          env:
+            - name: SONAR_WEB_CONTEXT
+              value: "/"
+            - name: SONAR_WEB_JAVAOPTS
+              value: ""
+            - name: SONAR_CE_JAVAOPTS
+              value: ""
+            - name: SONAR_HELM_CHART_VERSION
+              value: "2026.3.0"
+            - name: SONAR_WEB_SYSTEMPASSCODE
+              valueFrom:
+                secretKeyRef:
+                  name: sonarqube-sonarqube-monitoring-passcode
+                  key: SONAR_WEB_SYSTEMPASSCODE
+          volumeMounts:
+            - name: sonarqube
+              mountPath: /opt/sonarqube/data
+              subPath: data
+            - name: sonarqube
+              mountPath: /opt/sonarqube/temp
+              subPath: temp
+            - name: sonarqube
+              mountPath: /opt/sonarqube/logs
+              subPath: logs
+            - name: sonarqube
+              mountPath: /opt/sonarqube/extensions
+              subPath: extensions
+            - name: tmp-dir
+              mountPath: /tmp
+          resources:
+            requests:
+              memory: "3Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+          livenessProbe:
+            httpGet:
+              path: /api/system/status
+              port: http
+            initialDelaySeconds: 180
+            periodSeconds: 60
+            timeoutSeconds: 30
+            failureThreshold: 15
+          readinessProbe:
+            httpGet:
+              path: /api/system/status
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 30
+            failureThreshold: 10
+          startupProbe:
+            httpGet:
+              path: /api/system/status
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 60
+      volumes:
+        - name: sonarqube
+          persistentVolumeClaim:
+            claimName: sonarqube-sonarqube
+        - name: tmp-dir
+          emptyDir: {}

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarqube-sonarqube
+  namespace: soludev
+spec:
+  volumeName: nfs-dev-sonarqube
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-dev-sonarqube
+  resources:
+    requests:
+      storage: 5Gi
