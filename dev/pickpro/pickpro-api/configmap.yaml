@@ -22,7 +22,7 @@ data:
   INDEXING_API_URL: http://pickpro-indexing-api.pickpro.svc.cluster.local:8000/pickpro/rest/v1
   INDEXING_API_TIMEOUT: "120"
   LOGTO_URL: http://logto.soludev.svc.cluster.local:3001
-  LOGTO_GOOGLE_CONNECTOR_ID: cfw668egqtdjweu6oxhxk
+  LOGTO_GOOGLE_CONNECTOR_ID: 3zk5bznj8tavejeddtlse
   LOGTO_M2M_APP_ID: pickpro-dev-m2m
   RECALL_AI_REGION: eu-central-1
   RECALL_AI_BOT_NAME: PickPro-Dev
