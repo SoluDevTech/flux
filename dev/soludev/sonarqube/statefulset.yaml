@@ -20,6 +20,10 @@ spec:
         app.kubernetes.io/name: sonarqube
         app.kubernetes.io/part-of: soludev-workload
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       initContainers:
         - name: init-sysctl
           image: busybox:1.36
