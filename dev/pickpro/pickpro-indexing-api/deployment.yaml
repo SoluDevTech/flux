@@ -44,10 +44,10 @@ spec:
             failureThreshold: 5
           resources:
             requests:
-              memory: "256Mi"
+              memory: "1GiMi"
               cpu: "250m"
             limits:
-              memory: "1Gi"
+              memory: "2Gi"
               cpu: "500m"
       imagePullSecrets:
         - name: pickpro-docker-secret
