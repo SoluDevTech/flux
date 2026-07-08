@@ -20,7 +20,7 @@ data:
   MINIO_BUCKET: cvs
   MINIO_ALLOWED_EXTENSION: .pdf
   INDEXING_API_URL: http://pickpro-indexing-api.pickpro.svc.cluster.local:8000/pickpro/rest/v1
-  INDEXING_API_TIMEOUT: 60
+  INDEXING_API_TIMEOUT: "60"
   LOGTO_URL: http://logto.soludev.svc.cluster.local:3001
   LOGTO_GOOGLE_CONNECTOR_ID: cfw668egqtdjweu6oxhxk
   LOGTO_M2M_APP_ID: pickpro-dev-m2m
