@@ -26,3 +26,4 @@ data:
   FORCE_OCR: "true"
   VLM_MODEL: anthropic/claude-haiku-4.5:nitro
   VLM_TEMPERATURE: "0.0"
+  VLM_TIMEOUT_SECS: "120"
