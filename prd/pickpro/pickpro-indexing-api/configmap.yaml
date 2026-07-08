@@ -18,3 +18,11 @@ data:
   TRANSCRIPT_BUCKET: transcripts
   ENVIRONMENT: "production"
   ALLOWED_TRANSCRIPT_DOMAINS: '["recall.ai"]'
+  # KREUZBERG EXTRACTION
+  EXTRACT_PROFILE_PHOTO: "true"
+  ENABLE_HIERARCHY_DETECTION: "true"
+  INCLUDE_HEADERS: "false"
+  INCLUDE_FOOTERS: "false"
+  FORCE_OCR: "true"
+  VLM_MODEL: anthropic/claude-haiku-4.5:nitro
+  VLM_TEMPERATURE: "0.0"
