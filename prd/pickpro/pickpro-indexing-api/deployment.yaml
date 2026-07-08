@@ -6,7 +6,7 @@ metadata:
   labels:
     app: pickpro-indexing-api
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: pickpro-indexing-api
