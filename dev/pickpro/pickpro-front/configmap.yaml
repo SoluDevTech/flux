@@ -10,6 +10,7 @@ data:
         "oauth2ProxyUrl": "https://pickpro.soludev.tech",
         "logtoUrl": "https://logto-dev.soludev.tech",
         "logtoAppId": "pickpro-dev",
+        "cvExtractionTimeoutMs": 120000,
         "useMock": false,
         "devMode": true
     }
