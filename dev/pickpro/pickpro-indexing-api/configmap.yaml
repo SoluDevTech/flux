@@ -18,3 +18,13 @@ data:
   SUMMARY_MODEL: google/gemini-2.5-flash:nitro
   TEMPERATURE: "0.0"
   TRANSCRIPT_BUCKET: transcripts
+  # KREUZBERG EXTRACTION
+  EXTRACT_PROFILE_PHOTO: "true"
+  ENABLE_HIERARCHY_DETECTION: "true"
+  INCLUDE_HEADERS: "false"
+  INCLUDE_FOOTERS: "false"
+  FORCE_OCR: "true"
+  VLM_MODEL: anthropic/claude-haiku-4.5:nitro
+  VLM_TEMPERATURE: "0.0"
+  VLM_TIMEOUT_SECS: "120"
+  
