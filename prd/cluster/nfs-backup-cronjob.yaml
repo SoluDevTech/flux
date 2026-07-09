@@ -1,0 +1,93 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nfs-backup-to-dev
+  namespace: kube-system
+spec:
+  schedule: "0 2 * * *"
+  timeZone: "Europe/Paris"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 7200
+      template:
+        spec:
+          nodeSelector:
+            kubernetes.io/hostname: vmi3322097
+          restartPolicy: OnFailure
+          tolerations:
+            - key: "node-role.kubernetes.io/control-plane"
+              operator: "Exists"
+              effect: "NoSchedule"
+          containers:
+            - name: rsync-backup
+              image: alpine:3.20
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  apk add --no-cache rsync nfs-utils curl
+
+                  mkdir -p /mnt/prd-nfs /mnt/dev-nfs /mnt/dev-nfs-backup
+
+                  # Mount NFS prd (local)
+                  mount -t nfs -o vers=4,nolock 100.64.0.5:/srv/nfs /mnt/prd-nfs
+
+                  # Mount NFS dev (Mac-mini via Tailscale)
+                  mount -t nfs -o vers=3,nolock 100.64.0.3:/Volumes/NFSStorage /mnt/dev-nfs
+
+                  # Create backup dir with date
+                  BACKUP_DATE=$(date +%Y%m%d)
+                  BACKUP_DIR="/mnt/dev-nfs/prd-backup/${BACKUP_DATE}"
+                  mkdir -p "${BACKUP_DIR}"
+
+                  echo "=== Starting NFS backup: prd -> dev ==="
+                  echo "Date: $(date)"
+                  echo "Source: /mnt/prd-nfs/"
+                  echo "Target: ${BACKUP_DIR}/"
+
+                  # rsync all prd NFS data to dev, organized by date
+                  rsync -a --delete --exclude='*.sock' --exclude='*.pid' \
+                    --exclude='lost+found' \
+                    --exclude='.nfs*' \
+                    /mnt/prd-nfs/ "${BACKUP_DIR}/"
+
+                  echo "=== rsync complete ==="
+                  echo "Backup size: $(du -sh ${BACKUP_DIR} 2>/dev/null | awk '{print $1}')"
+
+                  # Retention: keep last 5 days, delete older
+                  echo "=== Cleaning old backups (keeping 5 days) ==="
+                  find /mnt/dev-nfs/prd-backup -maxdepth 1 -type d -name '[0-9]*' | \
+                    sort -r | tail -n +6 | while read old_dir; do
+                    echo "Removing old backup: ${old_dir}"
+                    rm -rf "${old_dir}"
+                  done
+
+                  echo "=== Listing remaining backups ==="
+                  ls -1 /mnt/dev-nfs/prd-backup/
+
+                  # Unmount
+                  umount /mnt/prd-nfs
+                  umount /mnt/dev-nfs
+
+                  echo "=== Backup done: $(date) ==="
+              securityContext:
+                privileged: true
+                runAsUser: 0
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "100m"
+                limits:
+                  memory: "1Gi"
+                  cpu: "500m"
+          volumes:
+            - name: tmp
+              emptyDir: {}
