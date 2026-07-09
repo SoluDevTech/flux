@@ -28,9 +28,6 @@ data:
       - hostname: logto-admin.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
 
-      - hostname: openobserve.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-
       - hostname: phoenix.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
 
