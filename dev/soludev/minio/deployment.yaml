@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio-soludev
+  namespace: soludev
+  labels:
+    app: minio
+    app.kubernetes.io/part-of: soludev-workload
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+        app.kubernetes.io/part-of: soludev-workload
+    spec:
+      volumes:
+        - name: export
+          persistentVolumeClaim:
+            claimName: minio
+      containers:
+        - name: minio
+          image: quay.io/minio/minio:RELEASE.2024-12-18T13-15-44Z
+          imagePullPolicy: IfNotPresent
+          args:
+            - server
+            - /export
+            - --console-address
+            - ":9001"
+          ports:
+            - name: http
+              containerPort: 9000
+              protocol: TCP
+            - name: http-console
+              containerPort: 9001
+              protocol: TCP
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: minio-soludev
+                  key: rootUser
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: minio-soludev
+                  key: rootPassword
+            - name: MINIO_PROMETHEUS_AUTH_TYPE
+              value: public
+          volumeMounts:
+            - name: export
+              mountPath: /export
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: 9000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: 9000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"

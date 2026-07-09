@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-dev-minio-soludev
+  namespace: soludev
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-dev-minio-soludev
+  nfs:
+    server: 100.64.0.3
+    path: /Volumes/NFSStorage/dev/minio-soludev
+  mountOptions:
+    - hard
+    - nfsvers=3
+    - timeo=600
+    - retrans=10
+    - rsize=1048576
+    - wsize=1048576
+    - noatime
+    - nodiratime
