@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: raganything-config
+  namespace: composables
+data:
+  HOST: "0.0.0.0"
+  PORT: "8000"
+  MCP_TRANSPORT: "sse"
+  ALLOWED_ORIGINS: '["*"]'
+  POSTGRES_HOST: "postgres"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DATABASE: "raganything"
+  POSTGRES_USER: "raganything"
+  MINIO_HOST: "minio:9000"
+  MINIO_BUCKET: "raganything"
+  MINIO_SECURE: "false"
+  RAG_STORAGE_TYPE: "postgres"
+  COSINE_THRESHOLD: "0.2"
+  MAX_CONCURRENT_FILES: "1"
+  MAX_WORKERS: "1"
+  ENABLE_IMAGE_PROCESSING: "true"
+  ENABLE_TABLE_PROCESSING: "true"
+  ENABLE_EQUATION_PROCESSING: "true"
+  CHAT_MODEL: "openai/gpt-4o-mini"
+  EMBEDDING_MODEL: "text-embedding-3-small"
+  EMBEDDING_DIM: "1536"
+  MAX_TOKEN_SIZE: "8192"
+  VISION_MODEL: "openai/gpt-4o"
+  OPEN_ROUTER_API_URL: "https://openrouter.ai/api/v1"
+  UVICORN_LOG_LEVEL: "critical"

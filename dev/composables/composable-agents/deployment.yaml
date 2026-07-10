@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: composable-agents
+  namespace: composables
+  labels:
+    app: composable-agents
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: composable-agents
+  template:
+    metadata:
+      labels:
+        app: composable-agents
+    spec:
+      tolerations:
+        - key: "klipperlb-exclude"
+          value: "true"
+          effect: "NoSchedule"
+          operator: "Equal"
+      containers:
+        - name: composable-agents
+          image: kaiohz/composable-agents:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: composable-agents-secret
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 90
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
