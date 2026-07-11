@@ -17,11 +17,6 @@ data:
   MINIO_ACCESS_KEY: "minioadmin"
   MINIO_BUCKET: "composable-agents"
   MINIO_SECURE: "false"
-  # === PostgreSQL (metadata) ===
-  POSTGRES_HOST: "postgres"
-  POSTGRES_PORT: "5432"
-  POSTGRES_USER: "raganything"
-  POSTGRES_DATABASE: "raganything"
   # === Tracing ===
   ENABLED: "true"
   PROVIDER: "phoenix" # or "langfuse" or "none"

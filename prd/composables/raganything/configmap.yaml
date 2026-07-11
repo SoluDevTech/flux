@@ -8,10 +8,6 @@ data:
   PORT: "8000"
   MCP_TRANSPORT: "sse"
   ALLOWED_ORIGINS: '["*"]'
-  POSTGRES_HOST: "postgres"
-  POSTGRES_PORT: "5432"
-  POSTGRES_DATABASE: "raganything"
-  POSTGRES_USER: "raganything"
   MINIO_HOST: "minio:9000"
   MINIO_BUCKET: "raganything"
   MINIO_SECURE: "false"
