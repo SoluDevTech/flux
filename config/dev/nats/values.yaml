@@ -1,0 +1,32 @@
+# Chart: nats
+# Repo: https://nats-io.github.io/k8s/helm/charts/
+# Install: helm upgrade --install nats nats/nats --namespace pickpro -f config/dev/nats/values.yaml
+
+config:
+  merge:
+    max_payload: 15728640
+    authorization:
+      user: "pickpro"
+      password: << $NATS_PASSWORD >>
+  jetstream:
+    enabled: true
+    fileStore:
+      pvc:
+        size: 5Gi
+        storageClassName: local-path
+
+container:
+  env:
+    NATS_PASSWORD:
+      valueFrom:
+        secretKeyRef:
+          name: nats-auth
+          key: password
+  merge:
+    resources:
+      requests:
+        cpu: "100m"
+        memory: 128Mi
+      limits:
+        cpu: "500m"
+        memory: 512Mi

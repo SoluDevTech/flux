@@ -29,6 +29,8 @@ data:
         service: http://traefik.kube-system.svc.cluster.local:80
       - hostname: pickpro-oauth2-proxy.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
+      - hostname: nats-dev.soludev.tech
+        service: http://traefik.kube-system.svc.cluster.local:80
       - hostname: sonarqube.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
       - hostname: openobserve.soludev.tech

@@ -2767,7 +2767,91 @@ This configuration:
 - Uses NFS storage class `nfs-pickpro-minio`
 - Sets up a standalone MinIO instance
 
-### 4. Application Ingress Protection
+### 4. NATS JetStream for Mass Import
+
+PickPro uses NATS JetStream for asynchronous mass import of CV files. The `pickpro-api` publishes messages to NATS, and the `pickpro-indexing-api` consumes them.
+
+#### Prerequisites
+
+- Namespace `pickpro` created
+- Secret `nats-auth` created with the NATS password (see `dev/pickpro/nats/secret.yaml.example`)
+- Cloudflare tunnel entry for `nats-dev.soludev.tech` added to `dev/soludev/cloudflare/configmap.yaml`
+
+#### Deployment Steps
+
+1. **Add the NATS Helm repository:**
+
+   ```bash
+   helm repo add nats https://nats-io.github.io/k8s/helm/charts/
+   helm repo update
+   ```
+
+2. **Create the Secret BEFORE installing the Helm chart:**
+
+   ```bash
+   kubectl apply -f dev/pickpro/nats/secret.yaml
+   ```
+
+3. **Install NATS with JetStream:**
+
+   ```bash
+   helm upgrade --install nats nats/nats \
+     --namespace pickpro \
+     -f config/dev/nats/values.yaml
+   ```
+
+4. **Apply the Ingress for the monitoring dashboard:**
+
+   ```bash
+   kubectl apply -f dev/pickpro/nats/ingress.yaml
+   ```
+
+5. **Verify the deployment:**
+
+   ```bash
+   kubectl get pods -n pickpro -l app.kubernetes.io/name=nats
+   kubectl get pvc -n pickpro
+   ```
+
+#### Accessing the Dashboard
+
+The NATS monitoring dashboard is available at https://nats-dev.soludev.tech (port 8222, HTTP monitoring, no authentication — dev only).
+
+#### Configuration
+
+The NATS configuration is managed through:
+
+- `config/dev/nats/values.yaml` — Helm chart values (JetStream, resources, PVC using `local-path` storage class)
+- `dev/pickpro/nats/secret.yaml` — NATS password (gitignored)
+- `dev/pickpro/nats/ingress.yaml` — Traefik Ingress for the monitoring dashboard
+
+#### Application Configuration
+
+The following environment variables must be set on `pickpro-api` and `pickpro-indexing-api`:
+
+**pickpro-api** (publisher):
+- `NATS_USER`, `NATS_PASSWORD` (secret), `NATS_URL`, `NATS_STREAM_NAME`, `NATS_STREAM_SUBJECT`, `NATS_MAX_PAYLOAD`, `NATS_MAX_AGE`, `NATS_MAX_RECONNECT`, `NATS_RECONNECT_WAIT`, `RETENTION`
+
+**pickpro-indexing-api** (consumer):
+- `NATS_USER`, `NATS_PASSWORD` (secret), `NATS_URL`, `NATS_STREAM_NAME`, `NATS_STREAM_SUBJECT`, `NATS_MAX_CONCURRENT`, `NATS_MAX_PAYLOAD`, `NATS_MAX_AGE`, `NATS_DURABLE_NAME`, `NATS_ACK_POLICY`, `NATS_ACK_WAIT`, `NATS_MAX_RECONNECT`, `NATS_RECONNECT_WAIT`, `RETENTION`
+
+These are configured in `dev/pickpro/pickpro-api/configmap.yaml`, `dev/pickpro/pickpro-api/secret.yaml`, `dev/pickpro/pickpro-indexing-api/configmap.yaml`, and `dev/pickpro/pickpro-indexing-api/secret.yaml`.
+
+After updating the configmaps/secrets, restart the pods:
+
+```bash
+kubectl rollout restart deployment/pickpro-api -n pickpro
+kubectl rollout restart deployment/pickpro-indexing-api -n pickpro
+```
+
+#### Uninstallation
+
+```bash
+helm uninstall nats --namespace pickpro
+kubectl delete pvc -n pickpro -l app.kubernetes.io/name=nats
+```
+
+### 5. Application Ingress Protection
 
 To protect an Ingress resource (e.g., `pickpro-front`), add the middleware annotation:
 
