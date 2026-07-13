@@ -16,6 +16,12 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [Phoenix Installation](#phoenix-installation)
 - [OpenObserve Installation](#openobserve-installation)
 - [Inference API Services](#inference-api-services)
+- [PickPro Application Setup](#pickpro-application-setup)
+  - [OAuth2 Proxy](#1-oauth2-proxy-installation)
+  - [Traefik Forward Auth Middleware](#2-traefik-forward-auth-middleware)
+  - [MinIO for PickPro](#3-minio-for-pickpro)
+  - [NATS JetStream for Mass Import](#4-nats-jetstream-for-mass-import)
+  - [Application Ingress Protection](#5-application-ingress-protection)
 - [OpenClaw Installation](#openclaw-installation)
 - [Headlamp Installation](#headlamp-installation)
 - [Storage Maintenance](#storage-maintenance)
@@ -2771,77 +2777,211 @@ This configuration:
 
 PickPro uses NATS JetStream for asynchronous mass import of CV files. The `pickpro-api` publishes messages to NATS, and the `pickpro-indexing-api` consumes them.
 
+#### Architecture
+
+```
+pickpro-api (publisher)                 pickpro-indexing-api (consumer)
+    │                                          │
+    │ publish(file, batch_id)                  │ subscribe(subject, durable)
+    ▼                                          ▼
+  ┌─────────────────────────────────────────────────┐
+  │            NATS JetStream (Stream: MASS_IMPORT) │
+  │            Subject: mass_import                  │
+  │            Retention: work_queue                 │
+  └─────────────────────────────────────────────────┘
+```
+
+#### Files
+
+| File | Description | Git tracked |
+|---|---|---|
+| `config/dev/nats/values.yaml` | Helm chart values (JetStream, local-path PVC 5Gi, auth via Secret, monitoring port) | Yes |
+| `dev/pickpro/nats/secret.yaml` | Secret `nats-auth` with NATS password | No (gitignored) |
+| `dev/pickpro/nats/secret.yaml.example` | Template for the secret | Yes |
+| `dev/pickpro/nats/ingress.yaml` | Traefik Ingress for monitoring dashboard (`nats-dev.soludev.tech`) | Yes |
+| `dev/soludev/cloudflare/configmap.yaml` | Cloudflare tunnel entry for `nats-dev.soludev.tech` | Yes |
+| `dev/pickpro/pickpro-api/configmap.yaml` | NATS env vars for the publisher | Yes |
+| `dev/pickpro/pickpro-api/secret.yaml` | `NATS_PASSWORD` for the publisher | No (gitignored) |
+| `dev/pickpro/pickpro-indexing-api/configmap.yaml` | NATS env vars for the consumer | Yes |
+| `dev/pickpro/pickpro-indexing-api/secret.yaml` | `NATS_PASSWORD` for the consumer | No (gitignored) |
+
 #### Prerequisites
 
-- Namespace `pickpro` created
-- Secret `nats-auth` created with the NATS password (see `dev/pickpro/nats/secret.yaml.example`)
-- Cloudflare tunnel entry for `nats-dev.soludev.tech` added to `dev/soludev/cloudflare/configmap.yaml`
+- K3s cluster running with `lenovo-dev` context
+- Namespace `pickpro` created (`dev/pickpro/namespace.yaml`)
+- Helm 3 installed
+- Flux CD syncing the `dev/pickpro` path (handles configmaps, secrets, ingress automatically)
+- `secret.yaml` files created manually (they are gitignored — see `secret.yaml.example` templates)
 
-#### Deployment Steps
+#### Full Deployment Procedure
 
-1. **Add the NATS Helm repository:**
+**Step 1 — Create the NATS auth Secret (manual, gitignored)**
 
-   ```bash
-   helm repo add nats https://nats-io.github.io/k8s/helm/charts/
-   helm repo update
-   ```
+The secret must be created on the cluster directly. It is NOT synced by Flux because `secret.yaml` is gitignored.
 
-2. **Create the Secret BEFORE installing the Helm chart:**
+```bash
+cp dev/pickpro/nats/secret.yaml.example dev/pickpro/nats/secret.yaml
+# Edit secret.yaml and set the real password
+kubectl apply -f dev/pickpro/nats/secret.yaml
+```
 
-   ```bash
-   kubectl apply -f dev/pickpro/nats/secret.yaml
-   ```
+**Step 2 — Ensure pickpro-api and pickpro-indexing-api secrets include NATS_PASSWORD**
 
-3. **Install NATS with JetStream:**
+These secrets are also gitignored and must be created manually. If they already exist, patch them:
 
-   ```bash
-   helm upgrade --install nats nats/nats \
-     --namespace pickpro \
-     -f config/dev/nats/values.yaml
-   ```
+```bash
+kubectl patch secret pickpro-api-secret -n pickpro --type merge -p '{"stringData":{"NATS_PASSWORD":"pickpro-nats-password"}}'
+kubectl patch secret pickpro-indexing-api-secret -n pickpro --type merge -p '{"stringData":{"NATS_PASSWORD":"pickpro-nats-password"}}'
+```
 
-4. **Apply the Ingress for the monitoring dashboard:**
+**Step 3 — Add the NATS Helm repository**
 
-   ```bash
-   kubectl apply -f dev/pickpro/nats/ingress.yaml
-   ```
+```bash
+helm repo add nats https://nats-io.github.io/k8s/helm/charts/
+helm repo update
+```
 
-5. **Verify the deployment:**
+**Step 4 — Install NATS with JetStream**
 
-   ```bash
-   kubectl get pods -n pickpro -l app.kubernetes.io/name=nats
-   kubectl get pvc -n pickpro
-   ```
+The Helm chart is NOT managed by Flux (it's a Helm release, not a Kustomization). Install it manually:
 
-#### Accessing the Dashboard
+```bash
+helm upgrade --install nats nats/nats \
+  --namespace pickpro \
+  -f config/dev/nats/values.yaml
+```
 
-The NATS monitoring dashboard is available at https://nats-dev.soludev.tech (port 8222, HTTP monitoring, no authentication — dev only).
+This creates:
+- A StatefulSet `nats` with 1 replica (JetStream enabled, 5Gi PVC on `local-path`)
+- A Service `nats` exposing ports 4222 (client) and 8222 (monitoring)
+- A `nats-box` Deployment for debugging with `nats` CLI
 
-#### Configuration
+**Step 5 — Verify the deployment**
 
-The NATS configuration is managed through:
+```bash
+kubectl get pods -n pickpro -l app.kubernetes.io/name=nats
+kubectl get pvc -n pickpro -l app.kubernetes.io/name=nats
+kubectl get svc nats -n pickpro
+```
 
-- `config/dev/nats/values.yaml` — Helm chart values (JetStream, resources, PVC using `local-path` storage class)
-- `dev/pickpro/nats/secret.yaml` — NATS password (gitignored)
-- `dev/pickpro/nats/ingress.yaml` — Traefik Ingress for the monitoring dashboard
+Expected output:
+```
+NAME      READY   STATUS    RESTARTS   AGE
+nats-0    2/2     Running   0          1m
 
-#### Application Configuration
+NAME             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS
+nats-js-nats-0   Bound    pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx   5Gi        RWO            local-path
 
-The following environment variables must be set on `pickpro-api` and `pickpro-indexing-api`:
+NAME   TYPE        CLUSTER-IP      EXTERNAL-IP   PORTS
+nats   ClusterIP   10.43.xxx.xxx   <none>        4222/TCP,8222/TCP
+```
 
-**pickpro-api** (publisher):
-- `NATS_USER`, `NATS_PASSWORD` (secret), `NATS_URL`, `NATS_STREAM_NAME`, `NATS_STREAM_SUBJECT`, `NATS_MAX_PAYLOAD`, `NATS_MAX_AGE`, `NATS_MAX_RECONNECT`, `NATS_RECONNECT_WAIT`, `RETENTION`
+**Step 6 — Verify Flux sync (configmaps, secrets, ingress)**
 
-**pickpro-indexing-api** (consumer):
-- `NATS_USER`, `NATS_PASSWORD` (secret), `NATS_URL`, `NATS_STREAM_NAME`, `NATS_STREAM_SUBJECT`, `NATS_MAX_CONCURRENT`, `NATS_MAX_PAYLOAD`, `NATS_MAX_AGE`, `NATS_DURABLE_NAME`, `NATS_ACK_POLICY`, `NATS_ACK_WAIT`, `NATS_MAX_RECONNECT`, `NATS_RECONNECT_WAIT`, `RETENTION`
+After pushing changes to Git, Flux will automatically sync:
+- `dev/pickpro/nats/ingress.yaml` → Ingress `nats-monitoring-ingress`
+- `dev/soludev/cloudflare/configmap.yaml` → Cloudflare tunnel config updated
+- `dev/pickpro/pickpro-api/configmap.yaml` → NATS env vars added
+- `dev/pickpro/pickpro-indexing-api/configmap.yaml` → NATS env vars added
 
-These are configured in `dev/pickpro/pickpro-api/configmap.yaml`, `dev/pickpro/pickpro-api/secret.yaml`, `dev/pickpro/pickpro-indexing-api/configmap.yaml`, and `dev/pickpro/pickpro-indexing-api/secret.yaml`.
+Check Flux sync status:
 
-After updating the configmaps/secrets, restart the pods:
+```bash
+flux get kustomization dev-pickpro -n flux-system
+```
+
+**Step 7 — Restart the Cloudflare tunnel**
+
+Flux syncs the configmap but does NOT automatically restart the cloudflared pod. Do it manually after the configmap is updated:
+
+```bash
+kubectl rollout restart deployment/cloudflared -n soludev
+```
+
+**Step 8 — Restart pickpro-api and pickpro-indexing-api pods**
+
+After Flux syncs the updated configmaps and secrets, restart the pods to pick up the new NATS env vars:
 
 ```bash
 kubectl rollout restart deployment/pickpro-api -n pickpro
 kubectl rollout restart deployment/pickpro-indexing-api -n pickpro
+```
+
+Wait for the pods to be ready:
+
+```bash
+kubectl rollout status deployment/pickpro-api -n pickpro
+kubectl rollout status deployment/pickpro-indexing-api -n pickpro
+```
+
+**Step 9 — Verify the monitoring dashboard**
+
+The NATS monitoring dashboard should be accessible at:
+
+```
+https://nats-dev.soludev.tech
+```
+
+Test with curl:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" https://nats-dev.soludev.tech
+# Expected: 200
+```
+
+**Step 10 — Verify NATS connectivity from the application pods**
+
+```bash
+# Check that pickpro-api can connect to NATS
+kubectl exec -n pickpro deployment/pickpro-api -- env | grep NATS
+
+# Check that pickpro-indexing-api can connect to NATS
+kubectl exec -n pickpro deployment/pickpro-indexing-api -- env | grep NATS
+
+# Verify the stream exists (after the publisher connects on startup)
+kubectl exec -n pickpro nats-box-0 -- nats -s nats://pickpro:pickpro-nats-password@nats:4222 stream list
+```
+
+#### Application Environment Variables
+
+**pickpro-api** (publisher):
+
+| Variable | Value | Source |
+|---|---|---|
+| `NATS_USER` | `pickpro` | ConfigMap |
+| `NATS_PASSWORD` | `pickpro-nats-password` | Secret |
+| `NATS_URL` | `nats://nats.pickpro.svc.cluster.local:4222` | ConfigMap |
+| `NATS_STREAM_NAME` | `MASS_IMPORT` | ConfigMap |
+| `NATS_STREAM_SUBJECT` | `mass_import` | ConfigMap |
+| `NATS_MAX_PAYLOAD` | `15728640` | ConfigMap |
+| `NATS_MAX_AGE` | `604800` | ConfigMap |
+| `NATS_MAX_RECONNECT` | `-1` | ConfigMap |
+| `NATS_RECONNECT_WAIT` | `2` | ConfigMap |
+| `RETENTION` | `work_queue` | ConfigMap |
+
+**pickpro-indexing-api** (consumer):
+
+| Variable | Value | Source |
+|---|---|---|
+| `NATS_USER` | `pickpro` | ConfigMap |
+| `NATS_PASSWORD` | `pickpro-nats-password` | Secret |
+| `NATS_URL` | `nats://nats.pickpro.svc.cluster.local:4222` | ConfigMap |
+| `NATS_STREAM_NAME` | `MASS_IMPORT` | ConfigMap |
+| `NATS_STREAM_SUBJECT` | `mass_import` | ConfigMap |
+| `NATS_MAX_CONCURRENT` | `10` | ConfigMap |
+| `NATS_DURABLE_NAME` | `mass-import-consumer` | ConfigMap |
+| `NATS_ACK_POLICY` | `explicit` | ConfigMap |
+| `NATS_ACK_WAIT` | `300` | ConfigMap |
+| `NATS_MAX_RECONNECT` | `-1` | ConfigMap |
+| `NATS_RECONNECT_WAIT` | `2` | ConfigMap |
+| `RETENTION` | `work_queue` | ConfigMap |
+
+#### Updating the Helm Chart
+
+When `config/dev/nats/values.yaml` is modified, apply the changes manually (Flux does not manage Helm releases):
+
+```bash
+helm upgrade nats nats/nats --namespace pickpro -f config/dev/nats/values.yaml
 ```
 
 #### Uninstallation
@@ -2849,6 +2989,8 @@ kubectl rollout restart deployment/pickpro-indexing-api -n pickpro
 ```bash
 helm uninstall nats --namespace pickpro
 kubectl delete pvc -n pickpro -l app.kubernetes.io/name=nats
+kubectl delete secret nats-auth -n pickpro
+kubectl delete ingress nats-monitoring-ingress -n pickpro
 ```
 
 ### 5. Application Ingress Protection
