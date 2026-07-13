@@ -30,3 +30,16 @@ container:
       limits:
         cpu: "500m"
         memory: 512Mi
+
+service:
+  merge:
+    spec:
+      ports:
+        - name: nats
+          port: 4222
+          targetPort: nats
+          protocol: TCP
+        - name: monitor
+          port: 8222
+          targetPort: monitor
+          protocol: TCP
