@@ -161,5 +161,4 @@ spec:
             failureThreshold: 30
       volumes:
         - name: data
-          persistentVolumeClaim:
-            claimName: openobserve-data
+          emptyDir: {}
