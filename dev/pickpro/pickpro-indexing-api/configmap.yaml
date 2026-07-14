@@ -24,6 +24,7 @@ data:
   INCLUDE_HEADERS: "false"
   INCLUDE_FOOTERS: "false"
   FORCE_OCR: "true"
+  OCR_MODE: "vlm"
   VLM_MODEL: google/gemini-2.5-flash-lite:nitro
   VLM_TEMPERATURE: "0.0"
   VLM_TIMEOUT_SECS: "120"
