@@ -125,9 +125,19 @@ spec:
               value: "true"
             - name: ZO_MAX_DASHBOARD_SERIES
               value: "500"
+            - name: ZO_DATA_DIR
+              value: "/data"
+            - name: ZO_DATA_WAL_DIR
+              value: "/data-wal"
+            - name: ZO_DATA_CACHE_DIR
+              value: "/data-cache"
           volumeMounts:
             - name: data
               mountPath: /data
+            - name: wal
+              mountPath: /data-wal
+            - name: cache
+              mountPath: /data-cache
           resources:
             requests:
               memory: "2Gi"
@@ -162,3 +172,8 @@ spec:
       volumes:
         - name: data
           emptyDir: {}
+        - name: wal
+          emptyDir: {}
+        - name: cache
+          persistentVolumeClaim:
+            claimName: openobserve-data
