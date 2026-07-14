@@ -66,9 +66,9 @@ spec:
             - name: ZO_META_STORE
               value: "postgres"
             - name: ZO_META_CONNECTION_POOL_MIN_SIZE
-              value: "5"
+              value: "1"
             - name: ZO_META_CONNECTION_POOL_MAX_SIZE
-              value: "10"
+              value: "5"
             - name: ZO_LOCAL_MODE
               value: "true"
             - name: ZO_LOCAL_MODE_STORAGE
@@ -161,5 +161,4 @@ spec:
             failureThreshold: 30
       volumes:
         - name: data
-          persistentVolumeClaim:
-            claimName: openobserve-data
+          emptyDir: {}
