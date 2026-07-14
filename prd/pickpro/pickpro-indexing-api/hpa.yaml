@@ -27,7 +27,7 @@ spec:
     # Indexing API a un initialDelay de 180s sur le liveness/readiness probe.
     # On stabilise plus longtemps pour éviter de scaler pendant le démarrage.
     scaleUp:
-      stabilizationWindowSeconds: 120
+      stabilizationWindowSeconds: 300
       selectPolicy: Max
       policies:
         - type: Percent
