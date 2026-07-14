@@ -8,7 +8,7 @@ data:
   ALLOWED_TRANSCRIPT_DOMAINS: '["recall.ai"]'
   EMBEDDING_CLIENT: openai/text-embedding-3-large
   ENVIRONMENT: development
-  INDEXING_MODEL: anthropic/claude-haiku-4.5:nitro
+  INDEXING_MODEL: google/gemini-2.5-flash-lite:nitro
   MAX_WORKERS: "2"
   MINIO_HOST: minio-pickpro.pickpro.svc.cluster.local:9000
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
@@ -24,7 +24,7 @@ data:
   INCLUDE_HEADERS: "false"
   INCLUDE_FOOTERS: "false"
   FORCE_OCR: "true"
-  VLM_MODEL: anthropic/claude-haiku-4.5:nitro
+  VLM_MODEL: google/gemini-2.5-flash-lite:nitro
   VLM_TEMPERATURE: "0.0"
   VLM_TIMEOUT_SECS: "120"
   NATS_USER: "pickpro"
