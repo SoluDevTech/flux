@@ -21,7 +21,8 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
   - [Traefik Forward Auth Middleware](#2-traefik-forward-auth-middleware)
   - [MinIO for PickPro](#3-minio-for-pickpro)
   - [NATS JetStream for Mass Import](#4-nats-jetstream-for-mass-import)
-  - [Application Ingress Protection](#5-application-ingress-protection)
+  - [Valkey (Redis-compatible cache) for Logto](#5-valkey-redis-compatible-cache-for-logto)
+  - [Application Ingress Protection](#6-application-ingress-protection)
 - [OpenClaw Installation](#openclaw-installation)
 - [Headlamp Installation](#headlamp-installation)
 - [Storage Maintenance](#storage-maintenance)
@@ -2793,25 +2794,61 @@ pickpro-api (publisher)                 pickpro-indexing-api (consumer)
 
 #### Files
 
+> **Note:** NATS now lives in the `soludev` namespace (not `pickpro`). The Helm release,
+> auth Secret, and Ingress are all in `soludev`. PickPro workloads in `pickpro` reach it
+> via the cross-namespace FQDN `nats.soludev.svc.cluster.local`.
+
 | File | Description | Git tracked |
 |---|---|---|
 | `config/dev/nats/values.yaml` | Helm chart values (JetStream, local-path PVC 5Gi, auth via Secret, monitoring port) | Yes |
-| `dev/pickpro/nats/secret.yaml` | Secret `nats-auth` with NATS password | No (gitignored) |
-| `dev/pickpro/nats/secret.yaml.example` | Template for the secret | Yes |
-| `dev/pickpro/nats/ingress.yaml` | Traefik Ingress for monitoring dashboard (`nats-dev.soludev.tech`) | Yes |
+| `dev/soludev/nats/secret.yaml` | Secret `nats-auth` with NATS password (namespace: `soludev`) | No (gitignored) |
+| `dev/soludev/nats/secret.yaml.example` | Template for the secret | Yes |
+| `dev/soludev/nats/ingress.yaml` | Traefik Ingress for monitoring dashboard (`nats-dev.soludev.tech`) | Yes |
 | `dev/soludev/cloudflare/configmap.yaml` | Cloudflare tunnel entry for `nats-dev.soludev.tech` | Yes |
-| `dev/pickpro/pickpro-api/configmap.yaml` | NATS env vars for the publisher | Yes |
+| `dev/pickpro/pickpro-api/configmap.yaml` | NATS env vars for the publisher (`NATS_URL` → `nats.soludev.svc.cluster.local`) | Yes |
 | `dev/pickpro/pickpro-api/secret.yaml` | `NATS_PASSWORD` for the publisher | No (gitignored) |
-| `dev/pickpro/pickpro-indexing-api/configmap.yaml` | NATS env vars for the consumer | Yes |
+| `dev/pickpro/pickpro-indexing-api/configmap.yaml` | NATS env vars for the consumer (`NATS_URL` → `nats.soludev.svc.cluster.local`) | Yes |
 | `dev/pickpro/pickpro-indexing-api/secret.yaml` | `NATS_PASSWORD` for the consumer | No (gitignored) |
 
 #### Prerequisites
 
 - K3s cluster running with `lenovo-dev` context
-- Namespace `pickpro` created (`dev/pickpro/namespace.yaml`)
+- Namespace `soludev` exists (Flux manages it via the `dev/soludev` Kustomization)
 - Helm 3 installed
-- Flux CD syncing the `dev/pickpro` path (handles configmaps, secrets, ingress automatically)
+- Flux CD syncing the `dev/soludev` path (handles the ingress + secret manifests)
+- Flux CD syncing the `dev/pickpro` path (handles the consumer configmaps/secrets)
 - `secret.yaml` files created manually (they are gitignored — see `secret.yaml.example` templates)
+
+#### Migration from `pickpro` to `soludev` namespace
+
+If NATS was previously installed in the `pickpro` namespace, migrate it before redeploying:
+
+```bash
+# 1. Uninstall the old Helm release (the 5Gi JetStream PVC data is lost — dev only)
+helm uninstall nats -n pickpro
+
+# 2. Delete the leftover PVC if it exists
+kubectl delete pvc nats-js-nats-0 -n pickpro --ignore-not-found
+
+# 3. Create the auth Secret in the new namespace
+cp dev/soludev/nats/secret.yaml.example dev/soludev/nats/secret.yaml
+# Edit secret.yaml and set the real password
+kubectl apply -f dev/soludev/nats/secret.yaml
+
+# 4. Reinstall NATS in soludev
+helm upgrade --install nats nats/nats \
+  --namespace soludev \
+  -f config/dev/nats/values.yaml
+
+# 5. Patch the consumer secrets so they reference the new password in soludev
+#    (password value is unchanged, but ensure it is present)
+kubectl patch secret pickpro-api-secret -n pickpro --type merge -p '{"stringData":{"NATS_PASSWORD":"pickpro-nats-password"}}'
+kubectl patch secret pickpro-indexing-api-secret -n pickpro --type merge -p '{"stringData":{"NATS_PASSWORD":"pickpro-nats-password"}}'
+
+# 6. Restart consumers so they pick up the new NATS_URL (nats.soludev.svc.cluster.local)
+kubectl rollout restart deployment/pickpro-api -n pickpro
+kubectl rollout restart deployment/pickpro-indexing-api -n pickpro
+```
 
 #### Full Deployment Procedure
 
@@ -2820,9 +2857,9 @@ pickpro-api (publisher)                 pickpro-indexing-api (consumer)
 The secret must be created on the cluster directly. It is NOT synced by Flux because `secret.yaml` is gitignored.
 
 ```bash
-cp dev/pickpro/nats/secret.yaml.example dev/pickpro/nats/secret.yaml
+cp dev/soludev/nats/secret.yaml.example dev/soludev/nats/secret.yaml
 # Edit secret.yaml and set the real password
-kubectl apply -f dev/pickpro/nats/secret.yaml
+kubectl apply -f dev/soludev/nats/secret.yaml
 ```
 
 **Step 2 — Ensure pickpro-api and pickpro-indexing-api secrets include NATS_PASSWORD**
@@ -2847,7 +2884,7 @@ The Helm chart is NOT managed by Flux (it's a Helm release, not a Kustomization)
 
 ```bash
 helm upgrade --install nats nats/nats \
-  --namespace pickpro \
+  --namespace soludev \
   -f config/dev/nats/values.yaml
 ```
 
@@ -2859,9 +2896,9 @@ This creates:
 **Step 5 — Verify the deployment**
 
 ```bash
-kubectl get pods -n pickpro -l app.kubernetes.io/name=nats
-kubectl get pvc -n pickpro -l app.kubernetes.io/name=nats
-kubectl get svc nats -n pickpro
+kubectl get pods -n soludev -l app.kubernetes.io/name=nats
+kubectl get pvc -n soludev -l app.kubernetes.io/name=nats
+kubectl get svc nats -n soludev
 ```
 
 Expected output:
@@ -2879,14 +2916,15 @@ nats   ClusterIP   10.43.xxx.xxx   <none>        4222/TCP,8222/TCP
 **Step 6 — Verify Flux sync (configmaps, secrets, ingress)**
 
 After pushing changes to Git, Flux will automatically sync:
-- `dev/pickpro/nats/ingress.yaml` → Ingress `nats-monitoring-ingress`
+- `dev/soludev/nats/ingress.yaml` → Ingress `nats-monitoring-ingress` (namespace: `soludev`)
 - `dev/soludev/cloudflare/configmap.yaml` → Cloudflare tunnel config updated
-- `dev/pickpro/pickpro-api/configmap.yaml` → NATS env vars added
-- `dev/pickpro/pickpro-indexing-api/configmap.yaml` → NATS env vars added
+- `dev/pickpro/pickpro-api/configmap.yaml` → `NATS_URL` points to `nats.soludev.svc.cluster.local`
+- `dev/pickpro/pickpro-indexing-api/configmap.yaml` → `NATS_URL` points to `nats.soludev.svc.cluster.local`
 
 Check Flux sync status:
 
 ```bash
+flux get kustomization dev-soludev -n flux-system
 flux get kustomization dev-pickpro -n flux-system
 ```
 
@@ -2939,7 +2977,7 @@ kubectl exec -n pickpro deployment/pickpro-api -- env | grep NATS
 kubectl exec -n pickpro deployment/pickpro-indexing-api -- env | grep NATS
 
 # Verify the stream exists (after the publisher connects on startup)
-kubectl exec -n pickpro nats-box-0 -- nats -s nats://pickpro:pickpro-nats-password@nats:4222 stream list
+kubectl exec -n soludev nats-box-0 -- nats -s nats://pickpro:pickpro-nats-password@nats:4222 stream list
 ```
 
 #### Application Environment Variables
@@ -2950,7 +2988,7 @@ kubectl exec -n pickpro nats-box-0 -- nats -s nats://pickpro:pickpro-nats-passwo
 |---|---|---|
 | `NATS_USER` | `pickpro` | ConfigMap |
 | `NATS_PASSWORD` | `pickpro-nats-password` | Secret |
-| `NATS_URL` | `nats://nats.pickpro.svc.cluster.local:4222` | ConfigMap |
+| `NATS_URL` | `nats://nats.soludev.svc.cluster.local:4222` | ConfigMap |
 | `NATS_STREAM_NAME` | `MASS_IMPORT` | ConfigMap |
 | `NATS_STREAM_SUBJECT` | `mass_import` | ConfigMap |
 | `NATS_MAX_PAYLOAD` | `15728640` | ConfigMap |
@@ -2965,7 +3003,7 @@ kubectl exec -n pickpro nats-box-0 -- nats -s nats://pickpro:pickpro-nats-passwo
 |---|---|---|
 | `NATS_USER` | `pickpro` | ConfigMap |
 | `NATS_PASSWORD` | `pickpro-nats-password` | Secret |
-| `NATS_URL` | `nats://nats.pickpro.svc.cluster.local:4222` | ConfigMap |
+| `NATS_URL` | `nats://nats.soludev.svc.cluster.local:4222` | ConfigMap |
 | `NATS_STREAM_NAME` | `MASS_IMPORT` | ConfigMap |
 | `NATS_STREAM_SUBJECT` | `mass_import` | ConfigMap |
 | `NATS_MAX_CONCURRENT` | `10` | ConfigMap |
@@ -2981,19 +3019,104 @@ kubectl exec -n pickpro nats-box-0 -- nats -s nats://pickpro:pickpro-nats-passwo
 When `config/dev/nats/values.yaml` is modified, apply the changes manually (Flux does not manage Helm releases):
 
 ```bash
-helm upgrade nats nats/nats --namespace pickpro -f config/dev/nats/values.yaml
+helm upgrade nats nats/nats --namespace soludev -f config/dev/nats/values.yaml
 ```
 
 #### Uninstallation
 
 ```bash
-helm uninstall nats --namespace pickpro
-kubectl delete pvc -n pickpro -l app.kubernetes.io/name=nats
-kubectl delete secret nats-auth -n pickpro
-kubectl delete ingress nats-monitoring-ingress -n pickpro
+helm uninstall nats --namespace soludev
+kubectl delete pvc -n soludev -l app.kubernetes.io/name=nats
+kubectl delete secret nats-auth -n soludev
+kubectl delete ingress nats-monitoring-ingress -n soludev
 ```
 
-### 5. Application Ingress Protection
+### 5. Valkey (Redis-compatible cache) for Logto
+
+Valkey is a Redis-compatible key/value store used as the cache backend for Logto
+(`CACHE_ENGINE=redis`). It is deployed in the `soludev` namespace via plain
+Flux-managed manifests (no Helm), following the same pattern as `postgres` and
+`minio` (Deployment + NFS-backed PV/PVC + ClusterIP Service).
+
+#### Architecture
+
+```
+logto (soludev)  ──CACHE_ENGINE=redis──▶  valkey (soludev:6379)
+                    REDIS_URL=redis://valkey:6379/0
+```
+
+#### Files
+
+| File | Description | Git tracked |
+|---|---|---|
+| `dev/soludev/valkey/persistent-volume.yaml` | NFS-backed PersistentVolume (1Gi, `nfs-dev-valkey`) | Yes |
+| `dev/soludev/valkey/volume-claim.yaml` | PersistentVolumeClaim bound to the PV above | Yes |
+| `dev/soludev/valkey/deployment.yaml` | Deployment `valkey` (`valkey/valkey:8-alpine`, persistence + probes) | Yes |
+| `dev/soludev/valkey/service.yaml` | ClusterIP Service `valkey` on port 6379 | Yes |
+| `dev/soludev/logto/configmap.yaml` | `CACHE_ENGINE=redis` + `REDIS_URL=redis://valkey:6379/0` | Yes |
+
+#### Prerequisites
+
+- K3s cluster running with `lenovo-dev` context
+- Namespace `soludev` exists (Flux manages it via the `dev/soludev` Kustomization)
+- NFS server reachable at `100.64.0.3` and the directory
+  `/Volumes/NFSStorage/dev/valkey` created:
+
+```bash
+# On the NFS server
+sudo mkdir -p /Volumes/NFSStorage/dev/valkey
+sudo chmod 777 /Volumes/NFSStorage/dev/valkey
+sudo exportfs -ra
+```
+
+#### Deployment
+
+Valkey is fully managed by Flux — once the manifests are pushed to Git, Flux
+reconciles them automatically. There is no Helm release and no manual secret to
+create.
+
+```bash
+# After pushing the manifests, check Flux sync
+flux get kustomization dev-soludev -n flux-system
+
+# Verify the pod is running
+kubectl get pods -n soludev -l app=valkey
+
+# Verify the PVC is bound
+kubectl get pvc -n soludev valkey
+
+# Verify the service
+kubectl get svc -n soludev valkey
+```
+
+#### Verifying the Logto ↔ Valkey connection
+
+```bash
+# Logto pod should have the cache env vars
+kubectl exec -n soludev deployment/logto -- env | grep -E "CACHE_ENGINE|REDIS_URL"
+# Expected:
+#   CACHE_ENGINE=redis
+#   REDIS_URL=redis://valkey:6379/0
+
+# Test connectivity from the Logto pod
+kubectl exec -n soludev deployment/logto -- \
+  sh -c 'echo PING | nc -w 2 valkey 6379'
+# Expected: +PONG
+
+# Restart Logto so it picks up the new cache config
+kubectl rollout restart deployment/logto -n soludev
+kubectl rollout status deployment/logto -n soludev
+```
+
+#### Notes
+
+- No password is configured on Valkey in dev. If a password is needed later,
+  add a `Secret` + `--requirepass` arg + a `valkey-password` env var and update
+  `REDIS_URL` in the Logto configmap accordingly.
+- The 1Gi NFS volume is sufficient for a dev cache; the RDB snapshot is
+  written every 60s if at least 1 key changed (`--save 60 1`).
+
+### 6. Application Ingress Protection
 
 To protect an Ingress resource (e.g., `pickpro-front`), add the middleware annotation:
 
