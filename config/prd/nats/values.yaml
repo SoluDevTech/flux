@@ -21,7 +21,7 @@ container:
       valueFrom:
         secretKeyRef:
           name: nats-auth
-          key: password
+          key: PASSWORD
   merge:
     resources:
       requests:
