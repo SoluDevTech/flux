@@ -41,3 +41,7 @@ data:
   NATS_ACK_POLICY: "explicit"
   NATS_ACK_WAIT: "300"
   NATS_RETENTION: "work_queue"
+  VALKEY_HOST: valkey.soludev.svc.cluster.local
+  VALKEY_PORT: "6379"
+  VALKEY_DB: "0"
+  VALKEY_KEY_PREFIX: pickpro:indexing

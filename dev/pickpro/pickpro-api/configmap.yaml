@@ -47,3 +47,7 @@ data:
   NATS_STREAM_SUBJECT: "mass-import"
   NATS_MAX_PAYLOAD: "15728640"
   NATS_MAX_AGE: "604800"
+  VALKEY_HOST: valkey.soludev.svc.cluster.local
+  VALKEY_PORT: "6379"
+  VALKEY_DB: "0"
+  VALKEY_KEY_PREFIX: pickpro:back
