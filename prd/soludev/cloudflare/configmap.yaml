@@ -67,6 +67,9 @@ data:
       - hostname: opencode-oauth2-proxy.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
 
+      - hostname: nats.soludev.tech
+        service: http://traefik.kube-system.svc.cluster.local:80
+
       - hostname: "*.soludev.tech"
         service: http://traefik.kube-system.svc.cluster.local:80
 

@@ -41,5 +41,13 @@ data:
   APP_BASE_URL: https://app.pickpro.io
   NOTIFICATION_CRON_TIME: 12:00
   NOTIFICATION_MAIL_CRON_TIME: 12:00
-
-
+  NATS_USER: "pickpro"
+  NATS_URL: "nats://nats.soludev.svc.cluster.local:4222"
+  NATS_STREAM_NAME: "PICKPRO"
+  NATS_STREAM_SUBJECT: "mass-import"
+  NATS_MAX_PAYLOAD: "15728640"
+  NATS_MAX_AGE: "604800"
+  VALKEY_HOST: valkey.soludev.svc.cluster.local
+  VALKEY_PORT: "6379"
+  VALKEY_DB: "0"
+  VALKEY_KEY_PREFIX: pickpro:back

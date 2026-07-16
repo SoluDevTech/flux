@@ -1,0 +1,45 @@
+# Chart: nats
+# Repo: https://nats-io.github.io/k8s/helm/charts/
+# Install: helm upgrade --install nats nats/nats --namespace soludev -f config/prd/nats/values.yaml
+
+config:
+  merge:
+    max_payload: 15728640
+    authorization:
+      user: "pickpro"
+      password: << $NATS_PASSWORD >>
+  jetstream:
+    enabled: true
+    fileStore:
+      pvc:
+        size: 5Gi
+        storageClassName: local-path
+
+container:
+  env:
+    NATS_PASSWORD:
+      valueFrom:
+        secretKeyRef:
+          name: nats-auth
+          key: password
+  merge:
+    resources:
+      requests:
+        cpu: "100m"
+        memory: 128Mi
+      limits:
+        cpu: "500m"
+        memory: 512Mi
+
+service:
+  merge:
+    spec:
+      ports:
+        - name: nats
+          port: 4222
+          targetPort: nats
+          protocol: TCP
+        - name: monitor
+          port: 8222
+          targetPort: monitor
+          protocol: TCP

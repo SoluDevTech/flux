@@ -10,3 +10,6 @@ data:
   ADMIN_ENDPOINT: "https://logto-admin.soludev.tech"
   ADMIN_PORT: "3002"
   NODE_ENV: "production"
+  # Cache via Valkey (Redis-compatible) — service in same namespace
+  CACHE_ENGINE: redis
+  REDIS_URL: redis://valkey:6379/0
