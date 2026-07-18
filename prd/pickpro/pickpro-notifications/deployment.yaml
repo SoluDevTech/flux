@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pickpro-notifications
+  namespace: pickpro
+  labels:
+    app: pickpro-notifications
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pickpro-notifications
+  template:
+    metadata:
+      labels:
+        app: pickpro-notifications
+        app.kubernetes.io/part-of: soludev-workload
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: soludev-workload
+      containers:
+        - name: pickpro-notifications
+          image: kaiohz/pickpro:pickpro-notifications-latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: pickpro-notifications-config
+            - secretRef:
+                name: pickpro-notifications-secret
+          livenessProbe:
+            httpGet:
+              path: /pickpro/rest/v1/health
+              port: 8000
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /pickpro/rest/v1/health
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "768Mi"
+              cpu: "500m"
+      imagePullSecrets:
+        - name: pickpro-docker-secret
