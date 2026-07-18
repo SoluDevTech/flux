@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pickpro-notifications-config
+  namespace: pickpro
+data:
+  ALLOWED_ORIGINS: '["https://pickpro.soludev.tech"]'
+  ENVIRONMENT: "development"
+  LOG_LEVEL: "INFO"
+  PYTHONPATH: "./pickpro_notification"
+  # NATS
+  NATS_USER: "pickpro"
+  NATS_URL: "nats://nats.soludev.svc.cluster.local:4222"
+  NATS_STREAM_NAME: "NOTIFICATIONS"
+  NATS_STREAM_SUBJECT: "notifications"
+  NATS_DURABLE_NAME: "notification-consumer"
+  NATS_MAX_PAYLOAD: "15728640"
+  NATS_MAX_AGE: "604800"
+  NATS_MAX_CONCURRENT: "5"
+  NATS_MAX_RECONNECT: "-1"
+  NATS_RECONNECT_WAIT: "2"
+  NATS_ACK_POLICY: "explicit"
+  NATS_ACK_WAIT: "120"
+  NATS_RETENTION: "work_queue"
+  # Valkey
+  VALKEY_HOST: valkey.soludev.svc.cluster.local
+  VALKEY_PORT: "6379"
+  VALKEY_DB: "0"
+  VALKEY_KEY_PREFIX: pickpro:notifications
+  CACHE_TTL_DEFAULT: "300"
+  # Cron
+  NOTIFICATION_CRON_TIME: "12:00"
+  NOTIFICATION_MAIL_CRON_TIME: "12:00"
+  # SMTP
+  SMTP_HOST: smtp.gmail.com
+  SMTP_PORT: "587"
+  SMTP_FROM_EMAIL: soludevtech@gmail.com
+  SMTP_USE_TLS: "true"
+  APP_BASE_URL: https://pickpro.soludev.tech
+  # Logto
+  LOGTO_URL: http://logto.soludev.svc.cluster.local:3001
+  LOGTO_M2M_APP_ID: pickpro-dev-m2m
