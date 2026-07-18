@@ -31,7 +31,4 @@ data:
       - hostname: oauth2-proxy.pickpro.io
         service: http://traefik.kube-system.svc.cluster.local:80
 
-      - hostname: "*.pickpro.io"
-        service: http://traefik.kube-system.svc.cluster.local:80
-
       - service: http_status:404
