@@ -43,7 +43,7 @@ data:
   NOTIFICATION_MAIL_CRON_TIME: 12:00
   NATS_USER: "pickpro"
   NATS_URL: "nats://nats.soludev.svc.cluster.local:4222"
-  NATS_STREAM_NAME: "PICKPRO"
+  NATS_STREAM_NAME: "RESUMES"
   NATS_STREAM_SUBJECT: "mass-import"
   NATS_MAX_PAYLOAD: "15728640"
   NATS_MAX_AGE: "604800"
