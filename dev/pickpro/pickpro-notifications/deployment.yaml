@@ -28,7 +28,7 @@ spec:
                 name: pickpro-notifications-secret
           livenessProbe:
             httpGet:
-              path: /health
+              path: /pickpro/rest/v1/health
               port: 8000
             initialDelaySeconds: 90
             periodSeconds: 10
@@ -36,7 +36,7 @@ spec:
             failureThreshold: 5
           readinessProbe:
             httpGet:
-              path: /health
+              path: /pickpro/rest/v1/health
               port: 8000
             initialDelaySeconds: 60
             periodSeconds: 5
