@@ -66,9 +66,9 @@ spec:
             - name: ZO_META_STORE
               value: "postgres"
             - name: ZO_META_CONNECTION_POOL_MIN_SIZE
-              value: "1"
+              value: "2"
             - name: ZO_META_CONNECTION_POOL_MAX_SIZE
-              value: "5"
+              value: "20"
             - name: ZO_LOCAL_MODE
               value: "true"
             - name: ZO_LOCAL_MODE_STORAGE
