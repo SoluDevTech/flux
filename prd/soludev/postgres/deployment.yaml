@@ -39,7 +39,7 @@ spec:
       containers:
         - name: postgres
           image: postgres:17-alpine
-          args: ["-c", "max_connections=500", "-c", "shared_buffers=512MB", "-c", "work_mem=8MB", "-c", "effective_cache_size=1536MB", "-c", "jit=off", "-c", "log_min_duration_statement=100ms", "-c", "tcp_keepalives_idle=30", "-c", "tcp_keepalives_interval=10", "-c", "tcp_keepalives_count=6", "-c", "idle_in_transaction_session_timeout=60000", "-c", "effective_io_concurrency=0", "-c", "wal_sync_method=fdatasync", "-c", "max_wal_size=2GB", "-c", "min_wal_size=512MB", "-c", "checkpoint_completion_target=0.9", "-c", "wal_buffers=16MB", "-c", "checkpoint_flush_after=0", "-c", "bgwriter_lru_maxpages=1000", "-c", "bgwriter_delay=200ms"]
+          args: ["-c", "max_connections=500", "-c", "shared_buffers=128MB", "-c", "tcp_keepalives_idle=30", "-c", "tcp_keepalives_interval=10", "-c", "tcp_keepalives_count=6", "-c", "idle_in_transaction_session_timeout=60000", "-c", "effective_io_concurrency=0", "-c", "wal_sync_method=fdatasync", "-c", "max_wal_size=2GB", "-c", "min_wal_size=512MB", "-c", "checkpoint_completion_target=0.9", "-c", "wal_buffers=16MB", "-c", "checkpoint_flush_after=0", "-c", "bgwriter_lru_maxpages=1000", "-c", "bgwriter_delay=200ms"]
           ports:
             - containerPort: 5432
           envFrom:
