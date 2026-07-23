@@ -17,12 +17,6 @@ spec:
         target:
           type: Utilization
           averageUtilization: 70
-    - type: Resource
-      resource:
-        name: memory
-        target:
-          type: Utilization
-          averageUtilization: 70
   behavior:
     # Indexing API a un initialDelay de 180s sur le liveness/readiness probe.
     # On stabilise plus longtemps pour éviter de scaler pendant le démarrage.
