@@ -23,6 +23,7 @@ spec:
       containers:
         - name: postgres
           image: postgres:16-alpine
+          args: ["postgres", "-c", "checkpoint_timeout=15min", "-c", "max_wal_size=2GB", "-c", "checkpoint_completion_target=0.9"]
           ports:
             - containerPort: 5432
           env:
@@ -35,20 +36,41 @@ spec:
                   key: password
             - name: POSTGRES_DB
               value: forgejo
+          startupProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - forgejo
+            failureThreshold: 30
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - forgejo
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
           readinessProbe:
-            tcpSocket:
-              port: 5432
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - forgejo
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "200m"
+              memory: "512Mi"
+              cpu: "500m"
             limits:
               memory: "1Gi"
-              cpu: "1000m"
+              cpu: "2000m"
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
