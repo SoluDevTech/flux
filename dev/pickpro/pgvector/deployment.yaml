@@ -26,7 +26,7 @@ spec:
       containers:
         - name: pgvector
           image: pgvector/pgvector:0.8.0-pg17
-          args: ["postgres", "-c", "tcp_keepalives_idle=30", "-c", "tcp_keepalives_interval=10", "-c", "tcp_keepalives_count=6", "-c", "idle_in_transaction_session_timeout=60000"]
+          args: ["postgres", "-c", "shared_buffers=512MB", "-c", "work_mem=8MB", "-c", "effective_cache_size=1536MB", "-c", "jit=off", "-c", "log_min_duration_statement=100ms", "-c", "tcp_keepalives_idle=30", "-c", "tcp_keepalives_interval=10", "-c", "tcp_keepalives_count=6", "-c", "idle_in_transaction_session_timeout=60000"]
           ports:
             - containerPort: 5432
           envFrom:
@@ -60,8 +60,8 @@ spec:
             failureThreshold: 6
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "100m"
+              memory: "1Gi"
+              cpu: "1000m"
             limits:
-              memory: "512Mi"
-              cpu: "500m"
+              memory: "3Gi"
+              cpu: "2"
