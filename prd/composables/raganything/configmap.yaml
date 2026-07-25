@@ -33,3 +33,4 @@ data:
   KREUZBERG_EXTRACT_IMAGES: "false"
   KREUZBERG_ENABLE_QUALITY_PROCESSING: "false"
   FASTMCP_STATELESS_HTTP: "true"
+  GENERATED_MCP_BASE_URL: "https://raganything.soludev.tech"
