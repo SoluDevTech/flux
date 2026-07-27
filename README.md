@@ -3132,6 +3132,85 @@ spec:
   # ... ingress rules ...
 ```
 
+## Composables Application Setup
+
+The Composables platform (composable-agents, mcp-raganything, composable-ui) uses
+oauth2-proxy with dual authentication: browser calls go through oauth2-proxy
+(cookie session via Logto OIDC), and machine-to-machine calls use either a
+Bearer JWT (`skip_jwt_bearer_tokens = true`) or a per-user `X-API-Key` header
+(routed directly to the backend via a Traefik `IngressRoute` header rule that
+bypasses the `forwardAuth` middleware).
+
+### 1. Create the namespace
+
+```bash
+kubectl create namespace composables
+```
+
+### 2. Install oauth2-proxy via Helm (Deployment + pod)
+
+The Deployment is installed manually via Helm (not managed by Flux). Flux
+manages the ConfigMaps, Secret, Service, Ingress, and HPA.
+
+```bash
+helm repo add oauth2-proxy https://oauth2-proxy.github.io/manifests
+helm upgrade --install oauth2-proxy oauth2-proxy/oauth2-proxy \
+  --namespace composables \
+  -f config/prd/oauth2-proxy/composables/values.yaml
+```
+
+### 3. OpenBao secrets
+
+The ExternalSecret `prd/composables/oauth2-proxy/external-secret.yaml` extracts
+`composables/oauth2-proxy` from OpenBao into the Secret `oauth2-proxy-secret`.
+Populate the key in OpenBao:
+
+```bash
+kubectl exec -n soludev openbao-0 -- bao kv put composables/oauth2-proxy \
+  client-id=trangw5kf2ii6tcmcdzzy \
+  client-secret=<logto-client-secret> \
+  cookie-secret=<openssl-rand-base64-32>
+```
+
+The `SECRET_ENCRYPTION_KEY` (Fernet, shared between composable-agents and
+raganything for encrypting LLM credentials at rest) must be identical in both
+application secrets:
+
+```bash
+kubectl exec -n soludev openbao-0 -- bao kv put composables/composable-agents \
+  SECRET_ENCRYPTION_KEY=<fernet-key> ...
+kubectl exec -n soludev openbao-0 -- bao kv put composables/raganything \
+  SECRET_ENCRYPTION_KEY=<fernet-key> ...
+```
+
+### 4. Logto application
+
+Create a Logto "Traditional Web" application with:
+- **App ID**: `trangw5kf2ii6tcmcdzzy`
+- **Redirect URI**: `https://composables.soludev.tech/oauth2/callback`
+- **Post sign-out redirect URIs**:
+  `https://composables.soludev.tech/oauth2/start`,
+  `https://composables.soludev.tech/oauth2/start?rd=/`
+
+### 5. Routing (Traefik IngressRoute)
+
+The backs use `IngressRoute` CRDs (not plain `Ingress`) with two routes per host:
+
+- **Header route** (`Host(...) && Header(`X-API-Key`)`, priority 100): goes
+  directly to the backend — the backend validates the per-user API key itself.
+- **Catch-all route** (priority 1): goes through `traefik-forward-auth`
+  (oauth2-proxy validates the cookie/JWT and injects `Authorization: Bearer
+  <id_token>`) + `cors-middleware`.
+
+The front (`composables.soludev.tech`) is a plain `Ingress` pointing to
+`oauth2-proxy-service:4180` (oauth2-proxy proxies to `composable-ui:80`).
+
+### 6. ConfigMaps
+
+`LOGTO_URL=https://logto.soludev.tech` and
+`JWT_AUDIENCE=trangw5kf2ii6tcmcdzzy` are set in the composable-agents and
+raganything ConfigMaps (used by the `JwtAdapter` for JWKS verification).
+
 ## OpenClaw Installation
 
 OpenClaw is a personal AI assistant that integrates with Telegram and various AI providers. This section covers deploying OpenClaw with OAuth2 Proxy authentication and NFS storage.

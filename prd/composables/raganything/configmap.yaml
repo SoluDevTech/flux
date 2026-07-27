@@ -34,3 +34,6 @@ data:
   KREUZBERG_ENABLE_QUALITY_PROCESSING: "false"
   FASTMCP_STATELESS_HTTP: "true"
   GENERATED_MCP_BASE_URL: "https://raganything.soludev.tech"
+  # === Dual auth (JWT via Logto OIDC + per-user API keys) ===
+  LOGTO_URL: "https://logto.soludev.tech"
+  JWT_AUDIENCE: "trangw5kf2ii6tcmcdzzy"

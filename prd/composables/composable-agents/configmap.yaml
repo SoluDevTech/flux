@@ -25,3 +25,6 @@ data:
   # === MCP ===
   MCP_TOOL_TIMEOUT: "600"
   AGENT_STREAM_IDLE_TIMEOUT: "600"
+  # === Dual auth (JWT via Logto OIDC + per-user API keys) ===
+  LOGTO_URL: "https://logto.soludev.tech"
+  JWT_AUDIENCE: "trangw5kf2ii6tcmcdzzy"
