@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-config
+  namespace: composables
+data:
+  oauth2_proxy.cfg: |
+    redirect_url = "https://composables.soludev.tech/oauth2/callback"
+
+    cookie_domains = [".soludev.tech"]
+    whitelist_domains = [".soludev.tech"]
+
+    cookie_name = "oauth2-proxy-composables"
+    email_domains = ["*"]
+
+    reverse_proxy = true
+
+    cookie_secure = true
+    cookie_httponly = true
+    cookie_path = "/"
+    cookie_samesite = "lax"
+    cookie_refresh = "30m"
+    cookie_csrf_per_request = true
+    cookie_csrf_expire = "15m"
+
+    # Allow direct Bearer JWT calls to bypass the cookie session check.
+    # Enables "use the JWT OR the API key" for machine-to-machine HTTP calls
+    # routed through the forwardAuth middleware.
+    skip_jwt_bearer_tokens = true
+
+    skip_provider_button = true
+    silence_ping_logging = true
+
+    skip_auth_routes = [
+      "^/assets/",
+      "^/config\\.json",
+    ]
