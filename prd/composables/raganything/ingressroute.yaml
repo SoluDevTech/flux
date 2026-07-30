@@ -20,13 +20,19 @@ spec:
     # Browser calls (cookie session) and direct Bearer JWT calls go through
     # forwardAuth (oauth2-proxy validates the cookie/JWT and injects the
     # Authorization header) + CORS.
+    # cors-middleware is intentionally placed BEFORE traefik-forward-auth: the
+    # Traefik headers middleware short-circuits CORS preflight (OPTIONS)
+    # requests directly, so they never reach oauth2-proxy (which would return
+    # 401 since browsers never send credentials on preflights). Real requests
+    # still pass through both: CORS adds headers, then forwardAuth enforces
+    # the session.
     - match: Host(`raganything.soludev.tech`)
       kind: Rule
       priority: 1
       middlewares:
-        - name: traefik-forward-auth
-          namespace: composables
         - name: cors-middleware
+          namespace: composables
+        - name: traefik-forward-auth
           namespace: composables
       services:
         - name: raganything
