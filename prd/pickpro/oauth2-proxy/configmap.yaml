@@ -32,4 +32,5 @@ data:
       "^/config\\.json",
       "^/pickpro/rest/v1/verify-invite",
       "^/pickpro/rest/v1/set-password-public",
+      "^/pickpro/rest/v1/webhooks",
     ]
