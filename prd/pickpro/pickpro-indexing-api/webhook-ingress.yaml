@@ -5,6 +5,7 @@ metadata:
   namespace: pickpro
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.priority: "100"
 spec:
   rules:
     - host: indexing-api.pickpro.io
