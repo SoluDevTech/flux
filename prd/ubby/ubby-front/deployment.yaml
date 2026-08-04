@@ -32,7 +32,7 @@ spec:
         - name: ubby-front
           image: kaiohz/pickpro:ubby-front-dd5a1a6a2843b63ee531afb3f4f074f4215e37b2
           ports:
-            - containerPort: 80
+            - containerPort: 8080
           env:
             - name: UBBY_MCP_FACTORY_API_BASE_URL
               value: "https://ubby-back.soludev.tech/api/v1"
@@ -43,13 +43,13 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 80
+              port: 8080
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /health
-              port: 80
+              port: 8080
             initialDelaySeconds: 5
             periodSeconds: 5
           resources:

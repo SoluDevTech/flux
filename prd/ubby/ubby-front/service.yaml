@@ -11,6 +11,6 @@ spec:
     app: ubby-front
   ports:
     - port: 4000
-      targetPort: 80
+      targetPort: 8080
       protocol: TCP
       name: http
