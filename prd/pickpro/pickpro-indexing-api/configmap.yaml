@@ -44,3 +44,6 @@ data:
   VALKEY_PORT: "6379"
   VALKEY_DB: "0"
   VALKEY_KEY_PREFIX: pickpro:indexing
+  NATS_RECALL_STREAM_NAME: RECALL
+  NATS_RECALL_SUBJECT: transcript
+  NATS_RECALL_DURABLE: transcript-consumer
