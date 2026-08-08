@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pickpro-pgvector-pvc
+  namespace: pickpro-dev
+spec:
+  volumeName: nfs-pickpro-dev-pgvector
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-pickpro-dev-pgvector
+  resources:
+    requests:
+      storage: 5Gi

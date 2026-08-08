@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio
+  namespace: pickpro-dev
+spec:
+  volumeName: nfs-pickpro-dev-minio
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-pickpro-dev-minio
+  resources:
+    requests:
+      storage: 5Gi

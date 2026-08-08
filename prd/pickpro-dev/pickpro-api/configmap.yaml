@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pickpro-api-config
+  namespace: pickpro-dev
+data:
+  ALLOWED_ORIGINS: '["https://pickpro.soludev.tech"]'
+  DEV_MODE: "true"
+  CHAT_MODEL: anthropic/claude-haiku-4.5:nitro
+  TITLE_MODEL: anthropic/claude-haiku-4.5:nitro
+  GRADER_MODEL: anthropic/claude-haiku-4.5:nitro
+  JOB_STRUCTURE_MODEL: anthropic/claude-haiku-4.5:nitro
+  TEMPERATURE: "0.0"
+  CONCURRENT_CALLS: "5"
+  OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
+  PHOENIX_HOST: http://phoenix-svc.soludev.svc.cluster.local:6006
+  PYTHONPATH: ./pickpro_api
+  MINIO_HOST: minio-pickpro.pickpro-dev.svc.cluster.local:9000
+  MINIO_ACCESS: minioadmin
+  MINIO_BUCKET: cvs
+  MINIO_ALLOWED_EXTENSION: .pdf
+  INDEXING_API_URL: http://pickpro-indexing-api.pickpro-dev.svc.cluster.local:8000/pickpro/rest/v1
+  INDEXING_API_TIMEOUT: "120"
+  LOGTO_URL: http://logto.soludev.svc.cluster.local:3001
+  LOGTO_GOOGLE_CONNECTOR_ID: 3zk5bznj8tavejeddtlse
+  LOGTO_M2M_APP_ID: pickpro-dev-m2m
+  RECALL_AI_REGION: eu-central-1
+  RECALL_AI_BOT_NAME: PickPro-Dev
+  JWT_AUDIENCE: pickpro-dev
+  ENVIRONMENT: "development"
+  ALLOWED_REDIRECT_URIS: '["https://pickpro.soludev.tech"]'
+  DOMAIN: pickpro.soludev.tech
+  PROTOCOL: https
+  OAUTH2_PROXY_URL: https://pickpro.soludev.tech
+  PICKPRO_ORGANIZATION_ID: m9qqyvmp8xyc
+  SMTP_HOST: smtp.gmail.com
+  SMTP_PORT: "587"
+  SMTP_USERNAME: soludevtech@gmail.com
+  SMTP_FROM: soludevtech@gmail.com
+  SMTP_SECURE: "true"
+  APP_BASE_URL: https://pickpro.soludev.tech
+  NOTIFICATION_CRON_TIME: 12:00
+  NOTIFICATION_MAIL_CRON_TIME: 12:00
+  NATS_USER: "pickpro"
+  NATS_URL: "nats://nats.soludev.svc.cluster.local:4222"
+  NATS_STREAM_NAME: "RESUMES"
+  NATS_STREAM_SUBJECT: "mass-import"
+  NATS_MAX_PAYLOAD: "15728640"
+  NATS_MAX_AGE: "604800"
+  VALKEY_HOST: valkey.soludev.svc.cluster.local
+  VALKEY_PORT: "6379"
+  VALKEY_DB: "0"
+  VALKEY_KEY_PREFIX: pickpro:back
