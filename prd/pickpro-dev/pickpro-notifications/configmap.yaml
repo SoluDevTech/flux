@@ -11,9 +11,9 @@ data:
   # NATS
   NATS_USER: "pickpro"
   NATS_URL: "nats://nats.soludev.svc.cluster.local:4222"
-  NATS_STREAM_NAME: "NOTIFICATIONS"
-  NATS_STREAM_SUBJECT: "notifications"
-  NATS_DURABLE_NAME: "notification-consumer"
+  NATS_STREAM_NAME: "NOTIFICATIONS-DEV"
+  NATS_STREAM_SUBJECT: "notifications-dev"
+  NATS_DURABLE_NAME: "notification-dev-consumer"
   NATS_MAX_PAYLOAD: "15728640"
   NATS_MAX_AGE: "604800"
   NATS_MAX_CONCURRENT: "5"
@@ -26,7 +26,7 @@ data:
   VALKEY_HOST: valkey.soludev.svc.cluster.local
   VALKEY_PORT: "6379"
   VALKEY_DB: "0"
-  VALKEY_KEY_PREFIX: pickpro:notifications
+  VALKEY_KEY_PREFIX: pickpro-dev:notifications
   CACHE_TTL_DEFAULT: "300"
   # Cron
   NOTIFICATION_CRON_TIME: "12:00"

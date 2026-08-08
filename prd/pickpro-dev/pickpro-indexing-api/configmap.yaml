@@ -30,21 +30,21 @@ data:
   VLM_TIMEOUT_SECS: "120"
   NATS_USER: "pickpro"
   NATS_URL: "nats://nats.soludev.svc.cluster.local:4222"
-  NATS_STREAM_NAME: "RESUMES"
-  NATS_STREAM_SUBJECT: "mass-import"
+  NATS_STREAM_NAME: "RESUMES-DEV"
+  NATS_STREAM_SUBJECT: "mass-import-dev"
   NATS_MAX_PAYLOAD: "15728640"
   NATS_MAX_AGE: "604800"
   NATS_MAX_CONCURRENT: "3"
   NATS_MAX_RECONNECT: "-1"
   NATS_RECONNECT_WAIT: "2"
-  NATS_DURABLE_NAME: "mass-import-consumer"
+  NATS_DURABLE_NAME: "mass-import-dev-consumer"
   NATS_ACK_POLICY: "explicit"
   NATS_ACK_WAIT: "300"
   NATS_RETENTION: "work_queue"
   VALKEY_HOST: valkey.soludev.svc.cluster.local
   VALKEY_PORT: "6379"
   VALKEY_DB: "0"
-  VALKEY_KEY_PREFIX: pickpro:indexing
-  NATS_RECALL_STREAM_NAME: RECALL
-  NATS_RECALL_SUBJECT: transcript
-  NATS_RECALL_DURABLE: transcript-consumer
+  VALKEY_KEY_PREFIX: pickpro-dev:indexing
+  NATS_RECALL_STREAM_NAME: RECALL-DEV
+  NATS_RECALL_SUBJECT: transcript-dev
+  NATS_RECALL_DURABLE: transcript-dev-consumer
