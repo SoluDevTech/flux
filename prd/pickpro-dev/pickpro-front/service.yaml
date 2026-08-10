@@ -10,7 +10,7 @@ spec:
   selector:
     app: pickpro-front
   ports:
-    - port: 5173
+    - port: 80
       targetPort: 80
       protocol: TCP
       name: http
