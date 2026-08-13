@@ -12,5 +12,6 @@ data:
         "logtoAppId": "sazp1vx8ah3pwv56rqm9v",
         "cvExtractionTimeoutMs": 120000,
         "useMock": false,
-        "devMode": false
+        "devMode": false,
+        "environment": "PRD"
     }
