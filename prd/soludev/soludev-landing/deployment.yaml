@@ -33,6 +33,29 @@ spec:
           image: kaiohz/soludev-landing:590db87a5182807f7e25ef890c262c5090db4175
           ports:
             - containerPort: 80
+          env:
+            - name: OPENOBSERVE_ENABLED
+              value: "true"
+            - name: OPENOBSERVE_SITE
+              value: "openobserve.soludev.tech"
+            - name: OPENOBSERVE_CLIENT_TOKEN
+              value: "rumWf3mnqgZHLkSPfQr"
+            - name: OPENOBSERVE_ORG_ID
+              value: "default"
+            - name: OPENOBSERVE_APPLICATION_ID
+              value: "soludev-landing"
+            - name: OPENOBSERVE_SERVICE
+              value: "soludev-landing"
+            - name: OPENOBSERVE_VERSION
+              value: "0.1.0"
+            - name: CLARITY_ENABLED
+              value: "true"
+            - name: CLARITY_PROJECT_ID
+              value: "y1iyt6knib"
+            - name: AHREFS_ENABLED
+              value: "true"
+            - name: AHREFS_KEY
+              value: "3cn1WFDnk2VUKpFzqCFdHw"
           livenessProbe:
             httpGet:
               path: /health
