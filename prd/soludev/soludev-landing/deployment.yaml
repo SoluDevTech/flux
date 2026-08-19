@@ -30,7 +30,7 @@ spec:
               app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: soludev-landing
-          image: kaiohz/soludev-landing:38f66d024e168317a955114d897cc4ebcb06739e
+          image: kaiohz/soludev-landing:590db87a5182807f7e25ef890c262c5090db4175
           ports:
             - containerPort: 80
           livenessProbe:
