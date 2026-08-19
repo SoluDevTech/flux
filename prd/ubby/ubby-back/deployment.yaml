@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: ubby-back
-          image: kaiohz/pickpro:ubby-back-15eccaeb1e8097230e1e15ef5cb2e6ac20829e23
+          image: kaiohz/pickpro:ubby-back-dbbf7358cb326cecabfb57498140020f448ee83a
           ports:
             - containerPort: 8000
           envFrom:
