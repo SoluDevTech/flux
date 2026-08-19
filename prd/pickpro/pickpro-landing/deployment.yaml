@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pickpro-landing
+  namespace: pickpro
+  labels:
+    app: pickpro-landing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pickpro-landing
+  template:
+    metadata:
+      labels:
+        app: pickpro-landing
+        app.kubernetes.io/part-of: soludev-workload
+    spec:
+      tolerations:
+        - key: "klipperlb-exclude"
+          value: "true"
+          effect: "NoSchedule"
+          operator: "Equal"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: soludev-workload
+      containers:
+        - name: pickpro-landing
+          image: kaiohz/pickpro:pickpro-landing-placeholder
+          ports:
+            - containerPort: 80
+          env:
+            - name: OPENOBSERVE_ENABLED
+              value: "true"
+            - name: OPENOBSERVE_SITE
+              value: "openobserve.soludev.tech"
+            - name: OPENOBSERVE_CLIENT_TOKEN
+              value: "rumWf3mnqgZHLkSPfQr"
+            - name: OPENOBSERVE_ORG_ID
+              value: "default"
+            - name: OPENOBSERVE_APPLICATION_ID
+              value: "pickpro-landing"
+            - name: OPENOBSERVE_SERVICE
+              value: "pickpro-landing"
+            - name: OPENOBSERVE_VERSION
+              value: "0.0.1"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "96Mi"
+              cpu: "100m"
+      imagePullSecrets:
+        - name: pickpro-docker-secret

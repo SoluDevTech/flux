@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pickpro-landing
+  namespace: pickpro
+  labels:
+    app: pickpro-landing
+spec:
+  type: ClusterIP
+  selector:
+    app: pickpro-landing
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
