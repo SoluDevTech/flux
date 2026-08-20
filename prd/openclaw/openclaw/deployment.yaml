@@ -166,11 +166,18 @@ spec:
               memory: "2Gi"
               cpu: "1"
 
+          startupProbe:
+            httpGet:
+              path: /health
+              port: gateway
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 60
+
           livenessProbe:
             httpGet:
               path: /health
               port: gateway
-            initialDelaySeconds: 120
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
@@ -179,7 +186,6 @@ spec:
             httpGet:
               path: /health
               port: gateway
-            initialDelaySeconds: 120
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
