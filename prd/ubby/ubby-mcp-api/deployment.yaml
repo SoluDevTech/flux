@@ -25,7 +25,7 @@ spec:
               app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: ubby-mcp-api
-          image: kaiohz/pickpro:ubby-mcp-api-15597da380490e5a4ade83e5a127d88e35c03d9a
+          image: kaiohz/pickpro:ubby-mcp-api-309b5781795b09ae545640037b6a3756ba606061
           ports:
             - containerPort: 3000
           envFrom:
