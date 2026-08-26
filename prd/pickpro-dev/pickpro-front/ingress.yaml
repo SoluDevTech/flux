@@ -6,6 +6,7 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/redirect-scheme: https
+    traefik.ingress.kubernetes.io/router.middlewares: pickpro-dev-security-headers@kubernetescrd
 spec:
   rules:
     - host: pickpro.soludev.tech
