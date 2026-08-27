@@ -29,6 +29,7 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [Troubleshooting](#troubleshooting)
 - [Network Architecture & Known Issues](#network-architecture--known-issues)
   - [Incident: 14-30s Client-Facing Timeouts (May 2026)](#incident-14-30s-client-facing-timeouts-may-2026)
+  - [Incident: Tailscale DNS pollution + Cloudflare Tunnel 502 (Aug 2026)](#incident-tailscale-dns-pollution--cloudflare-tunnel-502-aug-2026)
 
 ## Mesh VPN for mac os workers
 
@@ -4364,4 +4365,144 @@ kubectl logs -n pickpro -l app.kubernetes.io/name=oauth2-proxy --tail=20 | grep 
 
 # Les token exchanges Logto doivent être < 100ms
 kubectl logs -n soludev <logto-pod> --tail=50 | grep "POST /oidc/token"
+```
+
+### Incident: Tailscale DNS pollution + Cloudflare Tunnel 502 (Aug 2026)
+
+**Date:** 26 août 2026
+**Symptômes:**
+- Tous les domaines `*.soludev.tech` et `*.pickpro.io` renvoient **502 Bad Gateway** via Cloudflare
+- Le navigateur affiche parfois une page **parklogic.com** (parking de domaines)
+- `cloudflared` logs: `Unauthorized: Invalid tunnel secret` (après rotation du token)
+- External Secrets: `ClusterSecretStore "openbao-backend" is not ready` / `unable to log in to auth method: unable to log in with Kubernetes auth: context deadline exceeded`
+- Les pods ne peuvent plus résoudre les Services internes (`openbao.soludev.svc.cluster.local` timeout)
+
+**Timeline:**
+
+| Heure | Événement |
+|-------|-----------|
+| 06:38 | `unattended-upgrade` met à jour `openssl` + `libssl3` sur les 4 nodes |
+| 06:38 | `systemd-resolved` redémarre → Tailscale re-sync DNS → injecte `search solu.dev` dans `/etc/resolv.conf` |
+| 06:38+ | K3s propage `search solu.dev` à tous les pods via `dnsPolicy: ClusterFirst` |
+| 14:37 | Pods `cloudflared` + `traefik` redémarrent (OOM/crash lié au upgrade) |
+| 14:37+ | Les pods ne peuvent plus résoudre les Services internes → External Secrets casse → Openbao inaccessible → Cloudflare Tunnel rejette le trafic |
+
+**Root Causes (2 problèmes en cascade):**
+
+#### Root Cause #1: Tailscale Headscale MagicDNS pollue le resolv.conf
+
+Le serveur Headscale (`37.60.225.137`) a `base_domain: solu.dev` configuré dans `/etc/headscale/config.yaml`. Quand `systemd-resolved` redémarre (suite à un upgrade OpenSSL), Tailscale réinjecte `search solu.dev` dans `/etc/resolv.conf` du host.
+
+K3s hérite ce search domain et le propage à tous les pods:
+```
+search default.svc.cluster.local svc.cluster.local cluster.local solu.dev
+```
+
+**Conséquence:** Les pods qui résolvent `openbao.soludev.svc.cluster.local` se font intercepter par `solu.dev` (domaine public) qui résout en `172.237.x.x` (IP publique externe) → timeout → External Secrets ne peut plus joindre Openbao → tous les secrets (Cloudflare, DB, etc.) ne se sync plus.
+
+**Diagnostic:**
+```bash
+# Vérifier le resolv.conf d'un pod
+kubectl run curl-test --image=curlimages/curl --restart=Never -- sleep 300
+kubectl exec curl-test -- cat /etc/resolv.conf
+# Si "search ... solu.dev" → probléme
+
+# Vérifier la résolution
+kubectl exec curl-test -- curl -v -m 5 http://openbao.soludev.svc.cluster.local:8200/v1/sys/health
+# Si "Trying 172.237.x.x" → DNS pollué
+
+# Vérifier Tailscale sur les nodes
+ssh root@<node> 'resolvectl status | grep "DNS Domain"'
+# Si "DNS Domain: solu.dev" → Tailscale injecte le search domain
+```
+
+**Solution (immédiate):**
+```bash
+# Sur les 4 nodes du cluster (pas sur Headscale):
+ssh root@<node> 'tailscale set --accept-dns=false'
+# Vérifier:
+ssh root@<node> 'grep "search" /etc/resolv.conf'
+# Ne doit plus contenir "solu.dev"
+```
+
+**Solution (propre):**
+- Changer `base_domain` dans `/etc/headscale/config.yaml` sur le serveur Headscale (`37.60.225.137`) vers un domaine interne (ex: `ts.internal` ou `tailnet.local`)
+- Ou configurer K3s pour ne pas hériter le search domain du host (`--resolv-conf` custom)
+
+**Prévention:**
+- Ne jamais utiliser un domaine public comme `base_domain` Headscale
+- Désactiver `accept-dns` sur les nodes de production: `tailscale set --accept-dns=false`
+- Monitorer le `/etc/resolv.conf` des nodes (alerte si `solu.dev` réapparaît)
+
+#### Root Cause #2: Token Cloudflare Tunnel rotaté mais non propagé à Openbao
+
+Après rotation du token Cloudflare Tunnel (bouton "Rotate token" dans le dashboard), le nouveau token n'est pas automatiquement mis à jour dans Openbao. External Secrets continue de sync l'ancien token → `cloudflared` rejette → 502.
+
+**Diagnostic:**
+```bash
+# Logs cloudflared
+kubectl logs -n soludev -l app=cloudflared --tail=10 | grep -i "unauthorized"
+# Si "Unauthorized: Invalid tunnel secret" → token invalide
+
+# Comparer le token K8s vs Openbao
+kubectl get secret -n soludev cloudflare-secret -o jsonpath='{.data.TUNNEL_TOKEN}' | base64 -d
+```
+
+**Solution:**
+```bash
+# 1. Récupérer le nouveau token depuis Cloudflare dashboard:
+#    Zero Trust → Networks → Tunnels → <tunnel> → Add a replica → copier le token eyJ...
+
+# 2. Mettre à jour dans Openbao (avec root token):
+ROOT_TOKEN="s.xxx"
+NEW_TOKEN="eyJh..."
+kubectl exec -n soludev openbao-0 -- sh -c "BAO_TOKEN='$ROOT_TOKEN' bao kv put kv/soludev/cloudflare TUNNEL_TOKEN='$NEW_TOKEN' cert.pem='$(kubectl get secret -n soludev cloudflare-secret -o jsonpath='{.data.cert\.pem}' | base64 -d)'"
+
+# 3. Force sync External Secrets:
+kubectl annotate externalsecret cloudflare-external-secret -n soludev force-sync=$(date +%s) --overwrite
+
+# 4. Restart cloudflared:
+kubectl rollout restart deployment/cloudflared -n soludev
+```
+
+**⚠️ Important:** La commande `bao kv put` écrase TOUTES les clés du secret. Toujours inclure `cert.pem` (ou toutes les clés existantes) sinon elles sont perdues.
+
+**Prévention:**
+- Après toute rotation de token Cloudflare, mettre à jour Openbao immédiatement
+- Automatiser la rotation via script qui update Openbao + restart cloudflared
+- Ne pas utiliser `bao kv put` sans inclure toutes les clés existantes (préférer `bao kv patch` si la policy le permet)
+
+**Procédure de récupération complète (résumé):**
+
+```bash
+# 1. Fix Tailscale DNS (sur les 4 nodes)
+for ip in 84.247.188.175 84.247.189.16 84.247.190.97 84.247.189.239; do
+  ssh root@$ip 'tailscale set --accept-dns=false'
+done
+
+# 2. Vérifier que les pods résolvent correctement
+kubectl run curl-test --image=curlimages/curl --restart=Never -- sleep 300
+kubectl exec curl-test -- curl -s http://openbao.soludev.svc.cluster.local:8200/v1/sys/health
+
+# 3. Restart External Secrets pour reconnecter Openbao
+kubectl rollout restart deployment external-secrets -n external-secrets
+
+# 4. Vérifier que Openbao est prêt
+kubectl get clustersecretstore openbao-backend
+# Doit afficher READY: True
+
+# 5. Mettre à jour le token Cloudflare dans Openbao (si rotaté)
+ROOT_TOKEN="s.xxx"
+NEW_TOKEN="eyJh..."
+kubectl exec -n soludev openbao-0 -- sh -c "BAO_TOKEN='$ROOT_TOKEN' bao kv put kv/soludev/cloudflare TUNNEL_TOKEN='$NEW_TOKEN' cert.pem='$(kubectl get secret -n soludev cloudflare-secret -o jsonpath='{.data.cert\.pem}' | base64 -d)'"
+
+# 6. Force sync + restart cloudflared
+kubectl annotate externalsecret cloudflare-external-secret -n soludev force-sync=$(date +%s) --overwrite
+kubectl annotate externalsecret cloudflare-external-secret -n pickpro force-sync=$(date +%s) --overwrite
+kubectl rollout restart deployment/cloudflared -n soludev
+kubectl rollout restart deployment/cloudflared -n pickpro
+
+# 7. Vérifier
+curl -sI https://ubby.soludev.tech/
+curl -sI https://pickpro.io/
 ```
