@@ -46,12 +46,6 @@ data:
       - hostname: ubby-oauth2-proxy.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
 
-      - hostname: openclaw.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-
-      - hostname: hooks-openclaw.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-
       - hostname: liame.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
 
@@ -59,12 +53,6 @@ data:
         service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: unispace-back.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-
-      - hostname: opencode.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-
-      - hostname: opencode-oauth2-proxy.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
 
       - hostname: nats.soludev.tech
