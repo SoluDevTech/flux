@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencode-config
+  namespace: opencode
+data:
+  OPENCODE_DISABLE_AUTOUPDATE: "true"
+  OPENCODE_DISABLE_PRUNE: "false"
+  opencode.json: |
+    {
+      "$schema": "https://opencode.ai/config.json",
+      "logLevel": "DEBUG",
+      "server": {
+        "port": 4096,
+        "hostname": "0.0.0.0",
+        "cors": ["https://opencode.soludev.tech"]
+      },
+      "autoupdate": false,
+      "model": "ollama-cloud/minimax-m3",
+      "small_model": "ollama-cloud/glm-5.1",
+      "permission": {
+        "external_directory": {
+          "../../../**": "allow"
+        }
+      },
+      "provider": {
+        "ollama-cloud": {
+          "options": {
+            "apiKey": "{env:OLLAMA_CLOUD_API_KEY}"
+          }
+        }
+      },
+      "agent": {
+        "build": {
+          "mode": "primary",
+          "model": "ollama-cloud/minimax-m3"
+        },
+        "plan": {
+          "mode": "primary",
+          "model": "ollama-cloud/minimax-m3"
+        }
+      },
+      "mcp": {
+        "context7": {
+          "type": "local",
+          "command": ["npx", "-y", "@upstash/context7-mcp@2.3.0"]
+        },
+        "chrome-devtools": {
+          "type": "local",
+          "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
+        }
+      }
+    }

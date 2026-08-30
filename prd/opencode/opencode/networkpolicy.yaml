@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: opencode-ingress-policy
+  namespace: opencode
+spec:
+  podSelector:
+    matchLabels:
+      app: opencode
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: oauth2-proxy
+      ports:
+        - port: 4096
+          protocol: TCP
