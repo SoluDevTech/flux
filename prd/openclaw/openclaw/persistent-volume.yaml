@@ -10,7 +10,7 @@ spec:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   nfs:
-    server: 100.64.0.5
+    server: 100.64.0.7
     path: /srv/nfs/openclaw
   mountOptions:
     - hard
