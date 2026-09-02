@@ -4507,7 +4507,7 @@ curl -sI https://ubby.soludev.tech/
 curl -sI https://pickpro.io/
 ```
 
-## Incident: Migration cluster — 8 problèmes en cascade (Sept 2026)
+## Incident: Migration cluster — 9 problèmes en cascade (Sept 2026)
 
 **Date:** 1-2 septembre 2026
 **Contexte:** Ajout d'un 4e worker (Cloud VPS 6, vmi3549081 / 100.64.0.6) + migration du serveur NFS vers un Storage VPS 30 dédié (vmi3549084 / 100.64.0.7), taint du control-plane, drain des workloads. Chaque problème ci-dessous a été rencontré et résolu pendant cette migration.
@@ -4695,6 +4695,54 @@ kubectl delete pod -n soludev sonarqube-sonarqube-0   # repartir sur un kubelet 
 
 **Budget résultant:** 120s delay + 80×15s = 22 min de démarrage toléré.
 
+### Problème 9: pickpro.io 502 / page parklogic après la migration — pods avec resolv.conf pollué hérité du nœud
+
+**Symptômes:**
+- `https://pickpro.io/` renvoie **502** (`error code: 502` de Cloudflare), parfois une page parklogic (parking OVH)
+- Logs cloudflared: `Unable to reach the origin service ... EOF` vers `http://traefik.kube-system.svc.cluster.local:80`
+- Le domaine est sain (NS Cloudflare, actif, résout vers les IPs CF), le tunnel est enregistré, traefik répond depuis les autres pods
+
+**Root Cause:**
+Cascade en 3 étapes:
+
+1. Pendant le drain, le pod `cloudflared` (pickpro) a été reschedulé sur le **nouveau worker** alors que ce nœud avait encore `search solu.dev` dans son `/etc/resolv.conf` (Tailscale MagicDNS — cf. incident Aug 2026 et Problème DNS de cette migration)
+2. Le resolv.conf des pods est **figé à la création du pod** : le pod hérite `search pickpro.svc.cluster.local svc.cluster.local cluster.local solu.dev` + `ndots:5`
+3. Résolution de `traefik.kube-system.svc.cluster.local` (4 dots < ndots:5) → le resolver teste les search domains → `*.solu.dev` est un **wildcard DNS public** (parking Contabo/OVH) → la connexion aboutit au parking → `EOF` → 502
+
+**Leçon clé:** le fix `tailscale set --accept-dns=false` sur un nœud ne protège que les pods **futurs**. Les pods créés AVANT le fix gardent leur resolv.conf pollué **à vie** — il faut les recréer explicitement.
+
+**Diagnostic (trouver tous les pods pollués d'un nœud):**
+```bash
+# Scanner les containers du nœud via crictl (le resolv.conf n'est pas lisible via kubectl exec
+# pour les images distroless sans shell)
+ssh root@<node> 'for c in $(crictl ps -q --state Running); do
+  NAME=$(crictl inspect $c 2>/dev/null | jq -r ".status.metadata.name")
+  HP=$(crictl inspect $c 2>/dev/null | jq -r ".info.pid")
+  if grep -q "solu.dev" /proc/$HP/root/etc/resolv.conf 2>/dev/null; then
+    echo "POLLUÉ: $NAME (container $c)"
+  fi
+done'
+```
+
+**Solution:**
+```bash
+# Recréer TOUS les pods pollués du nœud (le nouveau resolv.conf sera propre)
+kubectl rollout restart deployment/<name> -n <ns>        # deployments
+kubectl delete pod -n <ns> <pod>                         # daemonsets/statefulsets se recréent seuls
+
+# ⚠️ StatefulSet openbao: le pod redémarre SCELLÉ → unseal manuel après recréation
+kubectl exec -n soludev openbao-0 -- bao operator unseal '<key1>'   # ×3 (seuil 3/5)
+kubectl exec -n soludev openbao-0 -- bao status | grep Sealed       # doit afficher false
+
+# Vérification finale: 0 container pollué sur le nœud
+# (relancer le script de diagnostic ci-dessus)
+```
+
+**Résultats observés (2 sept 2026):** 15 pods pollués nettoyés sur le nouveau worker (cloudflared pickpro, coredns, openbao-0, unispace/postgres, cert-manager ×2, metrics-server, local-path, svclb, collector, phoenix, opencode, soludev-landing ×2) → pickpro.io repassé de 502 à **200 en 0.8s**.
+
+**Solution définitive (toujours en suspens):**
+- Changer `base_domain` dans `/etc/headscale/config.yaml` (37.60.225.137) de `solu.dev` vers un domaine **interne** (`ts.internal`) — tant que le wildcard public `*.solu.dev` existe, tout resolv.conf pollué par Tailscale détourne le DNS des pods vers le parking
+
 ### Résumé des leçons de la migration
 
 | Leçon | Action |
@@ -4706,6 +4754,8 @@ kubectl delete pod -n soludev sonarqube-sonarqube-0   # repartir sur un kubelet 
 | Nouveau nœud k3s + PV NFS | `apt-get install nfs-common` au provisioning |
 | Migration NFS | PVC→PV delete (Retain), jamais de rsync --delete, git = source de vérité |
 | SonarQube/ES boot lent | startup probe budget ≥ 20 min |
+| **Fix accept-dns=false sur un nœud** | **Ne protège que les pods futurs — recréer tous les pods existants du nœud** (resolv.conf figé à la création) |
+| Release helm manuel (openbao) | Webhook config supprimée en urgence = jamais recréée par Flux → crashloop injector silencieux |
 
 **Architecture actuelle (post-migration):**
 ```
