@@ -1,0 +1,53 @@
+# CronJob de cleanup de la table oidc_model_instances de Logto.
+#
+# Contexte (incident documenté dans le README, section "Logto / OAuth2 Proxy —
+# Authentification Lente") : oidc-provider écrit des tokens OIDC (AuthorizationCode,
+# Session, Grant, AccessToken, RefreshToken) dans cette table et ne supprime JAMAIS
+# les enregistrements expirés. Avec 98-99% de rows expirées, chaque token exchange
+# du login OAuth2 ralentit (planning + scan) → callbacks de 2 à 9 secondes.
+#
+# Ce CronJob purge les rows expirées toutes les heures + VACUUM ANALYZE.
+# L'autovacuum tuning est déjà posé sur la table (reloptions) mais ne supprime pas
+# les rows expirées — il ne récupère que l'espace des tuples déjà mortes.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: logto-oidc-cleanup
+  namespace: soludev
+  labels:
+    app: logto-oidc-cleanup
+    app.kubernetes.io/part-of: soludev-workload
+spec:
+  schedule: "15 * * * *"  # à :15 de chaque heure, hors des pics
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 120
+      template:
+        metadata:
+          labels:
+            app: logto-oidc-cleanup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: psql
+              image: postgres:17-alpine
+              env:
+                - name: DB_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: logto-secret
+                      key: DB_URL
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  echo "[$(date -u +%FT%TZ)] cleanup oidc_modelinstances..."
+                  deleted=$(psql "$DB_URL" -t -A -c "WITH del AS (DELETE FROM oidc_model_instances WHERE expires_at < now() RETURNING 1) SELECT count(*) FROM del;")
+                  echo "[$(date -u +%FT%TZ)] purged $deleted expired rows"
+                  psql "$DB_URL" -c "VACUUM ANALYZE oidc_model_instances;" | tail -1
+                  echo "[$(date -u +%FT%TZ)] done"
