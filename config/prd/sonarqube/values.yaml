@@ -63,7 +63,10 @@ readinessProbe:
   timeoutSeconds: 30
   failureThreshold: 10
 startupProbe:
-  initialDelaySeconds: 60
-  periodSeconds: 10
+  # SonarQube 26 met 3-5 min a booter (ES recovery + DB migration + web server).
+  # Budget total : 120s delay + 80*15s = 22 min. L'ancienne config (60s + 60*10s = 11 min
+  # theoriques mais compteur kubelet corrompu par les crashloops) tuait le conteneur a ~2 min.
+  initialDelaySeconds: 120
+  periodSeconds: 15
   timeoutSeconds: 10
-  failureThreshold: 60
+  failureThreshold: 80
