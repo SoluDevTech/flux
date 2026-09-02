@@ -39,7 +39,15 @@ spec:
       containers:
         - name: postgres
           image: postgres:17-alpine
-          args: ["-c", "max_connections=500", "-c", "shared_buffers=128MB", "-c", "tcp_keepalives_idle=30", "-c", "tcp_keepalives_interval=10", "-c", "tcp_keepalives_count=6", "-c", "idle_in_transaction_session_timeout=60000", "-c", "effective_io_concurrency=0", "-c", "wal_sync_method=fdatasync", "-c", "max_wal_size=2GB", "-c", "min_wal_size=512MB", "-c", "checkpoint_completion_target=0.9", "-c", "wal_buffers=16MB", "-c", "checkpoint_flush_after=0", "-c", "bgwriter_lru_maxpages=1000", "-c", "bgwriter_delay=200ms"]
+          # Tuning 2026-09-02 (enquete SonarQube lent) :
+          # - shared_buffers 512MB = 25% de la limite 2Gi (regle usuelle 25% de la RAM dispo)
+          # - effective_cache_size 1536MB = hint planner realiste (512MB shared + page cache restant)
+          # - max_connections 100 : 32 connexions observees, pire cas ~75 (pool JDBC sonarqube max 60)
+          #   (500 avant = bombe a retardement : 500 backends x ~5MB RSS > limite 2Gi = OOMKill)
+          # - effective_io_concurrency retire : customisation inutile, laisse a la valeur par defaut
+          # NB : les checkpoints "lents" (write=90s) sont du pacing voulu
+          #     (checkpoint_completion_target=0.9 x 5min, ~100ms de sommeil par buffer), pas de la contention I/O.
+          args: ["-c", "max_connections=100", "-c", "shared_buffers=512MB", "-c", "effective_cache_size=1536MB", "-c", "tcp_keepalives_idle=30", "-c", "tcp_keepalives_interval=10", "-c", "tcp_keepalives_count=6", "-c", "idle_in_transaction_session_timeout=60000", "-c", "wal_sync_method=fdatasync", "-c", "max_wal_size=2GB", "-c", "min_wal_size=512MB", "-c", "checkpoint_completion_target=0.9", "-c", "wal_buffers=16MB", "-c", "checkpoint_flush_after=0", "-c", "bgwriter_lru_maxpages=1000", "-c", "bgwriter_delay=200ms"]
           ports:
             - containerPort: 5432
           envFrom:
