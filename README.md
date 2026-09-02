@@ -4506,3 +4506,211 @@ kubectl rollout restart deployment/cloudflared -n pickpro
 curl -sI https://ubby.soludev.tech/
 curl -sI https://pickpro.io/
 ```
+
+## Incident: Migration cluster — 8 problèmes en cascade (Sept 2026)
+
+**Date:** 1-2 septembre 2026
+**Contexte:** Ajout d'un 4e worker (Cloud VPS 6, vmi3549081 / 100.64.0.6) + migration du serveur NFS vers un Storage VPS 30 dédié (vmi3549084 / 100.64.0.7), taint du control-plane, drain des workloads. Chaque problème ci-dessous a été rencontré et résolu pendant cette migration.
+
+### Problème 1: Nouveau nœud tailscale — `fetch control key: 400 Bad Request` puis `x509: certificate signed by unknown authority`
+
+**Symptômes:**
+- `tailscale up --login-server=http://37.60.225.137:8080` → `400 Bad Request` en boucle
+- Avec `https://` → `x509: certificate signed by unknown authority`
+
+**Root Cause (2 couches):**
+1. Headscale écoute en **HTTPS** sur 8080 (`server_url: https://37.60.225.137:8080`) — le schéma `http://` est refusé
+2. Le certificat headscale est **autosigné** (`CN = 37.60.225.137`) — les nouvelles machines n'ont pas le CA dans leur trust store, et `update-ca-certificates` ne suffit pas car **`tailscaled` met en cache le trust store au démarrage**
+
+**Solution:**
+```bash
+# 1. Copier le certificat depuis le serveur headscale
+scp root@vmi3322106:/var/lib/headscale/server.crt /tmp/
+scp /tmp/server.crt root@<new-node>:/usr/local/share/ca-certificates/headscale.crt
+
+# 2. Sur le nouveau nœud — IMPORTANT: RESTART tailscaled après update-ca-certificates
+ssh root@<new-node> 'update-ca-certificates && systemctl restart tailscaled'
+
+# 3. Join (schéma https !)
+ssh root@<new-node> 'tailscale up --login-server=https://37.60.225.137:8080 --auth-key=<preauthkey>'
+```
+
+**Leçon:** `update-ca-certificates` sans `systemctl restart tailscaled` = le démon continue avec l'ancien trust store en mémoire.
+
+### Problème 2: Nouveau nœud join OK mais `no matching peer` depuis les anciens nœuds
+
+**Symptômes:**
+- Le nouveau nœud apparaît `online` dans `headscale nodes list`
+- `tailscale ping` depuis les anciens nœuds → `no matching peer`
+- Le nouveau nœud voit tout le tailnet, mais pas l'inverse
+
+**Root Cause:** Les anciens nœuds n'ont pas reçu le netmap mis à jour (PollNetMap long-poll ~60s, mais le netmap n'est repoussé qu'au prochain cycle). Le problème a été masqué puis résolu par les restarts tailscaled.
+
+**Solution:**
+```bash
+# Restart tailscaled sur les nœuds qui ne voient pas le nouveau (force PollNetMap immédiat)
+ssh root@84.247.188.175 'systemctl restart tailscaled'
+# (idem sur chaque worker + le serveur storage si besoin)
+```
+
+**⚠️ Effet de bord majeur (voir Problème 4):** le restart de tailscaled **efface les routes flannel/VXLAN** des nœuds k3s — toujours suivre par un restart k3s-agent.
+
+### Problème 3: Tailscale 1.102.3 (nouveaux nœuds) vs 1.98.3 (anciens nœuds) — downgrade nécessaire
+
+**Symptômes:**
+- Handshakes WireGuard impossibles entre nouveaux et anciens nœuds (timeout, pas de `pong`)
+
+**Root Cause:** Incompatibilité de protocole entre tailscaled 1.102.3 (installé par `curl -fsSL https://tailscale.com/install.sh`) et le reste du tailnet (1.98.3) derrière headscale 0.28.0. La version 1.98.3 n'est plus dans le repo apt noble.
+
+**Solution:**
+```bash
+# 1. Télécharger le tarball statique officiel de la version alignée
+cd /tmp && curl -fsSL -o ts.tgz https://pkgs.tailscale.com/stable/tailscale_1.98.3_amd64.tgz && tar xzf ts.tgz
+
+# 2. Installer les binaires + override systemd (PERSISTANT au reboot)
+mkdir -p /etc/systemd/system/tailscaled.service.d
+printf "[Service]\nExecStart=\nExecStart=/usr/local/bin/tailscaled-1.98.3 --state=/var/lib/tailscale/tailscaled.state --socket=/run/tailscale/tailscaled.sock --port=41641\n" > /etc/systemd/system/tailscaled.service.d/version.conf
+cp tailscale_1.98.3_amd64/tailscaled /usr/local/bin/tailscaled-1.98.3
+cp tailscale_1.98.3_amd64/tailscale /usr/local/bin/tailscale
+systemctl daemon-reload && systemctl restart tailscaled
+
+# 3. Figer le paquet apt pour éviter qu'un upgrade re-brise la maille
+apt-mark hold tailscale
+```
+
+**Vérification de résilience (test de reboot):**
+```bash
+ssh root@<new-node> 'systemctl reboot'
+# Après reboot: tailscale doit se reconnecter SEUL (service enabled + tailscaled.state persistant + override systemd)
+```
+
+### Problème 4: Restart tailscaled sur un nœud k3s → toutes les routes flannel/VXLAN perdues
+
+**Symptômes:**
+- `tailscale ping` OK entre nœuds, mais trafic pod-to-pod cross-node mort (ping IP de pod cross-node = 100% loss)
+- `ip route | grep flannel.1` → **0 route** au lieu de 4
+- `bridge fdb show | grep flannel.1` → **0 entrée**
+- DNS cluster cassé (coredns injoignable), webhooks apiserver timeout
+
+**Root Cause:** Flannel route via `tailscale0` (`--flannel-iface tailscale0`). Un restart de tailscaled réinitialise l'interface tailscale0 → les routes VXLAN et les entrées FDB flannel disparaissent et **ne se reconstruisent pas seules**.
+
+**Solution:**
+```bash
+# Après TOUT restart tailscaled sur un nœud k3s:
+ssh root@<node> 'systemctl restart k3s-agent'   # (ou k3s pour le control-plane)
+# Vérifier:
+ssh root@<node> 'ip route | grep -c "dev flannel.1"'   # doit afficher 4 (5 nœuds)
+```
+
+**Prévention:** Ne jamais restart tailscaled seul sur un nœud k3s — toujours enchaîner avec un restart k3s/k3s-agent.
+
+### Problème 5: Drain du control-plane → deadlock total de création de pods (webhooks + coredns évincé)
+
+**Symptômes:**
+- Après `kubectl drain`, coredns/metrics-server/local-path/openbao/postgres évincés mais **aucun pod ne se recrée**
+- Events: `FailedCreate ... Timeout: request did not complete within requested timeout` sur TOUS les ReplicaSets
+- `nslookup` depuis un pod → `Connection refused` vers 10.43.0.10 (coredns down)
+- Plusieurs minutes de panne totale de scheduling
+
+**Root Cause (cascade):**
+1. Le drain évince coredns → DNS cluster mort
+2. Les MutatingWebhookConfigurations `openbao-agent-injector-cfg` (`vault.hashicorp.com`) et `opentelemetry-operator-mutating-webhook-configuration` (`mpod.kb.io`) matchent **tous les pods** (pas de namespaceSelector)
+3. L'apiserver tente d'appeler les webhooks via leurs Services... qui ne résolvent plus (DNS down) → les appels **droppés silencieusement** (pas de reject iptables) → chaque création de pod attend le timeout 30s webhook
+4. 2 webhooks catch-all × 30s > timeout du contrôleur → `FailedCreate: Timeout` en boucle → **deadlock complet**
+
+**Solution (déblocage d'urgence):**
+```bash
+# Supprimer les webhooks catch-all (ils seront re-créés par Flux/les opérateurs une fois le DNS revenu)
+kubectl delete mutatingwebhookconfiguration openbao-agent-injector-cfg opentelemetry-operator-mutating-webhook-configuration
+# Les pods se créent alors instantanément, coredns revient, DNS rétabli
+```
+
+**Prévention:**
+- Vérifier les namespaceSelectors des MutatingWebhookConfigurations avant tout drain
+- Ajouter `failurePolicy: Ignore` (déjà le cas ici) ne suffit PAS quand le drop est silencieux — le seul vrai fix est un namespaceSelector restrictif sur chaque webhook
+- Prévoir un déploiement coredns à replicas>1 avec tolerations avant de drainer
+
+### Problème 6: Nouveau worker k3s — pods en ContainerCreating avec `mount failed: exit status 32`
+
+**Symptômes:**
+- Tous les pods NFS schedule sur le nouveau worker restent bloqués `ContainerCreating`
+- Events: `MountVolume.SetUp failed ... bad option; for several filesystems (e.g. nfs, cifs) you might need a /sbin/mount.<type> helper program`
+
+**Root Cause:** Le script d'installation k3s ne préinstalle pas le client NFS. Le kubelet ne peut pas monter les volumes `nfs` sans `mount.nfs`.
+
+**Solution:**
+```bash
+ssh root@<new-worker> 'apt-get install -y nfs-common'
+# Le kubelet retrye avec backoff — les pods passent en Running en 1-2 min
+# (test manuel: mount -t nfs4 -o vers=4 100.64.0.7:/srv/nfs/soludev /mnt && umount /mnt)
+```
+
+**Prévention:** Ajouter `nfs-common` au provisioning de tout nœud k3s qui montera des PV NFS.
+
+### Problème 7: Migration NFS — `spec.nfs.server` d'une PV est immuable
+
+**Symptôme:** Impossible de patcher une PersistentVolume existante avec la nouvelle IP du serveur NFS.
+
+**Root Cause:** Le champ `spec.nfs.server` (comme tout `spec.nfs`) est immuable dans l'API K8s.
+
+**Procédure de bascule validée (sans perte de données):**
+```bash
+# 0. Suspendre Flux + scale 0 de TOUS les consommateurs NFS (les pods démontent)
+# 1. Rsync final (source gelée = cohérence garantie)
+rsync -a /srv/nfs/ root@<new-nfs>:/srv/nfs/   # JAMAIS de --delete pendant une migration
+
+# 2. Update des manifests PV dans le repo (server: 100.64.0.5 → 100.64.0.7) + commit/push
+
+# 3. Supprimer PVC puis PV (dans cet ordre) :
+kubectl delete pvc -n <ns> <pvc-name>
+kubectl delete pv <pv-name>
+# Retain policy = les données NFS ne sont JAMAIS touchées. Vérifier 0 Terminating bloqué.
+
+# 4. Resume Flux → il re-crée les PV (nouvelle IP) puis les PVC → binding automatique
+# 5. Rescaler les workloads aux valeurs d'origine (git = source de vérité)
+```
+
+**Notes:**
+- Un PV bloqué `Terminating` = sa PVC est encore liée (protection finaleizer). Supprimer la PVC d'abord.
+- Les StatefulSets recréent leur PVC (`data-<sts>-0`) seuls au redémarrage du pod.
+- Vérifier l'intégrité après rsync: `PG_VERSION` des postgres, `du -sh` par export, permissions (`ls -lan`) — rsync -a préserve tout.
+
+### Problème 8: SonarQube CrashLoopBackOff — startup probe tue le conteneur avant la fin du boot
+
+**Symptômes:**
+- 58 restarts en boucle: le conteneur démarre, ES recovery démarre (log `recovered [6] indices`), puis `Sonarqube has been requested to stop` ~2 min après le start
+- Event: `Killing: Container sonarqube failed startup probe`
+
+**Root Cause:** Le web server SonarQube met **>2 min** à écouter sur :9000 (ES recovery + migrations DB). Le startup probe tuait le conteneur avant. Le math apparent (60×10s=11 min de budget) ne correspondait pas au kill à 2 min: le compteur de probe du kubelet était dans un état incohérent après des heures de crashloops dans des fenêtres réseau mortes.
+
+**Solution:**
+```bash
+# Live-patch du StatefulSet (chart helm sonarqube-2026.4.1):
+kubectl patch statefulset -n soludev sonarqube-sonarqube --type=json -p '[{"op":"replace","path":"/spec/template/spec/containers/0/startupProbe","value":{"httpGet":{"path":"/api/system/status","port":"http","scheme":"HTTP"},"initialDelaySeconds":120,"periodSeconds":15,"timeoutSeconds":10,"failureThreshold":80,"successThreshold":1}}]'
+kubectl delete pod -n soludev sonarqube-sonarqube-0   # repartir sur un kubelet state propre
+
+# Pérennité: config/prd/sonarqube/values.yaml mis à jour avec les mêmes valeurs
+# (le STS est un release helm manuel, pas encore GitOps — au prochain helm upgrade, utiliser -f config/prd/sonarqube/values.yaml)
+```
+
+**Budget résultant:** 120s delay + 80×15s = 22 min de démarrage toléré.
+
+### Résumé des leçons de la migration
+
+| Leçon | Action |
+|---|---|
+| Join tailscale derrière headscale: cert autosigné | Copier le CA + **restart tailscaled** après `update-ca-certificates` |
+| Aligner les versions tailscale du tailnet | Tarball statique + override systemd + `apt-mark hold` |
+| Restart tailscaled sur nœud k3s | **Toujours** enchaîner `systemctl restart k3s-agent` |
+| Webhooks catch-all + drain | Vérifier les namespaceSelectors; en urgence: delete les MutatingWebhookConfigurations |
+| Nouveau nœud k3s + PV NFS | `apt-get install nfs-common` au provisioning |
+| Migration NFS | PVC→PV delete (Retain), jamais de rsync --delete, git = source de vérité |
+| SonarQube/ES boot lent | startup probe budget ≥ 20 min |
+
+**Architecture actuelle (post-migration):**
+```
+vmi3322097 (cp, tainté NoSchedule)  → etcd/apiserver uniquement
+vmi3322098/99/100 + vmi3549081      → 4 workers (tailscale 1.98.3)
+vmi3549084 (Storage VPS 30)         → NFS 100.64.0.7 de toutes les DBs
+vmi3322106                           → headscale + anciennes données NFS intactes (rollback)
+```
