@@ -46,17 +46,20 @@ spec:
               path: /api/status
               port: 3001
             initialDelaySeconds: 0
-            periodSeconds: 10
-            timeoutSeconds: 5
+            # NodeJS (svhd/logto) fait des pauses GC/event-loop > 5s sous charge :
+            # timeout elargi a 10s et period 15s pour eviter les faux restarts
+            # (675 probes en echec observes sur 23 jours avec timeout 5s).
+            periodSeconds: 15
+            timeoutSeconds: 10
             failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /api/status
               port: 3001
             initialDelaySeconds: 0
-            periodSeconds: 5
-            timeoutSeconds: 5
-            failureThreshold: 3
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 2
           resources:
             requests:
               memory: "512Mi"

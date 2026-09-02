@@ -6,7 +6,7 @@ metadata:
   labels:
     app: pickpro-indexing-api
 spec:
-  replicas: 2
+  # replicas retiré : propriété du HPA pickpro-indexing-api (min 2 / max 4).
   selector:
     matchLabels:
       app: pickpro-indexing-api

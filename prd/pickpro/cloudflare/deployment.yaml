@@ -4,7 +4,8 @@ metadata:
   name: cloudflared
   namespace: pickpro
 spec:
-  replicas: 2
+  # replicas retiré : propriété du HPA cloudflared (min 1 / max 3).
+  # Un replicas en dur provoque un fight Flux (scale to 2) vs HPA (scale to 1).
   strategy:
     type: RollingUpdate
   selector:
