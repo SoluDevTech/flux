@@ -15,7 +15,6 @@ spec:
   #When the Git revision changes, the manifests are reconciled automatically. If previously applied objects are missing from the current revision, these objects are deleted from the cluster when spec.prune is enabled
   prune: true
 ---
-
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -53,22 +52,6 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: opencode-kustomization
-  namespace: flux-system
-spec:
-  interval: 2m
-  timeout: 90s
-  wait: true
-  targetNamespace: opencode
-  sourceRef:
-    kind: GitRepository
-    name: kaiohz-repo
-  path: "prd/opencode"
-  prune: true
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
   name: openclaw-kustomization
   namespace: flux-system
 spec:
@@ -80,54 +63,6 @@ spec:
     kind: GitRepository
     name: kaiohz-repo
   path: "prd/openclaw"
-  prune: true
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: liame-kustomization
-  namespace: flux-system
-spec:
-  interval: 2m
-  timeout: 90s
-  wait: true
-  targetNamespace: liame
-  sourceRef:
-    kind: GitRepository
-    name: kaiohz-repo
-  path: "prd/liame"
-  prune: true
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: unispace-kustomization
-  namespace: flux-system
-spec:
-  interval: 2m
-  timeout: 90s
-  wait: true
-  targetNamespace: unispace
-  sourceRef:
-    kind: GitRepository
-    name: kaiohz-repo
-  path: "prd/unispace"
-  prune: true
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: composables-kustomization
-  namespace: flux-system
-spec:
-  interval: 2m
-  timeout: 90s
-  wait: true
-  targetNamespace: composables
-  sourceRef:
-    kind: GitRepository
-    name: kaiohz-repo
-  path: "prd/composables"
   prune: true
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
