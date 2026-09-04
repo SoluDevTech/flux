@@ -14,8 +14,8 @@ data:
           fallthrough in-addr.arpa ip6.arpa
         }
         prometheus :9153
-        forward . 1.1.1.1 8.8.8.8 {
-          policy sequential
+        forward . 1.1.1.1 8.8.8.8 9.9.9.9 {
+          policy random
           max_concurrent 1000
         }
         cache 30
