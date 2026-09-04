@@ -17,3 +17,10 @@ spec:
       - "X-Forwarded-Uri"
       - "X-Forwarded-For"
     trustForwardHeader: true
+    # Transmet le cookie de session renouvelé par oauth2-proxy au navigateur.
+    # Sans cette option, Traefik jette le Set-Cookie du refresh : la session
+    # n'est jamais "collée" côté client et chaque requête api.pickpro.io
+    # re-déclenche un refresh OIDC (1-5s) une fois le seuil cookie_refresh dépassé.
+    # Le nom doit correspondre au --cookie-name d'oauth2-proxy.
+    addAuthCookiesToResponse:
+      - "oauth2-proxy-pickpro"
