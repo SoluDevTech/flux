@@ -19,8 +19,6 @@ spec:
         app: pgvector
         app.kubernetes.io/part-of: soludev-workload
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: vmi3322099
       volumes:
         - name: init-sql
           configMap:
