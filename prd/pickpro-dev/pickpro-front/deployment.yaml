@@ -39,11 +39,11 @@ spec:
             periodSeconds: 5
           resources:
             requests:
-              memory: "64Mi"
-              cpu: "50m"
-            limits:
-              memory: "96Mi"
+              memory: "128Mi"
               cpu: "100m"
+            limits:
+              memory: "192Mi"
+              cpu: "500m"
       volumes:
         - name: config-volume
           configMap:
