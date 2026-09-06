@@ -31,8 +31,8 @@ spec:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: logto-secret
-                  key: DB_URL
+                  name: pgbouncer-secret
+                  key: DATABASE_URL
             - name: AUTH_TYPE
               value: "scram-sha-256"
           ports:
