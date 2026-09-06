@@ -28,11 +28,11 @@ spec:
           # L'entrypoint edoburu parse DATABASE_URL et genere le userlist
           # (generate_userlist_if_needed) ; le configmap fournit le ini.
           env:
-            - name: DATABASE_URL
+            - name: DATABASE_URLS
               valueFrom:
                 secretKeyRef:
                   name: pgbouncer
-                  key: DATABASE_URL
+                  key: DATABASE_URLS
             - name: AUTH_TYPE
               value: "scram-sha-256"
           ports:
