@@ -22,42 +22,25 @@ spec:
         - name: config
           configMap:
             name: pgbouncer-configmap
-        - name: userlist
-          emptyDir: {}
       containers:
-        # Genere userlist.txt depuis DB_URL du secret logto (user + password)
-        - name: init-userlist
-          image: busybox:1.36
-          command: ["sh", "-c"]
-          args:
-            - |
-              USERPASS="${DB_URL#postgresql://}"
-              USERPASS="${USERPASS%%@*}"
-              U="${USERPASS%%:*}"
-              P="${USERPASS#*:}"
-              printf '"%s" "%s"\n' "$U" "$P" > /etc/pgbouncer/userlist.txt
-              echo "userlist OK: $U"
+        - name: pgbouncer
+          image: edoburu/pgbouncer:v1.25.2-p0
+          # L'entrypoint edoburu parse DATABASE_URL et genere le userlist
+          # (generate_userlist_if_needed) ; le configmap fournit le ini.
           env:
-            - name: DB_URL
+            - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: pgbouncer-secret
                   key: DB_URL
-          volumeMounts:
-            - name: userlist
-              mountPath: /etc/pgbouncer
-        - name: pgbouncer
-          image: edoburu/pgbouncer:v1.25.2-p0
+            - name: AUTH_TYPE
+              value: "scram-sha-256"
           ports:
             - containerPort: 6432
           volumeMounts:
             - name: config
               mountPath: /etc/pgbouncer/pgbouncer.ini
               subPath: pgbouncer.ini
-              readOnly: true
-            - name: userlist
-              mountPath: /etc/pgbouncer/userlist.txt
-              subPath: userlist.txt
               readOnly: true
           readinessProbe:
             tcpSocket:
