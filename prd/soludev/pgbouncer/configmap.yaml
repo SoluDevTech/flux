@@ -24,8 +24,9 @@ data:
     default_pool_size = 10
     max_client_conn = 100
 
-    ; clients node-postgres (slonik envoie statement_timeout en startup param)
-    ignore_startup_parameters = extra_float_digits,options,statement_timeout
+    ; clients node-postgres (slonik envoie statement_timeout et
+    ; idle_in_transaction_session_timeout en startup params)
+    ignore_startup_parameters = extra_float_digits,options,statement_timeout,idle_in_transaction_session_timeout
 
     log_connections = 0
     log_disconnections = 0
