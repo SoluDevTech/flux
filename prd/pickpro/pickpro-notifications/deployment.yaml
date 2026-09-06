@@ -25,7 +25,7 @@ spec:
               app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: pickpro-notifications
-          image: kaiohz/pickpro:pickpro-notifications-af994095459c513b81562149a669c697f59c8cab
+          image: kaiohz/pickpro:pickpro-notifications-4aa0d511a97c3f3a3d60e55a820b27c0a9c456e5
           ports:
             - containerPort: 8000
           envFrom:
