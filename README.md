@@ -30,6 +30,8 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [Network Architecture & Known Issues](#network-architecture--known-issues)
   - [Incident: 14-30s Client-Facing Timeouts (May 2026)](#incident-14-30s-client-facing-timeouts-may-2026)
   - [Incident: Tailscale DNS pollution + Cloudflare Tunnel 502 (Aug 2026)](#incident-tailscale-dns-pollution--cloudflare-tunnel-502-aug-2026)
+- [Incident: Migration cluster — 9 problèmes en cascade (Sept 2026)](#incident-migration-cluster--9-problèmes-en-cascade-sept-2026)
+- [Isolation télémétrie + migration Headscale (6 sept 2026)](#isolation-télémétrie--migration-headscale-6-sept-2026)
 
 ## Mesh VPN for mac os workers
 
@@ -4757,10 +4759,132 @@ kubectl exec -n soludev openbao-0 -- bao status | grep Sealed       # doit affic
 | **Fix accept-dns=false sur un nœud** | **Ne protège que les pods futurs — recréer tous les pods existants du nœud** (resolv.conf figé à la création) |
 | Release helm manuel (openbao) | Webhook config supprimée en urgence = jamais recréée par Flux → crashloop injector silencieux |
 
-**Architecture actuelle (post-migration):**
+**Architecture actuelle (post-migration sept 2026):**
 ```
-vmi3322097 (cp, tainté NoSchedule)  → etcd/apiserver uniquement
+vmi3322097 (cp, tainté NoSchedule)  → etcd/apiserver + headscale (100.64.0.1)
 vmi3322098/99/100 + vmi3549081      → 4 workers (tailscale 1.98.3)
-vmi3549084 (Storage VPS 30)         → NFS 100.64.0.7 de toutes les DBs
-vmi3322106                           → headscale + anciennes données NFS intactes (rollback)
+vmi3549084 (Storage VPS 30, .7)     → NFS principal: logto/pickpro/ubby/openbao data
+vmi3322106 (Storage VPS 10, .5)     → NFS télémétrie: postgres-telemetry + minio observability
+```
+
+## Isolation télémétrie + migration Headscale (6 sept 2026)
+
+### Contexte et investigation performance
+
+Enquête sur la lenteur pickpro (600-900ms par endpoint en burst). Éliminations mesurées :
+
+| Suspect | Verdict | Preuve |
+|---|---|---|
+| PostgreSQL pickpro + NFS | **Innocent** | `EXPLAIN ANALYZE` : exec 0.7ms, planning 16ms ; 11MB entièrement en RAM |
+| Valkey | **Coupable (CPU throttle)** | `cpu.stat` : 19724 périodes throttled, 1492s cumulés → GET 689ms en burst (12ms isolé) |
+| Postgres soludev (partagé) | **Coupable (CPU throttle)** | 16162 périodes throttled à 1 CPU |
+| Logto lui-même | **Victime, pas coupable** | Son lookup user = 475ms-3.7s alors que l'appel HTTP isolé fait ~100ms |
+
+**Cause racine (Logto lent):** un seul Postgres `soludev` hébergeait 4 workloads incompatibles —
+phoenix (1 GB, 12 GB/h de lectures NFS), openobserve (521 MB, écriture continue), sonarqube, logto.
+22 GB de WAL/h → churn des 512MB shared_buffers + checkpoint storms → chaque lookup logto paie des
+cache miss NFS (parse 69-374ms pour une PK !). Le NFS n'est coupable que via le **taux de cache miss** :
+pickpro-dev (11MB) ne miss jamais, le shared postgres (1.75 GB churné) miss en permanence.
+
+**Fixes appliqués (prouvés par mesure avant/après):**
+- Valkey CPU 1→2 (`prd/soludev/valkey/deployment.yaml`) — `/profiles` 1204ms → 220ms
+- Postgres soludev CPU 1→2 (`prd/soludev/postgres/deployment.yaml`)
+- Logto 2 replicas (voir plus bas — puis revert à 1, voir leçon seed race)
+- Isolation télémétrie (ci-dessous) — lookups logto 475ms-3.7s → **37-141ms**
+
+### Isolation télémétrie: postgres-telemetry + minio sur Storage VPS 10
+
+Un **nouveau Postgres dédié** (`prd/soludev/postgres-telemetry/`) héberge phoenix, openobserve et
+sonarqube. Son storage pointe vers le **NFS du Storage VPS 10** (`100.64.0.5`, exports déjà existants)
+— le problème n'était pas le NFS lui-même mais le **partage d'instance** (shared_buffers/WAL/checkpoints).
+
+Point clé: le PV pointe vers le **PGDATA du 1er sept déjà présent** sur ce NFS (ancien serveur NFS).
+Postgres v17 + crash recovery propre au boot (`database system was shut down at 2026-09-01`).
+Cohérence assurée : la metadata postgres (Sep 1) ↔ les objets minio (Sep 1) forment un snapshot homogène.
+
+Bascules effectuées :
+- Phoenix: configmap `phoenix-configmap` → `PHOENIX_POSTGRES_HOST=postgres-telemetry` + values.yaml aligné
+- OpenObserve: OpenBao `soludev/openobserve` → `ZO_META_POSTGRES_DSN` + restart pod
+- SonarQube: configmap `sonarqube-sonarqube-jdbc-config` → `SONAR_JDBC_URL` + values.yaml aligné
+- minio-soludev (stockage objet openobserve, bucket `observability`): PV `nfs-soludev-minio`
+  100.64.0.7 → 100.64.0.5 (PV immuable → scale 0, delete PV+PVC, Flux recrée, scale 1)
+- Nettoyage: DROP des bases phoenix/openobserve/sonarqube sur l'instance principale, DROP logto sur telemetry
+
+### Migration Headscale: vmi3322106 → control plane (Option B, re-auth complète)
+
+vmi3322097 (control plane) devient le serveur headscale. La machine a été choisie pour sortir
+headscale du Storage VPS 10. Contrainte majeure: **tout le cluster dépend des IP Tailscale**
+(`node-ip: 100.64.0.x` statique + `flannel-iface: tailscale0` + agents → `https://100.64.0.1:6443`
++ PVs NFS → 100.64.0.7). Une re-registration qui changerait une IP = outage cluster.
+
+**Procédure qui a fonctionné:**
+1. Backup tarball `/etc/headscale` + `/var/lib/headscale` (17KB) → copie sur la cible
+2. Binary headscale v0.28.0 identique + **nouveau cert autosigné CN=84.247.188.175**
+   (l'ancien cert a CN=37.60.225.137 → mismatch TLS avec la nouvelle URL)
+3. Copier le cert dans le CA store de **tous les clients** (6 hôtes) + `update-ca-certificates`
+4. **Copier la DB** (`db.sqlite` + `noise_private.key`) → les 7 machines gardent leurs IP assignées
+5. Stop ancien headscale → start nouveau → `headscale preauthkeys create --user 1 --reusable`
+6. Re-auth de chaque client (voir pièges ci-dessous)
+7. Vérifier `headscale nodes list` : 7/7 online, IP 100.64.0.1-7 **inchangées**, k3s 5/5 Ready
+
+**Piège 1 — `tailscale up --login-server` ne suffit pas.** Sans `--reset`, tailscale refuse de
+changer de control server et se contente d'imprimer la commande suggérée. Et même la commande
+suggérée échoue s'il manque des flags non-défaut. La commande complète qui marche :
+```bash
+tailscale up --login-server=https://84.247.188.175:8080 --auth-key=hskey-... \
+  --accept-routes --hostname=$(hostname) --force-reauth --reset
+```
+
+**Piège 2 — tailscaled met le pool de CA système en cache au démarrage.** Installer le nouveau
+cert + `update-ca-certificates` ne suffit pas : **`systemctl restart tailscaled` est obligatoire**,
+sinon le TLS vers le nouveau headscale échoue (`x509: certificate signed by unknown authority`) et
+le client reste "offline" avec l'ancien ControlURL.
+
+**Piège 3 — le serveur headscale est aussi un client de lui-même.** vmi3322097 héberge headscale
+ET y est enregistré (100.64.0.1). Sans le cert dans son propre CA store, son `tailscale up` se
+logout (NoState) → l'API k3s devient injoignable par les agents (https://100.64.0.1:6443) →
+**tous les nœuds NotReady**. Fix: cert dans le CA du serveur + restart tailscaled + up.
+
+**Préservation des IP:** la re-auth avec la DB copiée ré-attache l'entrée machine existante
+(même MachineKey → même IP). Vérifié : 100.64.0.1→.7 tous identiques. Si une IP avait dérivé,
+correction possible directement dans `db.sqlite` puis restart headscale (les clients convergent
+au prochain map update).
+
+### Incident induit: flannel mort sur les 5 nœuds
+
+Le restart de tailscaled sur chaque nœud a fait flapper `tailscale0` (= `flannel-iface`).
+Conséquence en cascade : `flannel.1` disparu du control plane → API server injoignable depuis
+les webhooks pods (`external-secrets-webhook` context deadline exceeded) → **toutes les
+Kustomizations Flux en False** →Impossible d'appliquer quoi que ce soit → landing pages down.
+
+**Fix:** `systemctl restart k3s` (server) + `systemctl restart k3s-agent` sur les 4 workers →
+flannel.1 recréé, vxlan rétabli, webhooks OK, Flux converge. (Cf. Problème 4 de la migration
+précédente — même cause, même fix, désormais systématique après toute manipulation tailscaled.)
+
+### Leçon logto: seed au boot incompatible multi-replicas
+
+Le `command` du deployment exécutait `npm run cli db seed` + `db alteration deploy` à chaque boot.
+Avec 2 replicas, les deux pods courent la course au seed → CrashLoopBackOff. **Seed retiré du
+command** (uniquement utile au premier install, migrations v1.41.0 appliquées depuis longtemps) et
+**retour à 1 replica**. Pour une future montée de version : exécuter l'alteration manuellement
+avant le rollout.
+
+### Résultat final
+
+| Métrique | Avant | Après |
+|---|---|---|
+| WAL instance principale | 22 GB/h | ~0 (logto seul) |
+| Lookup user Logto | 475ms-3.7s | 37-141ms |
+| `/profiles` pickpro | 1204ms | 220ms |
+| Valkey GET en burst | 689ms | ~12ms |
+| Headscale | vmi3322106 (Storage VPS 10) | vmi3322097 (control plane) |
+| Postgres télémétrie | partagé avec logto | dédié sur NFS Storage VPS 10 |
+
+**Architecture post-migration:**
+```
+vmi3322097 (cp)                      → etcd/apiserver + headscale (https://84.247.188.175:8080)
+vmi3322098/99/100 + vmi3549081       → 4 workers
+vmi3549084 (Storage VPS 30, .7)      → NFS: logto, pickpro, ubby, openbao (données sensibles)
+vmi3322106 (Storage VPS 10, .5)      → NFS: postgres-telemetry + minio observability (télémétrie)
+```
 ```
