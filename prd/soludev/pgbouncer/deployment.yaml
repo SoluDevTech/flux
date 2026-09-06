@@ -33,6 +33,8 @@ spec:
                 secretKeyRef:
                   name: pgbouncer
                   key: DATABASE_URLS
+            - name: AUTH_TYPE
+              value: "scram-sha-256"
           ports:
             - containerPort: 6432
           volumeMounts:
