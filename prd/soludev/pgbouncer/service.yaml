@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgbouncer
+  namespace: soludev
+  labels:
+    app: pgbouncer
+spec:
+  selector:
+    app: pgbouncer
+  ports:
+    - name: pgbouncer
+      port: 6432
+      targetPort: 6432
+      protocol: TCP

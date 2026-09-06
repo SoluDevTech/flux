@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgbouncer
+  namespace: soludev
+  labels:
+    app: pgbouncer
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: pgbouncer
+  template:
+    metadata:
+      labels:
+        app: pgbouncer
+        app.kubernetes.io/part-of: soludev-workload
+    spec:
+      volumes:
+        - name: config
+          configMap:
+            name: pgbouncer-configmap
+        - name: userlist
+          emptyDir: {}
+      containers:
+        # Genere userlist.txt depuis DB_URL du secret logto (user + password)
+        - name: init-userlist
+          image: busybox:1.36
+          command: ["sh", "-c"]
+          args:
+            - |
+              USERPASS="${DB_URL#postgresql://}"
+              USERPASS="${USERPASS%%@*}"
+              U="${USERPASS%%:*}"
+              P="${USERPASS#*:}"
+              printf '"%s" "%s"\n' "$U" "$P" > /etc/pgbouncer/userlist.txt
+              echo "userlist OK: $U"
+          env:
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: pgbouncer-secret
+                  key: DB_URL
+          volumeMounts:
+            - name: userlist
+              mountPath: /etc/pgbouncer
+        - name: pgbouncer
+          image: edoburu/pgbouncer:v1.25.2-p0
+          ports:
+            - containerPort: 6432
+          volumeMounts:
+            - name: config
+              mountPath: /etc/pgbouncer/pgbouncer.ini
+              subPath: pgbouncer.ini
+              readOnly: true
+            - name: userlist
+              mountPath: /etc/pgbouncer/userlist.txt
+              subPath: userlist.txt
+              readOnly: true
+          readinessProbe:
+            tcpSocket:
+              port: 6432
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: 6432
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"

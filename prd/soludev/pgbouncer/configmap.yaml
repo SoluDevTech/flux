@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgbouncer-configmap
+  namespace: soludev
+  labels:
+    app: pgbouncer
+data:
+  pgbouncer.ini: |
+    [databases]
+    logto = host=postgres.soludev.svc.cluster.local port=5432 dbname=logto
+
+    [pgbouncer]
+    listen_addr = 0.0.0.0
+    listen_port = 6432
+    auth_type = scram-sha-256
+    auth_file = /etc/pgbouncer/userlist.txt
+
+    ; session mode: la connexion SERVEUR reste chaude meme quand le client
+    ; (logto/slonik, idleTimeout 5s) se deconnecte -> plus de backend froid
+    ; a 35-215ms de chargement de catalogue par rafale
+    pool_mode = session
+    server_idle_timeout = 300
+    default_pool_size = 10
+    max_client_conn = 100
+
+    ; clients node-postgres
+    ignore_startup_parameters = extra_float_digits,options
+
+    log_connections = 0
+    log_disconnections = 0
+    verbose = 0
