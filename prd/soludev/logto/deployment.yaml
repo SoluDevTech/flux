@@ -19,12 +19,14 @@ spec:
       containers:
         - name: logto
           image: svhd/logto:1.41.0
-          command: 
+          command:
             - "sh"
             - "-c"
             - |
-              npm run cli db seed -- --swe
-              npm run cli db alteration deploy v1.41.0
+              # seed/alteration retires: uniquement utiles au premier install.
+              # Avec 2 replicas, la course au seed au boot crash-loop les pods.
+              # Migrations: lancer manuellement (kubectl exec -- npm run cli db
+              # alteration deploy vX.Y.Z) avant de changer de version d'image.
               exec npm start
           ports:
             - containerPort: 3002
