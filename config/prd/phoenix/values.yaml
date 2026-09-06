@@ -3,7 +3,7 @@ postgresql:
 
 database:
   postgres:
-    host: "postgres"
+    host: "postgres-telemetry"
     port: 5432
     db: "phoenix"
     user: "phoenix"

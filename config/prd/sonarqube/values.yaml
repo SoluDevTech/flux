@@ -9,10 +9,10 @@ monitoringPasscode: "SoludevSonar2026Monitoring"
 postgresql:
   enabled: false
 
-# Connexion à pgvector existant (cross-namespace)
+# Connexion au postgres telemetry dédié (phoenix/openobserve/sonarqube)
 jdbcOverwrite:
   enabled: true
-  jdbcUrl: "jdbc:postgresql://postgres.soludev.svc.cluster.local:5432/sonarqube"
+  jdbcUrl: "jdbc:postgresql://postgres-telemetry.soludev.svc.cluster.local:5432/sonarqube"
   jdbcUsername: "sonarqube"
   jdbcSecretName: "sonarqube-secret"
   jdbcSecretPasswordKey: "SONAR_JDBC_PASSWORD"
