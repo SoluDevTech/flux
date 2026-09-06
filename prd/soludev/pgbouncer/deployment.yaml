@@ -40,8 +40,6 @@ spec:
               value: postgresql://postgres:$(DB_PASSWORD)@postgres.soludev.svc.cluster.local:5432/logto
             - name: AUTH_TYPE
               value: "scram-sha-256"
-            - name: AUTH_TYPE
-              value: "scram-sha-256"
           ports:
             - containerPort: 6432
           volumeMounts:
