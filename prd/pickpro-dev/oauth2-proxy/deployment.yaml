@@ -67,10 +67,10 @@ spec:
         resources:
           requests:
             memory: "64Mi"
-            cpu: "100m"
+            cpu: "200m"
           limits:
             memory: "256Mi"
-            cpu: "300m"
+            cpu: "1"
       volumes:
       - name: alpha-config
         configMap:
