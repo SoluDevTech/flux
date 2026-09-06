@@ -15,10 +15,6 @@ data:
     listen_port = 6432
     auth_type = scram-sha-256
     auth_file = /etc/pgbouncer/userlist.txt
-    ; auth_query: pour les roles inconnus du userlist (logto_tenant_*,
-    ; password random 32c stocke dans la table tenants de logto), pgbouncer
-    ; recupere le verifier SCRAM depuis pg_authid avec le superuser
-    auth_user = postgres
 
     ; session mode: la connexion SERVEUR reste chaude meme quand le client
     ; (logto/slonik, idleTimeout 5s) se deconnecte -> plus de backend froid

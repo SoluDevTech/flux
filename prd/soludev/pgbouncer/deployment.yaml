@@ -28,18 +28,11 @@ spec:
           # L'entrypoint edoburu parse DATABASE_URL et genere le userlist
           # (generate_userlist_if_needed) ; le configmap fournit le ini.
           env:
-            # DATABASE_URL sert UNIQUEMENT a generer le userlist avec le
-            # auth_user (postgres) requis par auth_query ; le routage des
-            # bases est defini dans le pgbouncer.ini (configmap)
-            - name: DB_PASSWORD
+            - name: DATABASE_URLS
               valueFrom:
                 secretKeyRef:
-                  name: postgres-secret
-                  key: POSTGRES_PASSWORD
-            - name: DATABASE_URL
-              value: postgresql://postgres:$(DB_PASSWORD)@postgres.soludev.svc.cluster.local:5432/logto
-            - name: AUTH_TYPE
-              value: "scram-sha-256"
+                  name: pgbouncer
+                  key: DATABASE_URLS
           ports:
             - containerPort: 6432
           volumeMounts:
