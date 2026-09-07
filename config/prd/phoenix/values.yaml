@@ -3,8 +3,8 @@ postgresql:
 
 database:
   postgres:
-    host: "postgres-telemetry"
-    port: 5432
+    host: "100.64.0.5"
+    port: 5436
     db: "phoenix"
     user: "phoenix"
     password: ""
