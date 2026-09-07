@@ -1,0 +1,24 @@
+# Storage VPS 10 — minio soludev (observability)
+# Sécurité: bind UNIQUEMENT sur l'IP Tailscale + ufw deny eth0
+# Credentials dans /opt/pickpro-stack/.env (chmod 600, hors git)
+
+services:
+  minio-soludev:
+    image: quay.io/minio/minio:RELEASE.2024-12-18T13-15-44Z
+    container_name: minio-soludev
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_SOLUDEV_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_SOLUDEV_PASSWORD}
+      MINIO_IAM_REFRESH: "3600"
+    command: server /data --console-address ":9001"
+    ports:
+      - "100.64.0.5:9032:9000"
+      - "100.64.0.5:9034:9001"
+    volumes:
+      - /srv/nfs/soludev/minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

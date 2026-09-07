@@ -1,0 +1,64 @@
+# Storage VPS 30 — données stateful sorties de k8s/NFS
+# Sécurité: bind UNIQUEMENT sur l'IP Tailscale + ufw deny eth0
+# Les credentials vivent dans /opt/pickpro-stack/.env (chmod 600, hors git)
+# Les volumes pointent DIRECTEMENT vers les PGDATA/données existants
+
+services:
+  pgvector-pickpro-dev:
+    image: pgvector/pgvector:0.8.0-pg17
+    container_name: pgvector-pickpro-dev
+    restart: always
+    user: "999:999"
+    environment:
+      POSTGRES_USER: ${PGVECTOR_DEV_USER}
+      POSTGRES_PASSWORD: ${PGVECTOR_DEV_PASSWORD}
+      POSTGRES_DB: ${PGVECTOR_DEV_DB}
+      PGDATA: /var/lib/postgresql/data
+    command: ["-c", "max_connections=100", "-c", "shared_buffers=256MB", "-c", "effective_cache_size=768MB"]
+    ports:
+      - "100.64.0.7:5434:5432"
+    volumes:
+      - /srv/nfs/pickpro-dev/pgvector:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGVECTOR_DEV_USER} -d ${PGVECTOR_DEV_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-pickpro-dev:
+    image: minio/minio:latest
+    container_name: minio-pickpro-dev
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_DEV_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_DEV_PASSWORD}
+      MINIO_IAM_REFRESH: "3600"
+    command: server /data --console-address ":9001"
+    ports:
+      - "100.64.0.7:9031:9000"
+      - "100.64.0.7:9033:9001"
+    volumes:
+      - /srv/nfs/pickpro-dev/minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-soludev:
+    image: postgres:17-alpine
+    container_name: postgres-soludev
+    restart: always
+    user: "70:70"
+    environment:
+      PGDATA: /var/lib/postgresql/data
+    command: ["-c", "max_connections=100", "-c", "shared_buffers=512MB", "-c", "effective_cache_size=1536MB", "-c", "tcp_keepalives_idle=30", "-c", "tcp_keepalives_interval=10", "-c", "tcp_keepalives_count=6", "-c", "idle_in_transaction_session_timeout=60000", "-c", "wal_sync_method=fdatasync", "-c", "max_wal_size=2GB", "-c", "min_wal_size=512MB", "-c", "checkpoint_completion_target=0.9", "-c", "wal_buffers=16MB", "-c", "checkpoint_flush_after=0", "-c", "bgwriter_lru_maxpages=1000", "-c", "bgwriter_delay=200ms"]
+    ports:
+      - "100.64.0.7:5435:5432"
+    volumes:
+      - /srv/nfs/soludev/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logto -d logto"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
