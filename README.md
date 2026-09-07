@@ -4888,3 +4888,146 @@ vmi3549084 (Storage VPS 30, .7)      → NFS: logto, pickpro, ubby, openbao (don
 vmi3322106 (Storage VPS 10, .5)      → NFS: postgres-telemetry + minio observability (télémétrie)
 ```
 ```
+## Optimisation photos + pgbouncer Logto + réglages infra (6-7 sept 2026)
+
+### Migration photos en production (backfill + 060)
+
+La prod était restée à alembic **058**: colonnes MinIO absentes, `photo_base64`
+(94% de la table) toujours en base → l'API (code MinIO-only) plantait sur
+`photo_object_path does not exist`. Le runbook README pickpro-back a été suivi:
+
+```bash
+# Job K8s (adapté de scripts/migrate-photos-minio-job.yaml en ns pickpro):
+# le script standalone applique LUI-MÊME 059, fait le backfill puis 060
+kubectl apply -f -   # Job migrate-photos-minio-verify, ns=pickpro,
+                     # PGVECTOR_HOST=pgvector.pickpro.svc.cluster.local
+```
+
+| | Avant | Après |
+|---|---|---|
+| Table `candidates` prod | **1356 MB** | **25 MB** (-98%) |
+| Photos dans MinIO | 0 | **5197/5197** |
+| alembic | 058 | **060** |
+
+**⚠️ Piège job retry:** `backoffLimit: 1` → le 2e pod RE-EXÉCUTE le script
+entier, dont `alembic upgrade 059` (potentiellement un DOWNGRADE depuis 060).
+Vérifier `alembic_version` après tout job de migration. (Ici: pas de dégât.)
+
+### pgbouncer devant Logto
+
+**Cause racine:** Logto (slonik) ferme ses connexions postgres après **5s
+d'inactivité** (`idleTimeout` défaut du driver, non configurable via env).
+Chaque rafale = nouveau backend postgres = **35-215ms de chargement de
+catalogue à froid** (mesuré: 1ère requête session 36.7ms, puis 0.14ms).
+Lookups Logto: 57-470ms "aléatoires".
+
+**Pièges rencontrés (dans l'ordre):**
+1. `statement_timeout` puis `idle_in_transaction_session_timeout` sont envoyés
+   comme **startup parameters** par slonik → PgBouncer les refuse → les ajouter
+   à `ignore_startup_parameters`
+2. Logto se connecte sous des **rôles par tenant** (`logto_tenant_logto_default`,
+   `logto_tenant_logto_admin`) avec des **passwords random 32c** stockés chiffrés
+   dans sa table `tenants` → impossible de les mettre en userlist statique.
+   Solution: `DATABASE_URLS` avec les creds des 3 rôles (lus en clair depuis la
+   table `tenants` du DB logto)
+3. `AUTH_TYPE=scram-sha-256` en env requis: sans lui, l'entrypoint edoburu
+   génère un userlist en **md5** (incompatible avec le client SCRAM)
+4. Pas de `kubectl rollout restart` sur les deployments Flux: l'annotation
+   `restartedAt` est prunée par Flux à la reconcile suivante → nouveau rollout
+   → boucle. **Supprimer le pod directement** (le ReplicaSet le recrée avec le
+   secret à jour)
+
+**Config finale** (`prd/soludev/pgbouncer/`): session mode,
+`server_idle_timeout=300`, `ignore_startup_parameters=extra_float_digits,options,
+statement_timeout,idle_in_transaction_session_timeout`. Secret k8s `pgbouncer`
+← OpenBao `soludev/pgbouncer` (DATABASE_URLS: logto + 2 rôles tenant).
+Bascule: `DB_URL` de `soludev/logto` → `pgbouncer:6432`.
+
+Résultat: lookups Logto **constants <20ms**, backends chauds persistants
+(19 connexions idle via pgbouncer vues dans pg_stat_activity).
+
+### Chaîne photo: 5 couches réglées (l'affichage du vivier chargeait 7.5 MB)
+
+Le vivier = ~50 avatars (~150 KB chacun) servis via `GET /profiles/{id}/photo`
+→ MinIO (NFS). Chaque couche s'est révélée un goulot:
+
+| Couche | Problème mesuré | Fix |
+|---|---|---|
+| Valkey cache des blobs | `pickle` de MB sur l'event loop, `Valkey GET slow 5.2s` | **Cache photo supprimé** (le page cache OS remplace, gratuit) |
+| `response.read()` synchrone | lecture NFS de MB **sur l'event loop** | Déporté dans `run_in_executor` (executor dédié **32 threads**, le défaut asyncio ~10 faitait une file de 50÷10×1s = les 12-14s observés) |
+| MinIO CPU | **138 975 périodes throttled** (3.3h de gel) — pire du cluster | 500m → **2000m** (prod+dev) |
+| MinIO IAM refresh | `IAM refresh took 6.97s` sur NFS → gel global des auth | `MINIO_IAM_REFRESH=3600` (prod+dev) |
+| Serveurs NFS nfsd | **8 threads** pour des rafales de 50 lectures | **48** (storage30, 6 vCPU) / **16** (storage10, 2 vCPU) via `/etc/nfs.conf [nfsd]` |
+
+**Cache navigateur:** la route photo porte déjà `Cache-Control: private,
+max-age=3600, immutable` (le `SecurityHeadersMiddleware` utilise `setdefault`,
+il ne l'écrase pas). ⚠️ Tester DevTools **fermé** ou sans "Disable cache" coché.
+
+**Restant (chantier code):** thumbnails (~20 KB au lieu de ~150 KB par avatar,
+÷8 le poids du vivier) — resize à l'upload + one-shot sur les 6640 existantes.
+
+### dnsConfig ndots=1 sur les pods API
+
+`ndots:5` (défaut k8s) fait essayer **4-6 search domains** par résolution —
+mesuré: DNS MinIO **309ms** sur vmi3322100 (nœud jittery) vs 109ms ailleurs.
+Avec `ndots:1` (dnsConfig): 1 requête directe → **66ms**. Aide toutes les
+connexions sortantes (MinIO, Valkey, Logto, pgvector).
+
+```yaml
+dnsConfig:
+  options:
+    - name: ndots
+      value: "1"
+```
+
+### Dashboard: agrégat SQL + caches KPI (l'event loop mono-thread)
+
+Rappel: **async ≠ parallèle** — la validation Pydantic de 6281 entités est du
+CPU pur qui capture l'unique thread de la boucle 1-3s par affichage du
+dashboard. Le widget complétude chargeait `get_all_profiles()` (TOUTES les
+colonnes JSONB) pour produire **4 compteurs**.
+
+**Fix:** `ProfilePostgres.get_completeness_distribution()` — un seul agrégat SQL
+(CASE miroir de `CompletenessService` + CTE interviews), 45ms, 0 entité.
+Cohérence SQL↔Service verrouillée par
+`tests/unit/dashboard/test_completeness_distribution_sql.py` (si les critères
+métier changent, le test casse et force la synchro). + caches TTL **60s** sur
+les 5 widgets (`@cached("dashboard", ...)`) et TTL 3600 déjà posés sur
+`has_password`/`get_custom_data` Logto.
+
+**GZip middleware: RETIRÉ.** Utilité marginale (Cloudflare compresse déjà la
+jambe longue edge→navigateur) et risqué (gzip sur JPEG déjà compressés =
+CPU event loop brûlé pour ~0; buffering des flux event-stream). Les réponses
+restent non compressées sur API→edge, mais cette jambe est DE interne.
+
+### Replicas + HPAs (pickpro prod)
+
+4 HPAs (cloudflared, oauth2-proxy, pickpro-api, indexing-api) **écrasaient**
+les replicas du git à min=1 (fight HPA/Flux documenté). Supprimées (pas dans
+Flux: `kubectl delete hpa`) + manifests purgés. **Prd: replicas 2** pour
+cloudflared, pickpro-api, indexing-api. Dev: 1 (choix).
+
+### Latence tunnel VN→DE (physique)
+
+Test depuis le Mac (Vietnam): RTT edge Cloudflare **280ms** (PoP EU), setup
+connexion (DNS+TCP+TLS1.3) = 3×RTT ≈ **0.84s** — payé à chaque connexion
+fraîche (pool navigateur fermé après idle). Keep-alive: **0.37s**.
+
+```
+req1 (connexion fraîche): 1.06s
+req2 (keep-alive):        0.37s   ← RTT + origin, le plancher
+```
+
+**Pending:** HTTP/3 + 0-RTT Connection Resumption à activer dans le dashboard
+Cloudflare (zones soludev.tech + pickpro.io) — ~1 RTT économisé par
+reconnexion. Le seul fix structurel au-delà: héberger l'ingress en Asie
+(Contabo Singapour) — pertinent seulement si les utilisateurs pickpro y sont.
+
+### Récap des compteurs throttling corrigés (7 sept)
+
+| Pod | Périodes throttled | Fix |
+|---|---|---|
+| minio-pickpro (prod) | 138 975 (3.3h gel) | 500m → 2000m |
+| oauth2-proxy (dev) | 19 176 (31min gel) | 300m → 1 CPU |
+| valkey | 19 724 | 1 → 2 CPU |
+| postgres soludev | 16 162 | 1 → 2 CPU |
