@@ -4963,6 +4963,29 @@ Le vivier = ~50 avatars (~150 KB chacun) servis via `GET /profiles/{id}/photo`
 max-age=3600, immutable` (le `SecurityHeadersMiddleware` utilise `setdefault`,
 il ne l'écrase pas). ⚠️ Tester DevTools **fermé** ou sans "Disable cache" coché.
 
+### Serveurs NFS: threads nfsd (8 → 48 / 16)
+
+Les deux serveurs NFS tournaient avec **8 threads nfsd** (défaut historique) —
+chaque lecture en cours bloque un thread: une rafale de 50 photos dépasse les
+8 threads et met les 42 autres en file (miroir serveur du bug executor
+asyncio). La doc kernel recommande ~8 threads par CPU.
+
+```bash
+# État actuel
+ssh root@<nfs-server> 'cat /proc/fs/nfsd/threads'   # avant: 8
+
+# Règlage (persistant, via /etc/nfs.conf bloc [nfsd])
+ssh root@<nfs-server> 'sed -i "s/^# threads=8/threads=48/" /etc/nfs.conf \
+  && systemctl restart nfs-server && cat /proc/fs/nfsd/threads'   # après: 48
+
+# Storage VPS 30 (vmi3549084, 6 vCPU): 8 → 48
+# Storage VPS 10 (vmi3322106, 2 vCPU): 8 → 16
+```
+
+Les threads nfsd bloquent sur l'I/O (pas le CPU): dépasser le nombre de vCPU
+est voulu — c'est le parallélisme de lecture qui compte. Restart NFS = zéro
+perte (les montages `hard` rétablissent seuls), qq ms sur les requêtes en vol.
+
 **Restant (chantier code):** thumbnails (~20 KB au lieu de ~150 KB par avatar,
 ÷8 le poids du vivier) — resize à l'upload + one-shot sur les 6640 existantes.
 
