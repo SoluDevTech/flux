@@ -62,3 +62,42 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # ── pickpro PROD ──
+  pgvector-pickpro-prod:
+    image: pgvector/pgvector:0.8.0-pg17
+    container_name: pgvector-pickpro-prod
+    restart: always
+    user: "999:999"
+    environment:
+      PGDATA: /var/lib/postgresql/data
+    command: ["-c", "max_connections=100", "-c", "shared_buffers=512MB", "-c", "effective_cache_size=1536MB"]
+    ports:
+      - "100.64.0.7:5433:5432"
+    volumes:
+      - /srv/nfs/pickpro/pgvector:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pickpro -d pickpro"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-pickpro-prod:
+    image: minio/minio:latest
+    container_name: minio-pickpro-prod
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_PROD_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PROD_PASSWORD}
+      MINIO_IAM_REFRESH: "3600"
+    command: server /data --console-address ":9001"
+    ports:
+      - "100.64.0.7:9030:9000"
+      - "100.64.0.7:9035:9001"
+    volumes:
+      - /srv/nfs/pickpro/minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
