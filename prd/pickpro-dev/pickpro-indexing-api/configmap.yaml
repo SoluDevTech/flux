@@ -10,7 +10,7 @@ data:
   ENVIRONMENT: development
   INDEXING_MODEL: google/gemini-2.5-flash-lite:nitro
   MAX_WORKERS: "2"
-  MINIO_HOST: minio-pickpro.pickpro-dev.svc.cluster.local:9000
+  MINIO_HOST: 100.64.0.7:9031
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
   PHOENIX_HOST: http://phoenix-svc.soludev.svc.cluster.local:6006
   PYTHONPATH: ./pickpro_indexing_api
