@@ -8,7 +8,7 @@ metadata:
 data:
   pgbouncer.ini: |
     [databases]
-    logto = host=postgres.soludev.svc.cluster.local port=5432 dbname=logto
+    logto = host=100.64.0.7 port=5435 dbname=logto
 
     [pgbouncer]
     listen_addr = 0.0.0.0
