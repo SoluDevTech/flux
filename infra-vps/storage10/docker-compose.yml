@@ -22,3 +22,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  postgres-telemetry:
+    image: postgres:17-alpine
+    container_name: postgres-telemetry
+    restart: always
+    user: "70:70"
+    environment:
+      PGDATA: /var/lib/postgresql/data
+      # tuning herite du deployment k8s (partage 2 vCPU du Storage 10)
+    command: ["-c", "max_connections=100", "-c", "shared_buffers=512MB", "-c", "effective_cache_size=1536MB", "-c", "wal_sync_method=fdatasync", "-c", "max_wal_size=2GB", "-c", "min_wal_size=512MB", "-c", "checkpoint_completion_target=0.9"]
+    ports:
+      - "100.64.0.5:5436:5432"
+    volumes:
+      - /srv/nfs/soludev/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d phoenix"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
