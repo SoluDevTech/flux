@@ -12,7 +12,7 @@ data:
   SQL_DEBUG: "True"
   PYTHONPATH: ./pickpro_indexing_api
   MAX_WORKERS: "5"
-  MINIO_HOST: minio-pickpro.pickpro.svc.cluster.local:9000
+  MINIO_HOST: 100.64.0.7:9030
   PHOENIX_HOST: http://phoenix-svc.soludev.svc.cluster.local:6006
   RECALL_AI_REGION: eu-central-1
   SUMMARY_MODEL: anthropic/claude-haiku-4.5:nitro
