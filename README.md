@@ -5054,3 +5054,85 @@ reconnexion. Le seul fix structurel au-delà: héberger l'ingress en Asie
 | oauth2-proxy (dev) | 19 176 (31min gel) | 300m → 1 CPU |
 | valkey | 19 724 | 1 → 2 CPU |
 | postgres soludev | 16 162 | 1 → 2 CPU |
+
+## Migration des données stateful vers Docker sur les VPS Storage (7 sept 2026)
+
+### Contexte
+
+Après l'incident "MinIO à 72% du disque NFS étouffe toutes les DBs" (cf.
+section photos), décision de sortir les données stateful de k8s+NFS vers des
+conteneurs Docker sur les VPS Storage dédiés — disques locaux, isolation
+complète (aucun voisin bruyant), bind Tailscale uniquement.
+
+**Verdict honnête**: la migration n'accélère PAS les requêtes à chaud
+(tout tenait déjà en RAM, NFS invisible — mesuré dès le premier jour).
+Elle apporte: (1) fsync 3x plus rapide en écriture (fdatasync 0.65ms vs
+0.9-4.9ms NFS), (2) l'isolation des tempêtes I/O — le vrai incident,
+(3) zéro double-serveur possible sur le même disque NFS.
+
+### Décisions
+
+- **Docker direct** retenu (vs nœuds k3s + local-path): le collector
+  openobserve tolère tous les taints (`operator: Exists`) → l'isolation
+  nœuds k3s n'aurait jamais été totale. Docker = zéro process étranger.
+- **Volumes = données existantes montées directement** (PGDATA/dossiers
+  MinIO): pas de dump/restore, pas de perte. ⚠️ TOUJOURS éteindre le pod
+  k8s AVANT de lancer le conteneur (double postgres/minio sur le même
+  PGDATA = corruption).
+- **Credentials identiques** (mêmes users/passwords) — seules les
+  adresses changent (OpenBao + configmaps). Secrets dans `.env` sur les
+  VPS (chmod 600), composes versionnés SANS secrets (`infra-vps/`).
+- **Sécurité**: bind `100.64.0.x` uniquement (jamais 0.0.0.0) + ufw
+  (`deny in on eth0` ports DBs/MinIO, `allow 22`, `allow in on tailscale0`).
+  Les services ne répondent QUE via Tailscale.
+
+### Ports (tous bindés sur l'IP Tailscale du VPS)
+
+| VPS | Conteneur | Port | Servi par |
+|---|---|---|---|
+| Storage 30 (100.64.0.7) | pgvector-pickpro-**prod** | 5433 | api + indexing + notifications prod |
+| Storage 30 | pgvector-pickpro-**dev** | 5434 | api + indexing + notifications dev |
+| Storage 30 | postgres-soludev (**logto**) | 5435 | logto via pgbouncer (k8s) |
+| Storage 10 (100.64.0.5) | postgres-telemetry | 5436 | phoenix + sonarqube + openobserve |
+| Storage 30 | minio-pickpro-**prod** | 9030 | api + indexing prod |
+| Storage 30 | minio-pickpro-**dev** | 9031 | api + indexing dev |
+| Storage 10 | minio-soludev | 9032 | openobserve S3 |
+
+### Bascules effectuées
+
+| Consommateur | Mécanisme | Valeur |
+|---|---|---|
+| pickpro-dev api/indexing/notifications | OpenBao `pickpro-dev/{api,indexing,notifications}` DATABASE_URL | `@100.64.0.7:5434` |
+| pickpro-dev MINIO_HOST | configmaps Flux | `100.64.0.7:9031` |
+| pickpro PROD api/indexing/notifications | OpenBao `pickpro/{api,indexing,notifications}` DATABASE_URL (+ ALEMBIC_ sur api) | `@100.64.0.7:5433` |
+| pickpro PROD MINIO_HOST | configmaps Flux | `100.64.0.7:9030` |
+| logto | inchangé (via pgbouncer k8s:6432) | pgbouncer [databases] → `host=100.64.0.7 port=5435` |
+| phoenix | configmap (helm values patchés) | `PHOENIX_POSTGRES_HOST=100.64.0.5`, port 5436 |
+| sonarqube | configmap jdbc (helm values patchés) | `jdbc:postgresql://100.64.0.5:5436/sonarqube` |
+| openobserve | OpenBao `soludev/openobserve` ZO_META_POSTGRES_DSN + ZO_S3_SERVER_URL (statefulset) | `@100.64.0.5:5436/openobserve` + `http://100.64.0.5:9032` |
+
+### Pièges rencontrés (à retenir)
+
+1. **Flux rescale les pods scale-to-0**: un `kubectl scale --replicas=0`
+   est annulé à la reconcile suivante (2 min). TOUJOURS `git rm` le
+   deployment du repo (prune Flux) pour un arrêt définitif.
+2. **Configmaps ne se rechargent pas seules**: après édition du
+   configmap (pgbouncer.ini, phoenix host...), restart du pod requis.
+3. **L'ini pgbouncer [databases] est codé en dur** dans le configmap —
+   l'entrypoint edoburu ne le régénère pas (fichier existant). Chaque
+   déplacement du postgres cible = éditer le configmap + restart.
+   (Même famille que le bug "DNS postgres dans console logto".)
+4. **ExternalSecret resync écrase les patchs directs** des secrets k8s
+   (refreshInterval 60s): les bascules DSN passent par OpenBao, pas par
+   kubectl patch secret.
+5. **UFW peut couper le SSH public**: activer `allow 22` AVANT
+   `--force enable`. Si verrouillé: console VNC Contabo.
+6. **Double-serveur sur PGDATA partagé** (pod k8s + conteneur docker):
+   corruption garantie — séquence stricte: éteindre pod → pruner Flux →
+   lancer conteneur → basculer DSN → restart apps.
+
+### Fichiers
+
+- `infra-vps/storage30/docker-compose.yml` — 5 conteneurs (pickpro prod+dev, logto, minio prod+dev)
+- `infra-vps/storage10/docker-compose.yml` — 2 conteneurs (telemetry pg, minio soludev)
+- `.env` sur chaque VPS (`/opt/pickpro-stack/.env`, chmod 600, hors git)
