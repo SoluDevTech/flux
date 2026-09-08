@@ -4758,6 +4758,10 @@ kubectl exec -n soludev openbao-0 -- bao status | grep Sealed       # doit affic
 | SonarQube/ES boot lent | startup probe budget ≥ 20 min |
 | **Fix accept-dns=false sur un nœud** | **Ne protège que les pods futurs — recréer tous les pods existants du nœud** (resolv.conf figé à la création) |
 | Release helm manuel (openbao) | Webhook config supprimée en urgence = jamais recréée par Flux → crashloop injector silencieux |
+| Store de sessions oauth2-proxy | **Cookie store + refresh token rotatif = invalid_grant** sur requêtes parallèles → store Redis obligatoire (`--session-store-type=redis`) |
+| Configmap édité + `rollout restart` | Si Flux reconcile **entre les deux**, l'annotation `restartedAt` est retirée et le restart annulé — refaire le restart après le reconcile |
+| Cache valkey | **NFS interdit** pour valkey/redis (locks, fsync, gel du montage) — Docker Storage 30, bind Tailscale only |
+| App Logto sans `alwaysIssueRefreshToken` | Sessions sans refresh token → expiration 1 h → 401 en boucle ; aligner `custom_client_metadata` + `postLogoutRedirectUris` |
 
 **Architecture actuelle (post-migration sept 2026):**
 ```

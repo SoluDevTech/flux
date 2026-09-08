@@ -64,6 +64,7 @@ Dernière mise à jour : 7 septembre 2026
 | `postgres-soludev` (logto) | **5435** | `/srv/nfs/soludev/postgres` (1.3 Go) | logto (via pgbouncer k8s:6432) |
 | `minio-pickpro-prod` | **9030** | `/srv/nfs/pickpro/minio` (1.1 Go, 5197 photos) | pickpro prod (api, indexing) |
 | `minio-pickpro-dev` | **9031** | `/srv/nfs/pickpro-dev/minio` | pickpro-dev (api, indexing) |
+| `valkey-soludev` | **6379** | `/srv/nfs/soludev/valkey` | logto (REDIS_URL), pickpro prod+dev (VALKEY_HOST : api, indexing, notifications), sessions oauth2-proxy |
 
 ### Storage 10 (100.64.0.5) — `/opt/pickpro-stack/docker-compose.yml`
 
@@ -81,7 +82,6 @@ Composes versionnés : `flux/infra-vps/storage{10,30}/docker-compose.yml`.
 |---|---|---|
 | `soludev` | **logto** | IAM ; DB via pgbouncer |
 | `soludev` | **pgbouncer** | session mode :6432 → logto ; userlist auto-généré depuis OpenBao `soludev/pgbouncer` (rôles logto_tenant_*) |
-| `soludev` | **valkey** | cache (tokens M2M, has_password, custom_data, dashboard TTL 60s, connection status 3600s) |
 | `soludev` | **openbao** | secrets (ClusterSecretStore → ExternalSecrets, refresh 60s) |
 | `soludev` | **phoenix** | tracing LLM ; DB telemetry docker ; helm-managed |
 | `soludev` | **sonarqube** | DB telemetry docker ; helm-managed |
@@ -130,3 +130,4 @@ MinIO hosts (configmaps Flux, pas de secrets) : prod `100.64.0.7:9030`, dev `100
 
 - **6 sept** : isolation télémétrie (postgres-telemetry k8s → Storage 10 NFS), migration Headscale → control-plane, pgbouncer devant logto, fixes photos/MinIO/throttling.
 - **7 sept** : migration des données stateful vers Docker sur les VPS Storage (7 conteneurs), Mac rejoint le tailnet prd, thumbnails photos (code pickpro-back).
+- **8 sept** : valkey k8s (PVC NFS) → Docker Storage 30 (`valkey-soludev:6379`, même volume, sessions oauth2-proxy incluses) ; dnsConfig ndots=1 généralisé (logto, pgbouncer, oauth2-proxy, pickpro) ; sessions oauth2-proxy dev en store Redis ; app Logto PickPro Dev alignée prod (refresh token 14 j, postLogoutRedirectUris).
