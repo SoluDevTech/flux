@@ -27,7 +27,7 @@ spec:
         # Cookie store produit des invalid_grant sur refresh concurrents
         # (rotation Logto) et tue la session -> 401 apres ~1h.
         - --session-store-type=redis
-        - --redis-connection-url=redis://valkey.soludev.svc.cluster.local:6379
+        - --redis-connection-url=redis://100.64.0.7:6379
         env:
         - name: OAUTH2_PROXY_CLIENT_ID
           valueFrom:

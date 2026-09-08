@@ -101,3 +101,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # ── valkey (cache logto/pickpro + sessions oauth2-proxy) ──
+  # Migré de k8s (PVC NFS) le 8 sept 2026 — même volume, accès Tailscale only
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: valkey-soludev
+    restart: always
+    command: ["valkey-server", "--save", "60", "1", "--loglevel", "warning"]
+    ports:
+      - "100.64.0.7:6379:6379"
+    volumes:
+      - /srv/nfs/soludev/valkey:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
