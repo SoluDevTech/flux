@@ -28,6 +28,13 @@ data:
   MINIO_ACCESS: minioadmin
   MINIO_BUCKET: cvs
   MINIO_ALLOWED_EXTENSION: .pdf
+  # Presigned-URL 302 redirects (spec feat-presigned-media) : endpoint PUBLIC
+  # utilisé uniquement pour signer les URLs — l'origine du front dev
+  # (same-origin, routée vers MinIO dev par pickpro-media-ingress
+  # /photos|/cvs). Vide = mode proxy. Invariant : REDIRECT_CACHE < PRESIGN_TTL.
+  MINIO_PUBLIC_ENDPOINT: https://pickpro.soludev.tech
+  MINIO_PRESIGN_TTL_S: "3600"
+  MINIO_REDIRECT_CACHE_SECONDS: "300"
   INDEXING_API_URL: http://pickpro-indexing-api.pickpro-dev.svc.cluster.local:8000/pickpro/rest/v1
   INDEXING_API_TIMEOUT: "120"
   LOGTO_URL: http://logto.soludev.svc.cluster.local:3001
