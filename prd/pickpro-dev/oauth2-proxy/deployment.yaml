@@ -23,6 +23,11 @@ spec:
         - --alpha-config=/etc/oauth2_proxy/oauth2_proxy.yml
         - --cookie-name=oauth2-proxy-pickpro-dev
         - --config=/etc/oauth2_proxy/oauth2_proxy.cfg
+        # Session store Redis (valkey) : refresh token rotation atomique.
+        # Cookie store produit des invalid_grant sur refresh concurrents
+        # (rotation Logto) et tue la session -> 401 apres ~1h.
+        - --session-store-type=redis
+        - --redis-connection-url=redis://valkey.soludev.svc.cluster.local:6379
         env:
         - name: OAUTH2_PROXY_CLIENT_ID
           valueFrom:
