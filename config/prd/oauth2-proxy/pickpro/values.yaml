@@ -8,7 +8,11 @@ alphaConfig:
   existingConfig: "oauth2-proxy-alpha-config"
 
 sessionStorage:
-  type: cookie
+  type: redis
+  redis:
+    clientType: standalone
+    standalone:
+      connectionUrl: redis://100.64.0.7:6379
 
 ingress:
   enabled: false
