@@ -6,7 +6,7 @@ metadata:
 data:
   config.json: |
     {
-        "backendUrl": "https://pickpro.soludev.tech",
+        "backendUrl": "https://pickpro-api.soludev.tech",
         "oauth2ProxyUrl": "https://pickpro.soludev.tech",
         "logtoUrl": "https://logto.soludev.tech",
         "logtoAppId": "pickpro-dev",
