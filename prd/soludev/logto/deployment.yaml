@@ -69,3 +69,7 @@ spec:
             limits:
               memory: "2Gi"
               cpu: "2"
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"

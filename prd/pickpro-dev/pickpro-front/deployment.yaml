@@ -48,5 +48,9 @@ spec:
         - name: config-volume
           configMap:
             name: pickpro-front-config
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
       imagePullSecrets:
         - name: pickpro-docker-secret

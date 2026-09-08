@@ -61,3 +61,7 @@ spec:
             limits:
               memory: "256Mi"
               cpu: "200m"
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"

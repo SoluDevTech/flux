@@ -49,5 +49,9 @@ spec:
             limits:
               memory: "768Mi"
               cpu: "500m"
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
       imagePullSecrets:
         - name: pickpro-docker-secret
