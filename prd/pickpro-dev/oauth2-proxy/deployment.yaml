@@ -83,3 +83,7 @@ spec:
       - name: config
         configMap:
           name: oauth2-proxy-config
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
