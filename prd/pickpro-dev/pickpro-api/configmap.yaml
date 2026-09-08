@@ -32,7 +32,10 @@ data:
   # utilisé uniquement pour signer les URLs — l'origine du front dev
   # (same-origin, routée vers MinIO dev par pickpro-media-ingress
   # /photos|/cvs). Vide = mode proxy. Invariant : REDIRECT_CACHE < PRESIGN_TTL.
-  MINIO_PUBLIC_ENDPOINT: https://pickpro.soludev.tech
+  # A/B test 8 sept soir: retour mode proxy (302 presign = 2 requetes par
+  # photo au 1er chargement; le gain n a pas ete mesure). Reactivable en
+  # remplissant MINIO_PUBLIC_ENDPOINT.
+  MINIO_PUBLIC_ENDPOINT: ""
   MINIO_PRESIGN_TTL_S: "3600"
   MINIO_REDIRECT_CACHE_SECONDS: "300"
   INDEXING_API_URL: http://pickpro-indexing-api.pickpro-dev.svc.cluster.local:8000/pickpro/rest/v1
