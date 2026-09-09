@@ -3,6 +3,15 @@ config:
   existingConfig: "oauth2-proxy-config"
   cookieName: "oauth2-proxy-pickpro"
 
+# Aligné sur pickpro-dev (flux/prd/pickpro-dev/oauth2-proxy/deployment.yaml) :
+# même version d'image. Épinglage explicite pour éviter les surprises
+# d'appVersion au prochain upgrade de chart. Le chart préfixe avec
+# image.registry — laisser le repository relatif pour éviter le
+# quay.io/quay.io dupliqué.
+image:
+  repository: "oauth2-proxy/oauth2-proxy"
+  tag: "v7.15.2"
+
 alphaConfig:
   enabled: true
   existingConfig: "oauth2-proxy-alpha-config"
@@ -23,7 +32,7 @@ resources:
     memory: "64Mi"
   limits:
     cpu: "1000m"
-    memory: "128Mi"
+    memory: "256Mi"
 
 service:
   type: ClusterIP
