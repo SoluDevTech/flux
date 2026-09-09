@@ -10,7 +10,10 @@ data:
   TITLE_MODEL: anthropic/claude-haiku-4.5:nitro
   GRADER_MODEL: anthropic/claude-haiku-4.5:nitro
   JOB_STRUCTURE_MODEL: anthropic/claude-haiku-4.5:nitro
-  SQL_DEBUG: "True"
+  # SQL_DEBUG active l echo SQLAlchemy (chaque statement loggue) — utile
+  # ponctuellement pour debugger, desactive par defaut car il ajoute des
+  # centaines de ms par requete + alimente openobserve en continu.
+  SQL_DEBUG: "False"
   SEARCH_MODEL: google/gemini-2.5-flash:nitro
   TEMPERATURE: "0.0"
   CONCURRENT_CALLS: "5"
