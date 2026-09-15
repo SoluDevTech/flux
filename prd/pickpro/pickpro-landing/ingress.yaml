@@ -18,3 +18,13 @@ spec:
                 name: pickpro-landing
                 port:
                   number: 80
+    - host: www.pickpro.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pickpro-landing
+                port:
+                  number: 80
