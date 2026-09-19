@@ -32,6 +32,8 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
   - [Incident: Tailscale DNS pollution + Cloudflare Tunnel 502 (Aug 2026)](#incident-tailscale-dns-pollution--cloudflare-tunnel-502-aug-2026)
 - [Incident: Migration cluster — 9 problèmes en cascade (Sept 2026)](#incident-migration-cluster--9-problèmes-en-cascade-sept-2026)
 - [Isolation télémétrie + migration Headscale (6 sept 2026)](#isolation-télémétrie--migration-headscale-6-sept-2026)
+- [Migration des données stateful vers Docker sur les VPS Storage (7 sept 2026)](#migration-des-données-stateful-vers-docker-sur-les-vps-storage-7-sept-2026)
+- [Les Storage VPS rejoignent le cluster k3s (19 sept 2026)](#les-storage-vps-rejoignent-le-cluster-k3s-19-sept-2026)
 
 ## Mesh VPN for mac os workers
 
@@ -5140,3 +5142,140 @@ Elle apporte: (1) fsync 3x plus rapide en écriture (fdatasync 0.65ms vs
 - `infra-vps/storage30/docker-compose.yml` — 5 conteneurs (pickpro prod+dev, logto, minio prod+dev)
 - `infra-vps/storage10/docker-compose.yml` — 2 conteneurs (telemetry pg, minio soludev)
 - `.env` sur chaque VPS (`/opt/pickpro-stack/.env`, chmod 600, hors git)
+
+---
+
+## Les Storage VPS rejoignent le cluster k3s (19 sept 2026)
+
+### Contexte
+
+Fin de l'approche Docker-direct (7 sept) : les Storage VPS 30 et 10
+rejoignent le cluster k3s comme agents dédiés données. Objectifs :
+réunification GitOps (tout redevance k8s/Flux), URLs internes cluster
+(`*.svc.cluster.local`) partout, disques locaux natifs (fin du NFS pour
+les DBs/MinIO), et isolation stricte — **seuls les workloads
+minio/postgres/pgvector peuvent s'y planifier** (taint).
+
+### Architecture
+
+```
+CLUSTER K3S (7 nœuds)
+├── vmi3322097 (100.64.0.1) : control-plane
+├── vmi3322098…vmi3549081   : workers compute (tous les pods stateless)
+├── vmi3549084 (Storage 30, 100.64.0.7) : agent TAINTÉ — postgres + pgvector ×2 + minio ×2
+└── vmi3322106 (Storage 10, 100.64.0.5) : agent TAINTÉ — postgres-telemetry + minio-soludev
+```
+
+- **Labels** : `storage/role=data`, `storage/nodename=storage30|storage10`
+- **Taint** : `storage/role=data:NoSchedule` → aucun autre workload ne s'y
+  pose (même en contrainte de scheduler). La topologie compute est
+  inchangée (5 nœuds untainted).
+- **Réseau** : agents lancés avec `--node-ip 100.64.0.x --flannel-iface
+  tailscale0` → VXLAN passe par le mesh Tailscale (jamais les IP
+  publiques). Service LB svclb-traefik tolérant le taint également
+  (patch DaemonSet, re-faire après un restart k3s).
+
+### Workloads stateful k8s (PV local, mêmes chemins que docker)
+
+| Nœud | Workload | Image | Données (PV local, nodeAffinity) |
+|---|---|---|---|
+| Storage 30 | postgres (logto) | `postgres:17-alpine` | `/srv/nfs/soludev/postgres` |
+| Storage 30 | pgvector pickpro | `pgvector/pgvector:0.8.0-pg17` | `/srv/nfs/pickpro/pgvector` |
+| Storage 30 | pgvector pickpro-dev | idem | `/srv/nfs/pickpro-dev/pgvector` |
+| Storage 30 | minio pickpro (helm) | `minio/minio RELEASE.2025-09-07T16-13-09Z` | `/srv/nfs/pickpro/minio` |
+| Storage 30 | minio pickpro-dev | idem | `/srv/nfs/pickpro-dev/minio` |
+| Storage 10 | postgres-telemetry | `postgres:17-alpine` | `/srv/nfs/soludev/postgres` (le disque Storage 10 !) |
+| Storage 10 | minio-soludev (helm) | `minio/minio RELEASE.2024-12-18T13-15-44Z` | `/srv/nfs/soludev/minio` |
+
+Restés hors k8s (docker Storage 30, bind Tailscale) : `valkey-soludev:6379`
+(cache logto/pickpro/oauth2-proxy). Les PV NFS server (nfsd sur Storage 30)
+servent toujours openbao/openobserve/sonarqube — couche *stockage*, pas
+workload k8s : le taint ne la concerne pas.
+
+### URLs internes (basculées en `*.svc.cluster.local`)
+
+| Clé OpenBao / config | Avant | Après |
+|---|---|---|
+| `pickpro/api` + `indexing` + `notifications` | `@100.64.0.7:5433` | `@pgvector.pickpro.svc.cluster.local:5432` |
+| `pickpro-dev/*` idem | `@100.64.0.7:5434` | `@pgvector.pickpro-dev.svc.cluster.local:5432` |
+| `soludev/pgbouncer` DATABASE_URLS | `@100.64.0.7:5435` | `@postgres.soludev.svc.cluster.local:5432` |
+| `soludev/openobserve` ZO_META_POSTGRES_DSN | `@100.64.0.5:5436` | `@postgres-telemetry.soludev.svc.cluster.local:5432` |
+| configmaps pickpro MINIO_HOST | `100.64.0.7:9030/9031` | `minio-pickpro[.dev].*.svc.cluster.local:9000` |
+| sonarqube jdbcUrl + phoenix host (values git) | `100.64.0.5:5436` | `postgres-telemetry.soludev.svc.cluster.local:5432` |
+| openobserve ZO_S3_SERVER_URL | docker `100.64.0.5:9032` | `http://minio-soludev.soludev.svc.cluster.local:9000` |
+| logto REDIS_URL + VALKEY_HOST ×6 | — | **inchangés** (`100.64.0.7:6379`, valkey reste docker) |
+
+Hosts **patchés dans OpenBao en read-modify-write** (hosts uniquement,
+credentials inchangés) : `pickpro/{api,indexing,notifications}`,
+`pickpro-dev/{api,indexing,notifications}`, `soludev/pgbouncer`,
+`soludev/openobserve`.
+
+### Installs Helm (rejouables)
+
+```bash
+helm upgrade --install minio-soludev minio/minio -n soludev \
+  -f config/prd/minio/soludev/values.yaml
+helm upgrade --install minio-pickpro minio/minio -n pickpro \
+  -f config/prd/minio/pickpro/values.yaml
+helm upgrade sonarqube sonarqube/sonarqube -n soludev \
+  -f config/prd/sonarqube/values.yaml --reuse-values
+helm upgrade phoenix oci://registry-1.docker.io/arizephoenix/phoenix-helm \
+  --version 9.0.12 -n soludev -f config/phoenix/prd/values.yaml \
+  --reuse-values --force-conflicts
+helm upgrade openobserve openobserve/openobserve-standalone -n soludev \
+  -f config/prd/openobserve/values.yml
+```
+
+FC: le `minio-pickpro-dev` reste un **Deployment raw Flux** (pas Helm),
+image `quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z`, PVC `minio`
+sur PV `local-pickpro-dev-minio`.
+
+### Pièges rencontrés et fixes (à retenir)
+
+1. **Token k3s tronqué par le script d'install** : les `::server:...`
+   sont mangés par le heredoc SQLite → "invalid token format". Écrire
+   le fichier `k3s-agent.service` **à la main** (token complet) ou
+   passer par `INSTALL_K3S_EXEC` shell-safe.
+2. **Version agent ≠ serveur**: installer exactement la même version
+   (`INSTALL_K3S_VERSION=v1.35.4+k3s1`), sinon les anomalies d'API
+   (PingLocks) se multiplient.
+3. **`--flannel-iface tailscale0`** obligatoire sur les agents Storage :
+   par défaut flannel choisit l'IP publique eth0 (VXLAN qui passe par
+   internet → tunnels UDP 8472 bloqués) et cassé le pod-network
+   inter-nœuds. Symptôme : `ping` d'un pod-CIDR voisin dead, mais le
+   pod est "Running" en local.
+4. **Taint perdu au re-register du nœud** : après `kubectl delete node`
+   + re-join, le taint/labels ne sont PAS réappliqués automatiquement —
+   KCCT les re-patch après chaque création de node (ou encodé dans
+   systemd unit `--node-label` + re-patch taint).
+5. **Chown-fuyant kubelet** : le chart MinIO porte
+   `runAsUser:1000/fsGroup:1000` par défaut → le kubelet fait un
+   `chown -R` sur **5,5M fichiers** (bucket openobserve) à CHAQUE mount
+   → pods bloqués en `ContainerCreating` pendant des dizaines de
+   minutes. **Fix** : `securityContext.enabled: false` dans les values
+   MinIO (container root, comme docker avant) → pas de fsGroup → pas de
+   chown → boot instantané.
+6. **Compat version MinIO** : le `minio:latest` docker (RELEASE.2025-09-07)
+   écrit du XL-meta v3 ; une image plus ancienne (`RELEASE.2024-12-18`
+   du chart) refuse : "Unknown xl meta version 3". Toujours pinner
+   `image.tag` **au moins égal** à la version qui a écrit les données.
+7. **fsGroup=0 n'est pas "pas de fsGroup"** : le kubelet contй réommène
+   le chown du volume si fsGroup est SET (0 y compris). La seule échappée
+   est `enabled: false`.
+8. **"Prefix access is denied: .minio.sys/pool.bin"** ≠ permission
+   réelle : c'est un effet du chown fsGroup partiel. Vérifier en
+   `sudo -u '#1000' touch` avant de blâmer les perms.
+9. **Restaurer des pods sur un nœud re-register** : après le changement
+   de podCIDR (10.42.5→10.42.7), les pods pré-datés restent "Running"
+   avec des IP d'un subnet qui n'existe plus (cni0 DOWN). **Forcer la
+   recréation des pods** (delete + RS auto).
+10. **Old → new scripts d'install**:以身 de toujours passer les args
+    exacts via `INSTALL_K3S_EXEC` plutôt que par flags posés en arg à
+    l'unit systemd ré-générée par get.k3s.io.
+
+### Rollback
+
+Les manifests docker-compose sont conservés dans `infra-vps/` (conteneurs
+stopeés avec `restart=no`) ; rollback = `flux` re-prune les manifests +
+`docker compose up -d` sur le même disque. Valkey / NFS n'ont **pas**
+migré : ils restent dockerisés depuis le début.

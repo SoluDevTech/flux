@@ -1,6 +1,6 @@
 # Architecture — Cluster K3s SoluDev + VPS Storage
 
-Dernière mise à jour : 7 septembre 2026
+Dernière mise à jour : 19 septembre 2026
 
 ## Vue d'ensemble
 
@@ -10,17 +10,22 @@ Dernière mise à jour : 7 septembre 2026
                         └──────────────────┬──────────────────────┘
                                            │
                                 Cloudflare (DNS, tunnel)
-                                           │ cloudflared ×2 (k8s)
-                    ┌──────────────────────┴─────────────────────┐
-                    │      CLUSTER K3S — apps & services        │
-                    │  1 control-plane + 4 workers (Tailscale) │
-                    └──┬──────────────────────────────────┬─────┘
-                       │ Tailscale (mesh, 100.64.0.0/10)  │
-          ┌────────────┴────────────┐        ┌────────────┴─────────────┐
-          │  STORAGE 30 (vmi3549084)│        │  STORAGE 10 (vmi3322106) │
-          │  DBs pickpro + logto    │        │  DBs telemetry + minio   │
-          │  minio pickpro (Docker) │        │  obs (Docker)            │
-          └─────────────────────────┘        └──────────────────────────┘
+                                           │ cloudflared ×4 (k8s)
+                ┌──────────────────────────┴───────────────────────────┐
+                │           CLUSTER K3S — 7 nœuds                     │
+                │                                                     │
+                │  control-plane + 4 workers compute (untainted)      │
+                │  tous les pods stateless                            │
+                │                                                     │
+                │  ┌─────────────────────────┐  ┌──────────────────┐  │
+                │  │ STORAGE 30 vmi3549084   │  │ STORAGE 10       │  │
+                │  │ 100.64.0.7 — TAINTED    │  │ vmi3322106 .5    │  │
+                │  │ postgres + pgvector ×2  │  │ — TAINTED        │  │
+                │  │ minio ×2 (disque local) │  │ postgres-telemetry│ │
+                │  │                         │  │ + minio-soludev  │  │
+                │  └─────────────────────────┘  └──────────────────┘  │
+                │   (valkey + serveur NFS : docker/hors k8s)          │
+                └─────────────────────────────────────────────────────┘
 ```
 
 ## Machines
@@ -28,107 +33,129 @@ Dernière mise à jour : 7 septembre 2026
 | Machine | Rôle | IP publique | IP Tailscale | vCPU / RAM | Héberge |
 |---|---|---|---|---|---|
 | **vmi3322097** | Control-plane k3s + **Headscale** (coordination Tailscale) | 84.247.188.175 | **100.64.0.1** | 4 / 8 GB | etcd, apiserver, headscale:8080 |
-| **vmi3322098** | Worker k3s | 84.247.189.16 | **100.64.0.3** | 6 / 8 GB | pods applicatifs, CoreDNS |
-| **vmi3322099** | Worker k3s | 84.247.189.239 | **100.64.0.2** | 6 / 8 GB | pods applicatifs |
-| **vmi3322100** | Worker k3s | 84.247.190.97 | **100.64.0.4** | 6 / 8 GB | pods applicatifs |
-| **vmi3549081** | Worker k3s | 173.212.219.98 | **100.64.0.6** | 6 / 8 GB | pods applicatifs |
-| **vmi3549084** | **Storage VPS 30** — Docker stateful | 164.68.123.88 | **100.64.0.7** | 6 / 8 GB | DBs pickpro (prod+dev), postgres logto, minio pickpro (prod+dev) |
-| **vmi3322106** | **Storage VPS 10** — Docker stateful | 37.60.225.137 | **100.64.0.5** | 2 / 3.8 GB | postgres telemetry, minio soludev (observability) |
+| **vmi3322098** | Worker k3s | 84.247.189.16 | **100.64.0.3** | 6 / 8 GB | pods compute |
+| **vmi3322099** | Worker k3s | 84.247.189.239 | **100.64.0.2** | 6 / 8 GB | pods compute |
+| **vmi3322100** | Worker k3s | 84.247.190.97 | **100.64.0.4** | 6 / 8 GB | pods compute |
+| **vmi3549081** | Worker k3s | 173.212.219.98 | **100.64.0.6** | 6 / 8 GB | pods compute |
+| **vmi3549084** | **Storage VPS 30** — Agent k3s TAINTÉ | 164.68.123.88 | **100.64.0.7** | 6 / 8 GB | postgres logto, pgvector prod+dev, minio prod+dev (PV local) |
+| **vmi3322106** | **Storage VPS 10** — Agent k3s TAINTED | 37.60.225.137 | **100.64.0.5** | 2 / 3.8 GB | postgres-telemetry, minio-soludev (PV local) |
 | *(hors cluster)* MacBook de Yohan | Client tailnet | — | **100.64.0.8** | — | kubectl, tests |
 
-> Les Storage VPS ne sont **pas dans le cluster k3s** (décision 7 sept 2026 :
-> l'isolation totale exige Docker direct — le collector openobserve tolère
-> tous les taints, l'option nœuds k3s aurait laissé des process étrangers).
+> 19 sept 2026 : les Storage VPS rejoignent le cluster comme **agents
+> k3s taintés** `storage/role=data:NoSchedule` — seuls les workloads
+> minio/postgres/pgvector y sont tolérés (nodeSelector + toleration).
+> Le docker-direct de la période 7-19 sept est remplacé : tout redevance
+> k8s/Flux. Restent hors k8s : `valkey-soludev` (Docker Storage 30) et
+> le serveur **NFS** de Storage 30 (couche stockage pour openbao /
+> openobserve / sonarqube — pas un workload k8s, le taint ne la concerne pas).
 
 ## Réseau
 
-- **Tailscale** (headscale sur vmi3322097:8080, cert autosigné CN=84.247.188.175)
-  relie toutes les machines : `100.64.0.0/10`.
-- **Flannel** (réseau pods k3s) roule sur `tailscale0` — les nœuds k3s
-  communiquent via leurs IP Tailscale.
-- **Accès externe** : Cloudflare Tunnel (`cloudflared` ×2 dans k8s) →
-  traefik (k8s) → apps. RTT Vietnam↔edge CF ≈ 280 ms (PoP EU).
-- **Sécurité Storage VPS** : services Docker bindés **uniquement** sur
-  l'IP Tailscale + ufw (`deny in on eth0` ports 5432-5436/9030-9035,
-  `allow 22`, `allow in on tailscale0`). Les DBs/MinIO sont **injoignables
-  publiquement**.
+- **Tailscale** (headscale plateau vmi3322097:8080) relie les machines :
+  `100.64.0.0/10`.
+- **Flannel VXLAN** passe sur `tailscale0` — agents storage lancés avec
+  `--node-ip 100.64.0.x --flannel-iface tailscale0` (le default=
+  VXLAN qui passerait par les IP publiques eth0 bloquerait absurdement
+  les tunnels UDP 8472 entre zones dégeolocalisées).
+- **Accès externe** : Cloudflare Tunnel (cloudflared ×2 soludev, ×2 pickpro)
+  → traefik (k8s) → apps.
+- **Sécurité** : le taint protège les storage nodes (scheduling) ;
+  ufw sur les VPS bloque toujours les ports DB publics. L'AWS-like zone
+  de confiance est le mesh Tailscale (mTLS headscale auth).
 
-## Données stateful — Docker sur les VPS Storage
+## Données stateful — Pods k8s sur disque local
 
-### Storage 30 (100.64.0.7) — `/opt/pickpro-stack/docker-compose.yml`
+### Storage 30 (100.64.0.7) — agent tainté
 
-| Conteneur | Port (bind 100.64.0.7) | Volume (données) | Servi par |
+| Workload | Image | Données (PV local, nodeAffinity) | Servi par |
 |---|---|---|---|
-| `pgvector-pickpro-prod` | **5433** | `/srv/nfs/pickpro/pgvector` (153 Mo) | pickpro prod (api ×2, indexing ×2, notifications) |
-| `pgvector-pickpro-dev` | **5434** | `/srv/nfs/pickpro-dev/pgvector` (66 Mo) | pickpro-dev (api, indexing, notifications) |
-| `postgres-soludev` (logto) | **5435** | `/srv/nfs/soludev/postgres` (1.3 Go) | logto (via pgbouncer k8s:6432) |
-| `minio-pickpro-prod` | **9030** | `/srv/nfs/pickpro/minio` (1.1 Go, 5197 photos) | pickpro prod (api, indexing) |
-| `minio-pickpro-dev` | **9031** | `/srv/nfs/pickpro-dev/minio` | pickpro-dev (api, indexing) |
-| `valkey-soludev` | **6379** | `/srv/nfs/soludev/valkey` | logto (REDIS_URL), pickpro prod+dev (VALKEY_HOST : api, indexing, notifications), sessions oauth2-proxy |
+| `postgres` (logto) | `postgres:17-alpine` | `/srv/nfs/soludev/postgres` (~1.3 Go) | logto via pgbouncer (k8s:6432) |
+| `pgvector` pickpro | `pgvector/pgvector:0.8.0-pg17` | `/srv/nfs/pickpro/pgvector` | pickpro prod (api, indexing, notifications) |
+| `pgvector` pickpro-dev | idem | `/srv/nfs/pickpro-dev/pgvector` | pickpro-dev |
+| `minio-pickpro` (helm) | `RELEASE.2025-09-07T16-13-09Z` | `/srv/nfs/pickpro/minio` (cvs, photos, transcripts) | pickpro prod |
+| `minio-pickpro-dev` (Deployment raw Flux) | idem | `/srv/nfs/pickpro-dev/minio` | pickpro-dev |
 
-### Storage 10 (100.64.0.5) — `/opt/pickpro-stack/docker-compose.yml`
+### Storage 10 (100.64.0.5) — agent tainté
 
-| Conteneur | Port (bind 100.64.0.5) | Volume | Servi par |
+| Workload | Image | Données (PV local) | Servi par |
 |---|---|---|---|
-| `postgres-telemetry` | **5436** | `/srv/nfs/soludev/postgres` (2.8 Go) | phoenix, sonarqube, openobserve |
-| `minio-soludev` | **9032** | `/srv/nfs/soludev/minio` | openobserve (S3 observability) |
+| `postgres-telemetry` | `postgres:17-alpine` | `/srv/nfs/soludev/postgres` (~3 Go, le disque Storage **10**) | phoenix, sonarqube, openobserve |
+| `minio-soludev` (helm) | `RELEASE.2024-12-18T13-15-44Z` | `/srv/nfs/soludev/minio` (bucket `observability`) | openobserve S3 |
 
-Credentials : `/opt/pickpro-stack/.env` sur chaque VPS (chmod 600, hors git).
-Composes versionnés : `flux/infra-vps/storage{10,30}/docker-compose.yml`.
+Server (hors k8s, docker Storage 30, mesh Tailscale only) :
+
+| Conteneur | Port | Volume | Servi par |
+|---|---|---|---|
+| `valkey-soludev` | 6379 | `/srv/nfs/soludev/valkey` | logto (REDIS_URL), pickpro VALKEY_HOST ×6, sessions oauth2-proxy |
+| serveur **NFS nfsd** (Storage 30) | 2049 | `/srv/nfs/*` | PVs `nfs-soludev-{openbao,openobserve,sonarqube}` + ubby/back |
 
 ## Services dans le cluster k3s
 
 | Namespace | Service | Détail |
 |---|---|---|
-| `soludev` | **logto** | IAM ; DB via pgbouncer |
-| `soludev` | **pgbouncer** | session mode :6432 → logto ; userlist auto-généré depuis OpenBao `soludev/pgbouncer` (rôles logto_tenant_*) |
-| `soludev` | **openbao** | secrets (ClusterSecretStore → ExternalSecrets, refresh 60s) |
-| `soludev` | **phoenix** | tracing LLM ; DB telemetry docker ; helm-managed |
-| `soludev` | **sonarqube** | DB telemetry docker ; helm-managed |
-| `soludev` | **openobserve** | logs/metrics ; DB + S3 telemetry docker |
-| `soludev` | **nats**, **cloudflared** ×2, **headlamp** | infra |
-| `pickpro` | **pickpro-api** ×2, **pickpro-indexing-api** ×2, **pickpro-notifications**, **pickpro-front**, **pickpro-landing**, **oauth2-proxy**, **cloudflared** ×2 | DB → docker :5433, MinIO → docker :9030 |
-| `pickpro-dev` | idem (replicas 1) | DB → docker :5434, MinIO → docker :9031 |
-| `ubby`, `openclaw` | apps | DBs encore en k8s (pgvector ubby : NFS) |
+| `soludev` | **logto** | IAM ; DB via pgbouncer (6432) → `postgres.soludev.svc...` |
+| `soludev` | **pgbouncer** | session mode :6432 → logto ; userlist auto-généré depuis OpenBao `soludev/pgbouncer` |
+| `soludev` | **postgres** + **postgres-telemetry** | instances k8s, PV local node-pinned |
+| `soludev` | **openbao** | secrets (ClusterSecretStore → ExternalSecrets 60s) |
+| `soludev` | **phoenix**, **sonarqube**, **openobserve** | DB → postgres-telemetry interne; openobserve S3 → minio-soludev interne |
+| `soludev` | **minio-soludev** (helm) | observabilité ; image chart 5.4.0 |
+| `soludev` | nats (local-path), cloudflared ×2, headlamp | infra |
+| `pickpro` | pickpro-api ×2, indexing ×2, notifications, front, landing, oauth2-proxy, cloudflared ×2 | DB → `pgvector.pickpro:5432`, MinIO → `minio-pickpro:9000` |
+| `pickpro-dev` | idem (replicas 1) | DB → `pgvector.pickpro-dev:5432`, MinIO → `minio-pickpro-dev:9000` |
 
 ## Flux GitOps
 
-- Repo : `SoluDevTech/flux` (push) → mirror `Kaiohz/flux` (lu par Flux)
-- 6 Kustomizations : `soludev`, `pickpro`, `pickpro-dev`, `ubby`, `openclaw`, `cluster` (prune=true, interval 2 min)
-- Helm-managed hors Flux : phoenix, sonarqube, oauth2-proxy prod, minio prod (retiré depuis) — patchs kubectl directs, values dans `config/prd/*/values.yaml`
+- Repo : `SoluDevTech/flux` (push = flux sync en 1-2 min)
+- Kustomizations : `soludev`, `pickpro`, `pickpro-dev`, `cluster`
+  (prune=true, interval 2 min, wait=true pour apps)
+- Helm-managed (install manuel via helm CLI, values versionnées dans
+  `config/prd/*`) : openbao, phoenix, sonarqube, openobserve, oauth2-proxy,
+  nats, **minio-soludev**, **minio-pickpro**
+- Manifests Flux raw : logto, pgbouncer, cloudflared, headlamp,
+  postgres, postgres-telemetry, pgvector ×2, minio-pickpro-dev,
+  ingresses, PVs locaux, ExternalSecrets
 
 ## Secrets & connexions (OpenBao)
 
-| Clé OpenBao | Contenu | Pointe vers |
-|---|---|---|
-| `pickpro/api` | DATABASE_URL, ALEMBIC_DATABASE_URL, MINIO_SECRET, clés LLM... | `@100.64.0.7:5433` |
-| `pickpro/indexing`, `pickpro/notifications` | DATABASE_URL | `@100.64.0.7:5433` |
-| `pickpro-dev/{api,indexing,notifications}` | idem | `@100.64.0.7:5434` |
-| `soludev/pgbouncer` | DATABASE_URLS (logto + 2 rôles tenant) | `@100.64.0.7:5435` |
-| `soludev/logto` | DB_URL (via pgbouncer), ADMIN_PASSWORD, KEK | `pgbouncer:6432` |
-| `soludev/openobserve` | ZO_META_POSTGRES_DSN, MINIO_* | `@100.64.0.5:5436` + `:9032` |
-| `soludev/pgbouncer`-style : `soludev/phoenix`, secrets minio... | | docker correspondants |
+| Clé OpenBao | Pointe vers (post-19 sept) |
+|---|---|
+| `pickpro/{api,indexing,notifications}` | `@pgvector.pickpro.svc.cluster.local:5432` (+ `MINIO_HOST` configmap → `minio-pickpro:9000`) |
+| `pickpro-dev/{api,indexing,notifications}` | `@pgvector.pickpro-dev.svc.cluster.local:5432` |
+| `soludev/pgbouncer` | `@postgres.soludev.svc.cluster.local:5432` |
+| `soludev/logto` | `pgbouncer.soludev.svc.cluster.local:6432` (inchangé) |
+| `soludev/openobserve` | `@postgres-telemetry.soludev...:5432` + `http://minio-soludev...:9000` |
+| `soludev/{phoenix,sonarqube}` secrets | postgres-telemetry interne (host/jdbcUrl aussi dans values git) |
 
-MinIO hosts (configmaps Flux, pas de secrets) : prod `100.64.0.7:9030`, dev `100.64.0.7:9031`.
+## Règles opérationnelles (MAJ 19 sept)
 
-## Règles opérationnelles (leçons de session)
+1. **Éteindre un pod définitivement** = `git rm` du manifest (prune
+   Flux), jamais un simple `kubectl scale 0`.
+2. **Configmap édité** = restart/éviction du pod → nouveau env.
+3. **Bascule DSN** = picher OpenBao (read-modify-write, hosts seulement)
+   → l'ExternalSecret re-sync en 60s → évincer les pods : ils re-lisent.
+4. **Déplacer un postgres/minio** = stop docker/pod source → diffuser
+   manifests fautifs → data dir identique via PV local (nodeAffinity) →
+   OpenBao host patch → pods consumers redémarrés. **Jamais deux
+   serveurs sur le même PGDATA.**
+5. **Le securityContext du chart MinIO (uid 1000) déclenche un
+   `chown -R` de millions de fichiers à chaque mount** — à laisser OFF
+   (`securityContext.enabled: false`) pour les volumes chargés.
+6. **Version MinIO** ≥ version qui a écrit les données (XL-meta v3
+   depuis `RELEASE.2025-09-07T16-13-09Z`).
+7. **Agent k3s** = `--node-ip <tailscale-IP> --flannel-iface
+   tailscale0` + re-patch taint après tout re-register de nœud.
+8. **Backup** : PGDATA restent sur les disques Storage 30/10 —
+   des dumps cron croisés restent à mettre en place.
 
-1. Éteindre un pod définitivement = `git rm` du manifest (prune Flux),
-   jamais seulement `kubectl scale 0` (rescalé à la reconcile).
-2. Configmap édité = restart du pod (pas de hot-reload).
-3. Bascule DSN d'une app = patch OpenBao (l'ExternalSecret écrase les
-   patchs k8s en 60 s), puis restart pods.
-4. Déplacer un postgres/minio = séquence : stop pod k8s → prune Flux →
-   conteneur docker (même volume) → bascule OpenBao/configmap → restart apps.
-   Jamais deux serveurs sur le même PGDATA.
-5. Les adresses en dur dans les configs ([databases] pgbouncer, hosts
-   helm values) cassent quand la cible bouge — les expliciter à chaque migration.
-6. Backup : les PGDATA restent sur les VPS Storage (disque local) —
-   prévoir des dumps cron croisés 30↔10 (à mettre en place).
+## Historique
 
-## Historique récent
-
-- **6 sept** : isolation télémétrie (postgres-telemetry k8s → Storage 10 NFS), migration Headscale → control-plane, pgbouncer devant logto, fixes photos/MinIO/throttling.
-- **7 sept** : migration des données stateful vers Docker sur les VPS Storage (7 conteneurs), Mac rejoint le tailnet prd, thumbnails photos (code pickpro-back).
-- **8 sept** : valkey k8s (PVC NFS) → Docker Storage 30 (`valkey-soludev:6379`, même volume, sessions oauth2-proxy incluses) ; dnsConfig ndots=1 généralisé (logto, pgbouncer, oauth2-proxy, pickpro) ; sessions oauth2-proxy dev en store Redis ; app Logto PickPro Dev alignée prod (refresh token 14 j, postLogoutRedirectUris).
-- **9 sept** : backfill thumbnails photos prod (5198/5198, Job one-shot) ; stabilité cluster — CoreDNS scalé à 4 (1/worker, patch direct helm-managed k3s : peut être ré-écrasé par un upgrade k3s, re-vérifier `kubectl scale deployment coredns -n kube-system --replicas=4`) ; probes openobserve assouplies (liveness timeout 1s→5s, ft 3→10 : le crash-loop 43 restarts dégradait le réseau du node vmi3322098, latences valkey p95 146ms→13ms après fix).
+- **6 sept** : isolation télémétrie, Headscale → control-plane, pgbouncer devant logto, fixes photos/MinIO/throttling.
+- **7 sept** : données stateful → Docker sur les VPS Storage (7 conteneurs).
+- **8 sept** : valkey k8s → Docker Storage 30 ; oauth2-proxy sessions Redis ; dnsConfig ndots=1.
+- **9 sept** : backfill thumbnails photos ; CoreDNS ×4 ; probes openobserve robustes.
+- **19 sept** : **les Storage VPS sont dans le cluster** (agents taintés
+  via Tailscale, `--flannel-iface tailscale0`) ; tout le stateful
+  postgres/pgvector/minio redevance k8s en **PV local** sur les disques
+  des VPS (mêmes chemins), binômes URLs → `*.svc.cluster.local` via
+  OpenBao + configmaps ; minio pickpro + soludev en Helm VALUES
+  versionnées ; opentrack du docker (valkey reste dockerisé).
