@@ -11,9 +11,9 @@ rootPassword: minioadmin
 # Stockage
 persistence:
   enabled: true
-  existingClaim: minio
-  storageClass: nfs-pickpro-minio
-  accessMode: ReadWriteMany
+  existingClaim: minio-pickpro
+  storageClass: local-pickpro-minio
+  accessMode: ReadWriteOnce
   size: 5Gi
 
 # Ressources

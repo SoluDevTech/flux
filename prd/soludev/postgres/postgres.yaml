@@ -1,0 +1,151 @@
+# PostgreSQL Soludev (Logto) — stockage local sur Storage30
+# Data: /srv/nfs/soludev/postgres (PGDATA)
+# Secret: soludev/postgres (openbao)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-soludev-postgres
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-soludev-postgres
+  local:
+    path: /srv/nfs/soludev/postgres
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: storage/nodename
+              operator: In
+              values:
+                - storage30
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: soludev-postgres-pvc
+  namespace: soludev
+spec:
+  volumeName: local-soludev-postgres
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-soludev-postgres
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: soludev
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+        app.kubernetes.io/part-of: soludev-workload
+    spec:
+      nodeSelector:
+        storage/nodename: storage30
+      tolerations:
+        - key: storage/role
+          operator: Equal
+          value: data
+          effect: NoSchedule
+      securityContext:
+        runAsUser: 70
+        runAsGroup: 70
+        fsGroup: 70
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          args:
+            - "-c"
+            - "max_connections=100"
+            - "-c"
+            - "shared_buffers=512MB"
+            - "-c"
+            - "effective_cache_size=1536MB"
+            - "-c"
+            - "tcp_keepalives_idle=30"
+            - "-c"
+            - "tcp_keepalives_interval=10"
+            - "-c"
+            - "tcp_keepalives_count=6"
+            - "-c"
+            - "idle_in_transaction_session_timeout=60000"
+            - "-c"
+            - "wal_sync_method=fdatasync"
+            - "-c"
+            - "max_wal_size=2GB"
+            - "-c"
+            - "min_wal_size=512MB"
+            - "-c"
+            - "checkpoint_completion_target=0.9"
+            - "-c"
+            - "wal_buffers=16MB"
+            - "-c"
+            - "checkpoint_flush_after=0"
+            - "-c"
+            - "bgwriter_lru_maxpages=1000"
+            - "-c"
+            - "bgwriter_delay=200ms"
+          ports:
+            - containerPort: 5432
+              name: postgres
+          envFrom:
+            - secretRef:
+                name: postgres-secret
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          startupProbe:
+            tcpSocket:
+              port: 5432
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: soludev-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: soludev
+spec:
+  selector:
+    app: postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+      name: postgres
