@@ -1,0 +1,70 @@
+# MinIO Soludev (observabilité) — stockage local sur Storage10
+# Data: /srv/nfs/soludev/minio
+# Install helm manuel : helm upgrade --install minio-soludev minio/minio -n soludev -f config/prd/minio/soludev/values.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-soludev-minio
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-soludev-minio
+  local:
+    path: /srv/nfs/soludev/minio
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: storage/nodename
+              operator: In
+              values:
+                - storage10
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-soludev
+  namespace: soludev
+spec:
+  volumeName: local-soludev-minio
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-soludev-minio
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio-soludev-ingress
+  namespace: soludev
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/redirect-scheme: https
+spec:
+  rules:
+    - host: dev-soludev-minio.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio-soludev-console
+                port:
+                  number: 9001
+    - host: soludev-api-minio.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio-soludev
+                port:
+                  number: 9000
