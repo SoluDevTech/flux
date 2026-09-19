@@ -4,12 +4,13 @@ server:
     create: false
     name: openbao
   # Resource limits to prevent OOM kills
+  # (pipelre sizing 19 sept : usage reel 449Mi > request 256Mi)
   resources:
     requests:
-      memory: "256Mi"
+      memory: "512Mi"
       cpu: "100m"
     limits:
-      memory: "512Mi"
+      memory: "768Mi"
       cpu: "500m"
   tolerations:
     - key: klipperlb-exclude

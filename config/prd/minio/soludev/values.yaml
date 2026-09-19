@@ -16,14 +16,14 @@ persistence:
   accessMode: ReadWriteOnce
   size: 5Gi
 
-# Ressources
+# Ressources (sizé popeye 19 sept : usage réel 457Mi, cpu spikes 233% du request)
 resources:
   requests:
-    memory: 512Mi
-    cpu: 100m
+    memory: 768Mi
+    cpu: 250m
   limits:
     memory: 1Gi
-    cpu: 250m
+    cpu: 1000m
 
 # Pin: données sur Storage10 (disque local soludev/minio) + tolérance du taint storage
 nodeSelector:

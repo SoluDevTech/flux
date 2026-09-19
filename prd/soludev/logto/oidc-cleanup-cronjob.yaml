@@ -51,3 +51,10 @@ spec:
                   echo "[$(date -u +%FT%TZ)] purged $deleted expired rows"
                   psql "$DB_URL" -c "VACUUM ANALYZE oidc_model_instances;" | tail -1
                   echo "[$(date -u +%FT%TZ)] done"
+              resources:
+                requests:
+                  memory: "64Mi"
+                  cpu: "50m"
+                limits:
+                  memory: "128Mi"
+                  cpu: "500m"
