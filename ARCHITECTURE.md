@@ -126,27 +126,6 @@ Server (hors k8s, docker Storage 30, mesh Tailscale only) :
 | `soludev/openobserve` | `@postgres-telemetry.soludev...:5432` + `http://minio-soludev...:9000` |
 | `soludev/{phoenix,sonarqube}` secrets | postgres-telemetry interne (host/jdbcUrl aussi dans values git) |
 
-## Règles opérationnelles (MAJ 19 sept)
-
-1. **Éteindre un pod définitivement** = `git rm` du manifest (prune
-   Flux), jamais un simple `kubectl scale 0`.
-2. **Configmap édité** = restart/éviction du pod → nouveau env.
-3. **Bascule DSN** = picher OpenBao (read-modify-write, hosts seulement)
-   → l'ExternalSecret re-sync en 60s → évincer les pods : ils re-lisent.
-4. **Déplacer un postgres/minio** = stop docker/pod source → diffuser
-   manifests fautifs → data dir identique via PV local (nodeAffinity) →
-   OpenBao host patch → pods consumers redémarrés. **Jamais deux
-   serveurs sur le même PGDATA.**
-5. **Le securityContext du chart MinIO (uid 1000) déclenche un
-   `chown -R` de millions de fichiers à chaque mount** — à laisser OFF
-   (`securityContext.enabled: false`) pour les volumes chargés.
-6. **Version MinIO** ≥ version qui a écrit les données (XL-meta v3
-   depuis `RELEASE.2025-09-07T16-13-09Z`).
-7. **Agent k3s** = `--node-ip <tailscale-IP> --flannel-iface
-   tailscale0` + re-patch taint après tout re-register de nœud.
-8. **Backup** : PGDATA restent sur les disques Storage 30/10 —
-   des dumps cron croisés restent à mettre en place.
-
 ## Historique
 
 - **6 sept** : isolation télémétrie, Headscale → control-plane, pgbouncer devant logto, fixes photos/MinIO/throttling.
