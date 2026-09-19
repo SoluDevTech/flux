@@ -37,11 +37,7 @@ tolerations:
 # Container en root comme l'ancien conteneur docker (quay/minio RELEASE.2024-12-18) :
 # évite le chown récursif des ~2M fichiers du bucket openobserve
 securityContext:
-  enabled: true
-  runAsUser: 0
-  runAsGroup: 0
-  fsGroup: 0
-  fsGroupChangePolicy: OnRootMismatch
+  enabled: false
 
 service:
   type: ClusterIP
