@@ -36,6 +36,15 @@ tolerations:
     value: data
     effect: NoSchedule
 
+# Container en root comme l'ancien conteneur docker (minio/latest run as root) :
+# évite le chown récursif du volume local + bugs de permissions sur .minio.sys/pool.bin
+securityContext:
+  enabled: true
+  runAsUser: 0
+  runAsGroup: 0
+  fsGroup: 0
+  fsGroupChangePolicy: OnRootMismatch
+
 service:
   type: ClusterIP
   port: 9000
