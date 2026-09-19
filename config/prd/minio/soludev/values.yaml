@@ -25,6 +25,15 @@ resources:
     memory: 1Gi
     cpu: 250m
 
+# Pin: données sur Storage10 (disque local soludev/minio) + tolérance du taint storage
+nodeSelector:
+  storage/nodename: storage10
+tolerations:
+  - key: storage/role
+    operator: Equal
+    value: data
+    effect: NoSchedule
+
 service:
   type: ClusterIP
   port: 9000

@@ -8,6 +8,11 @@ replicas: 1
 rootUser: minioadmin
 rootPassword: minioadmin
 
+# Image alignée sur les données existantes (containers docker minio:latest =
+# RELEASE.2025-09-07T16-13-09Z) — une version plus ancienne refuse le XL-meta v3
+image:
+  tag: RELEASE.2025-09-07T16-13-09Z
+
 # Stockage
 persistence:
   enabled: true
@@ -21,6 +26,15 @@ resources:
   requests:
     memory: 512Mi
     cpu: 250m
+
+# Pin: données sur Storage30 (disque local pickpro/minio) + tolérance du taint storage
+nodeSelector:
+  storage/nodename: storage30
+tolerations:
+  - key: storage/role
+    operator: Equal
+    value: data
+    effect: NoSchedule
 
 service:
   type: ClusterIP

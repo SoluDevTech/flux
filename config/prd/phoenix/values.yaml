@@ -3,8 +3,8 @@ postgresql:
 
 database:
   postgres:
-    host: "100.64.0.5"
-    port: 5436
+    host: "postgres-tel.soludev.svc.cluster.local"
+    port: 5432
     db: "phoenix"
     user: "phoenix"
     password: ""
