@@ -1,43 +1,7 @@
 # MinIO PickPro DEV — stockage local sur Storage30
 # Data: /srv/nfs/pickpro-dev/minio
 # Secret: pickpro-dev/minio (openbao)
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: local-pickpro-dev-minio
-spec:
-  capacity:
-    storage: 5Gi
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-pickpro-dev-minio
-  local:
-    path: /srv/nfs/pickpro-dev/minio
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-        - matchExpressions:
-            - key: storage/nodename
-              operator: In
-              values:
-                - storage30
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: minio
-  namespace: pickpro-dev
-spec:
-  volumeName: local-pickpro-dev-minio
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-pickpro-dev-minio
-  resources:
-    requests:
-      storage: 5Gi
----
+# PV/PVC dans prd/pickpro-dev/minio/minio.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
