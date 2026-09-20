@@ -1,0 +1,25 @@
+# MinIO de Composables — stockage local direct sur Storage30 (déplacé du NFS /srv/nfs/composables/minio)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-composables-minio
+  annotations:
+    description: "Stockage local Storage30 — MinIO composables (/srv/nfs/composables/minio)"
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-composables-minio
+  local:
+    path: /srv/nfs/composables/minio
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: storage/nodename
+              operator: In
+              values:
+                - storage30

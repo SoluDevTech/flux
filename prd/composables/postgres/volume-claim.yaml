@@ -1,0 +1,14 @@
+# PostgreSQL RAG (pgvector) de Composables — stockage local direct sur Storage30 (déplacé du NFS)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: composables-postgres-pvc
+  namespace: composables
+spec:
+  volumeName: local-composables-postgres
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-composables-postgresql
+  resources:
+    requests:
+      storage: 5Gi
