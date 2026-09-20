@@ -1,0 +1,16 @@
+# PostgreSQL Soludev (Logto) — stockage local sur Storage30
+# Data: /srv/nfs/soludev/postgres (PGDATA)
+# Secret: soludev/postgres (openbao)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: soludev-postgres-pvc
+  namespace: soludev
+spec:
+  volumeName: local-soludev-postgres
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-soludev-postgres
+  resources:
+    requests:
+      storage: 5Gi

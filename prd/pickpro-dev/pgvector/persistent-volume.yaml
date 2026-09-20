@@ -1,0 +1,25 @@
+# PGVector PickPro DEV — stockage local sur Storage30
+# Data: /srv/nfs/pickpro-dev/pgvector
+# Secret: pickpro-dev/pgvector (openbao)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pickpro-dev-pgvector
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-pickpro-dev-pgvector
+  local:
+    path: /srv/nfs/pickpro-dev/pgvector
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: storage/nodename
+              operator: In
+              values:
+                - storage30

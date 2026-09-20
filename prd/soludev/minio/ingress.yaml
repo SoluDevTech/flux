@@ -1,43 +1,6 @@
 # MinIO Soludev (observabilité) — stockage local sur Storage10
 # Data: /srv/nfs/soludev/minio
 # Install helm manuel : helm upgrade --install minio-soludev minio/minio -n soludev -f config/prd/minio/soludev/values.yaml
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: local-soludev-minio
-spec:
-  capacity:
-    storage: 5Gi
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-soludev-minio
-  local:
-    path: /srv/nfs/soludev/minio
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-        - matchExpressions:
-            - key: storage/nodename
-              operator: In
-              values:
-                - storage10
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: minio-soludev
-  namespace: soludev
-spec:
-  volumeName: local-soludev-minio
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-soludev-minio
-  resources:
-    requests:
-      storage: 5Gi
----
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

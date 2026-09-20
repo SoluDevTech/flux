@@ -1,43 +1,6 @@
 # PostgreSQL Telemetry (phoenix/sonarqube/openobserve) — stockage local sur Storage10
 # Data: /srv/nfs/soludev/postgres (PGDATA sur Storage10 — migré du docker 65fcd35)
 # Secret partagé: soludev/postgres (openbao) — même secret que postgres principal
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: local-soludev-telemetry-postgres
-spec:
-  capacity:
-    storage: 20Gi
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-soludev-telemetry-postgres
-  local:
-    path: /srv/nfs/soludev/postgres
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-        - matchExpressions:
-            - key: storage/nodename
-              operator: In
-              values:
-                - storage10
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: soludev-telemetry-pg-pvc
-  namespace: soludev
-spec:
-  volumeName: local-soludev-telemetry-postgres
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-soludev-telemetry-postgres
-  resources:
-    requests:
-      storage: 20Gi
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -109,19 +72,3 @@ spec:
             limits:
               memory: "2Gi"
               cpu: "2000m"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres-telemetry
-  namespace: soludev
-  labels:
-    app: postgres-telemetry
-spec:
-  selector:
-    app: postgres-telemetry
-  ports:
-    - name: postgres
-      port: 5432
-      targetPort: 5432
-      protocol: TCP

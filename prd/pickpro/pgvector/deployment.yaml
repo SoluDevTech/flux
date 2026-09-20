@@ -1,48 +1,11 @@
-# PGVector PickPro DEV — stockage local sur Storage30
-# Data: /srv/nfs/pickpro-dev/pgvector
-# Secret: pickpro-dev/pgvector (openbao)
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: local-pickpro-dev-pgvector
-spec:
-  capacity:
-    storage: 5Gi
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-pickpro-dev-pgvector
-  local:
-    path: /srv/nfs/pickpro-dev/pgvector
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-        - matchExpressions:
-            - key: storage/nodename
-              operator: In
-              values:
-                - storage30
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: pickpro-dev-pgvector-pvc
-  namespace: pickpro-dev
-spec:
-  volumeName: local-pickpro-dev-pgvector
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-pickpro-dev-pgvector
-  resources:
-    requests:
-      storage: 5Gi
----
+# PGVector PickPro PROD — stockage local sur Storage30
+# Data: /srv/nfs/pickpro/pgvector
+# Secret: pickpro/pgvector (openbao)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pgvector
-  namespace: pickpro-dev
+  namespace: pickpro
   labels:
     app: pgvector
 spec:
@@ -71,22 +34,12 @@ spec:
             name: pgvector-init
         - name: pgvector-data
           persistentVolumeClaim:
-            claimName: pickpro-dev-pgvector-pvc
+            claimName: pickpro-pgvector-pvc
       containers:
         - name: pgvector
           image: pgvector/pgvector:0.8.0-pg17
           args:
             - "postgres"
-            - "-c"
-            - "shared_buffers=512MB"
-            - "-c"
-            - "work_mem=8MB"
-            - "-c"
-            - "effective_cache_size=1536MB"
-            - "-c"
-            - "jit=off"
-            - "-c"
-            - "log_min_duration_statement=0"
             - "-c"
             - "tcp_keepalives_idle=30"
             - "-c"
@@ -119,14 +72,6 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
-          livenessProbe:
-            exec:
-              command:
-                - pg_isready
-            initialDelaySeconds: 30
-            periodSeconds: 15
-            timeoutSeconds: 5
-            failureThreshold: 6
           resources:
             requests:
               memory: "1Gi"
@@ -134,17 +79,3 @@ spec:
             limits:
               memory: "3Gi"
               cpu: "2000m"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: pgvector
-  namespace: pickpro-dev
-spec:
-  selector:
-    app: pgvector
-  ports:
-    - protocol: TCP
-      port: 5432
-      targetPort: 5432
-      name: postgres

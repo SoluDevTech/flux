@@ -1,0 +1,16 @@
+# MinIO PickPro PROD — stockage local sur Storage30
+# Data: /srv/nfs/pickpro/minio
+# Install helm manuel : helm upgrade --install minio-pickpro minio/minio -n pickpro -f config/prd/minio/pickpro/values.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pickpro
+  namespace: pickpro
+spec:
+  volumeName: local-pickpro-minio
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-pickpro-minio
+  resources:
+    requests:
+      storage: 5Gi

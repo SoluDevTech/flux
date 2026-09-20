@@ -1,0 +1,17 @@
+# MinIO PickPro DEV — stockage local sur Storage30
+# Data: /srv/nfs/pickpro-dev/minio
+# Secret: pickpro-dev/minio (openbao)
+# Install helm manuel : helm upgrade --install minio-pickpro-dev minio/minio -n pickpro-dev -f config/prd/minio/pickpro/values.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio
+  namespace: pickpro-dev
+spec:
+  volumeName: local-pickpro-dev-minio
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-pickpro-dev-minio
+  resources:
+    requests:
+      storage: 5Gi
