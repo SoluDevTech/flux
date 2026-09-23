@@ -74,6 +74,12 @@ sudo docker exec -it headscale   headscale nodes register --user k3s-headscale -
 
 ## K3s Installation
 
+> **Version actuelle du cluster : `v1.37.0+k3s1`** (upgradé depuis v1.35.4 le 23 sept. 2026).
+> Le runtime-config `certificates.k8s.io/v1beta1=true` est requis par Agent Substrate (kagent 1.0) :
+> il est configuré sur le control-plane via `kube-apiserver-arg` dans `/etc/rancher/k3s/config.yaml`.
+> Tout futur reinstall de nœud doit conserver ce flag. L'ensemble etcd est désormais mono-membre
+> (control-plane uniquement) après un `--cluster-reset` lors du upgrade.
+
 ### Control Plane Setup
 
 #### 1. Basic Installation
@@ -81,6 +87,23 @@ sudo docker exec -it headscale   headscale nodes register --user k3s-headscale -
 ```bash
 curl -sfL https://get.k3s.io | sh -
 ```
+
+#### 1bis. Version pin (production)
+
+Pour installer/reinstaller une version précise :
+
+```bash
+# Control-plane
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION='v1.37.0+k3s1' sh -
+
+# Agent (ne JAMAIS omettre K3S_URL sinon le nœud démarre un serveur et s'ajoute comme membre etcd !)
+curl -sfL https://get.k3s.io | K3S_URL='https://100.64.0.1:6443' K3S_TOKEN=$(grep '^token:' /etc/rancher/k3s/config.yaml | awk '{print $2}') \
+  INSTALL_K3S_VERSION='v1.37.0+k3s1' INSTALL_K3S_EXEC='agent' sh -
+```
+
+Attention : `get.k3s.io` sans `K3S_URL` installe toujours un **server**, même sur un nœud agent.
+Sur les agents, conserver dans `/etc/rancher/k3s/config.yaml` : `node-ip` (IP Tailscale 100.64.0.x),
+`flannel-iface: tailscale0` — sinon flannel bascule sur l'interface publique et le mesh VXLAN casse.
 
 #### 2. Troubleshooting cgroups v2 (Raspberry Pi OS)
 
