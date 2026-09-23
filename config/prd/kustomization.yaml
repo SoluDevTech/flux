@@ -1,23 +1,6 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: composables-kustomization
-  namespace: flux-system
-spec:
-  interval: 2m
-  timeout: 90s
-  wait: true
-  targetNamespace: composables
-  sourceRef:
-    kind: GitRepository
-    name: kaiohz-repo
-  path: "prd/composables"
-  #When the Git revision changes, the manifests are reconciled automatically. If previously applied objects are missing from the current revision, these objects are deleted from the cluster when spec.prune is enabled
-  prune: true
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
   name: soludev-kustomization
   namespace: flux-system
 spec:
