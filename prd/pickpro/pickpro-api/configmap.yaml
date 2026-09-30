@@ -6,11 +6,12 @@ metadata:
 data:
   ALLOWED_ORIGINS: '["https://app.pickpro.io"]'
   DEV_MODE: "false"
-  CHAT_MODEL: anthropic/claude-haiku-4.5:nitro
-  TITLE_MODEL: anthropic/claude-haiku-4.5:nitro
-  GRADER_MODEL: anthropic/claude-haiku-4.5:nitro
-  JOB_STRUCTURE_MODEL: anthropic/claude-haiku-4.5:nitro
+  CHAT_MODEL: google/gemini-2.5-flash:nitro
+  TITLE_MODEL: google/gemini-2.5-flash:nitro
+  GRADER_MODEL: google/gemini-2.5-flash:nitro
+  JOB_STRUCTURE_MODEL: google/gemini-2.5-flash:nitro
   SEARCH_MODEL: google/gemini-2.5-flash:nitro
+  ENABLE_DEEP_AGENT: "True"
   GRADER_MAX_CONCURRENT: "10"
   GRADER_CHUNK_SIZE: "50"
   GRADER_MAX_CANDIDATES: "500"

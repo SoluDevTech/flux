@@ -5,7 +5,7 @@ metadata:
   namespace: pickpro
 data:
   ALLOWED_ORIGINS: '["https://app.pickpro.io"]'
-  INDEXING_MODEL: anthropic/claude-haiku-4.5:nitro
+  INDEXING_MODEL: google/gemini-2.5-flash-lite:nitro
   EMBEDDING_CLIENT: openai/text-embedding-3-large
   TEMPERATURE: "0.0"
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
