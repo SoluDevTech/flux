@@ -22,7 +22,7 @@ resources:
     memory: 768Mi
     cpu: 250m
   limits:
-    memory: 1Gi
+    memory: 2Gi
     cpu: 1000m
 
 # Pin: données sur Storage10 (disque local soludev/minio) + tolérance du taint storage

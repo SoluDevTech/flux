@@ -7,9 +7,10 @@ data:
   ALLOWED_ORIGINS: '["https://pickpro.soludev.tech"]'
   DEV_MODE: "true"
   CHAT_MODEL: anthropic/claude-haiku-4.5:nitro
-  TITLE_MODEL: anthropic/claude-haiku-4.5:nitro
-  GRADER_MODEL: anthropic/claude-haiku-4.5:nitro
-  JOB_STRUCTURE_MODEL: anthropic/claude-haiku-4.5:nitro
+  TITLE_MODEL: google/gemini-2.5-flash-lite:nitro
+  GRADER_MODEL: google/gemini-2.5-flash-lite:nitro
+  JOB_STRUCTURE_MODEL: google/gemini-2.5-flash-lite:nitro
+  ENABLE_DEEP_AGENT: "True"
   # SQL_DEBUG active l echo SQLAlchemy (chaque statement loggue) — utile
   # ponctuellement pour debugger, desactive par defaut car il ajoute des
   # centaines de ms par requete + alimente openobserve en continu.
