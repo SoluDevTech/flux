@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: logto
-          image: svhd/logto:1.41.0
+          image: svhd/logto:1.44.0
           command:
             - "sh"
             - "-c"

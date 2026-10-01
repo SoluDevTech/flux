@@ -1,8 +1,8 @@
-# values.yaml - OpenObserve v0.80.2 (chart 0.80.3)
+# values.yaml - OpenObserve v1.0.4 (chart 1.0.1)
 
 image:
   oss:
-    tag: "v0.80.2"
+    tag: "v1.0.4"
 
 # Using existing secret from ExternalSecret/OpenBao
 auth:
