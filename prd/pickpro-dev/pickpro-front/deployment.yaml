@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: pickpro-front
-          image: kaiohz/pickpro:pickpro-front-41ff7c46b7cb609881d426bbc8b50aafae6e9295
+          image: kaiohz/pickpro:pickpro-front-a44b9d56b2616f730bea91d7d35978ece1e94603
           ports:
             - containerPort: 80
           volumeMounts:
