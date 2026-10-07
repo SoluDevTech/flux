@@ -10,7 +10,14 @@ data:
   TITLE_MODEL: google/gemini-2.5-flash-lite:nitro
   GRADER_MODEL: google/gemini-2.5-flash-lite:nitro
   JOB_STRUCTURE_MODEL: google/gemini-2.5-flash-lite:nitro
-  ENABLE_DEEP_AGENT: "True"
+  DEEP_AGENT_MODEL: z-ai/glm-5.3-flash:nitro
+  DEEP_AGENT_MAX_TOKENS: "16384"
+  DEEP_AGENT_REASONING_EFFORT: low
+  DEEP_AGENT_MAX_INPUT_TOKENS: "1310720"
+  DEEP_AGENT_RECURSION_LIMIT: "150"
+  DEEP_AGENT_SQL_BUDGET: "25"
+  DEEP_AGENT_JOB_STRUCTURE_CACHE_MAX: "32"
+  DEEP_AGENT_PUBLISH_VALIDATION_MAX_RETRIES: "2"
   # SQL_DEBUG active l echo SQLAlchemy (chaque statement loggue) — utile
   # ponctuellement pour debugger, desactive par defaut car il ajoute des
   # centaines de ms par requete + alimente openobserve en continu.
