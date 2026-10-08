@@ -1,0 +1,49 @@
+# OpenObserve Collector (o2c) — Helm values
+#
+# Versionné ici pour que les `helm upgrade` suivants ne régressent pas.
+# Le script config/scripts/install-openobserve-collector.sh applique ce fichier
+# avec helm -f en plus des --set CLI (endpoint / auth token).
+#
+# Contexte des overrides non-default (diagnostics Oct 2026) :
+#
+# - instrumentationPythonImage :
+#     Le chart ne pose PAS d'image Python sur le CR Instrumentation — l'opérateur
+#     OTel (0.136.0) l'injecte via son annotation default, fixée par versions.txt
+#     du repo operator = autoinstrumentation-python:0.58b0.
+#     Cette image est buguée pour cette stack :
+#       * wrapt 2.5.0 embarqué (contrainte "wrapt<2" non respectée au build du
+#         requirements.txt de 0.58b0) qui MASQUE le wrapt 1.17.3 du venv via
+#         PYTHONPATH -> openinference-instrumentation-langchain crash
+#         (TypeError: wrap_function_wrapper() got an unexpected keyword
+#         argument 'module').
+#       * typing_extensions embarqué < 4.16 -> anyio 4.15.1 (app) exige
+#         typing_extensions>=4.16.0 (constante 'sentinel').
+#     0.65b0+ fixe la contrainte wrapt<3 ; 0.66b0-3 est le rebuild corrigé,
+#     testé et validé sur cette stack.
+#     NOTE : ce n'est PAS une clé du chart -> le script l'applique en deux
+#     temps : flag --auto-instrumentation-python-image sur le deployment de
+#     l'opérateur (config/scripts/pin-python-agent-image.sh, rappelé après
+#     chaque apply du manifest opentelemetry-operator.yaml), puis patch du
+#     CR après le helm upgrade.
+#
+# - gateway.replicas=1 :
+#     Default du chart = 0 -> le gateway (réception OTLP des traces/logs/metrics
+#     des workloads instrumentés) ne tournait PAS ; toutes les traces étaient
+#     perdues malgré les agents actifs.
+#
+# - gateway.service.pipelines.logs :
+#     Absent du default -> POST /v1/logs sur le gateway répondait 404 ; les
+#     logs applicatifs OTel (SDK injecté) étaient rejetés.
+
+# Flag transmis à l'opérateur par pin-python-agent-image.sh (pas une clé du chart)
+instrumentationPythonImage: "ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-python:0.66b0-3"
+
+gateway:
+  replicas: 1
+  service:
+    pipelines:
+      logs:
+        receivers:
+          - otlp
+        exporters:
+          - otlphttp/openobserve

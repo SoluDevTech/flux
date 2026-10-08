@@ -9,6 +9,8 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+
 # Configuration
 NAMESPACE="openobserve-collector"
 CLUSTER_NAME="cluster1"
@@ -167,7 +169,11 @@ install_opentelemetry_operator() {
         --timeout=120s || {
         log_warning "Operator may still be starting..."
     }
-    
+
+    # The upstream manifest resets the manager args — re-pin the Python agent
+    # image (0.58b0 default is broken, see collector-values.yaml).
+    "$SCRIPT_DIR/pin-python-agent-image.sh" || log_warning "Could not pin python agent image"
+
     log_success "OpenTelemetry operator installed"
 }
 
@@ -182,11 +188,15 @@ create_namespace() {
     fi
 }
 
+# Values file with non-default overrides (python agent image, gateway replicas,
+# logs pipeline). See config/prd/openobserve/collector-values.yaml.
+VALUES_FILE="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/../prd/openobserve/collector-values.yaml"
+
 install_collector() {
     local auth_token="$1"
-    
+
     log_info "Installing OpenObserve Collector..."
-    
+
     helm --namespace "$NAMESPACE" \
         upgrade --install o2c openobserve/openobserve-collector \
         --set k8sCluster="$CLUSTER_NAME" \
@@ -203,10 +213,35 @@ install_collector() {
         --set gateway.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].key=kubernetes.io/hostname \
         --set gateway.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].operator=NotIn \
         --set gateway.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].values[0]=jetson-desktop \
+        -f "$VALUES_FILE" \
         --wait \
         --timeout 5m
-    
+
+    pin_python_agent_image
+
     log_success "OpenObserve Collector installed"
+}
+
+# The chart does not set the Python agent image on the Instrumentation CR —
+# the operator injects its own default (0.58b0), which is broken for this
+# stack (see collector-values.yaml). Patch the CR so injected pods use the
+# tested image. Idempotent.
+pin_python_agent_image() {
+    local image
+    image=$(python3 -c "import sys,yaml; print(yaml.safe_load(open('$VALUES_FILE').read())['instrumentationPythonImage'])" 2>/dev/null || true)
+
+    if [ -z "$image" ]; then
+        log_warning "instrumentationPythonImage not set in $VALUES_FILE, skipping python agent image pin"
+        return 0
+    fi
+
+    if kubectl -n "$NAMESPACE" get instrumentation openobserve-python &> /dev/null; then
+        log_info "Pinning Python auto-instrumentation image to $image..."
+        kubectl -n "$NAMESPACE" patch instrumentation openobserve-python \
+            --type=json \
+            -p='[{"op":"replace","path":"/spec/python/image","value":"'"$image"'"}]'
+        log_success "Python agent image pinned"
+    fi
 }
 
 verify_installation() {
