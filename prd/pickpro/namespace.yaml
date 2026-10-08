@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: pickpro-dev
+  name: pickpro
   labels:
     app.kubernetes.io/part-of: soludev-workload
   annotations:
