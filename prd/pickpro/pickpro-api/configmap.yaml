@@ -32,7 +32,6 @@ data:
   CONCURRENT_CALLS: "20"
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
   PHOENIX_HOST: http://phoenix-svc.soludev.svc.cluster.local:6006
-  PYTHONPATH: ./pickpro_api
   MINIO_HOST: minio-pickpro.pickpro.svc.cluster.local:9000
   MINIO_ACCESS: minioadmin
   MINIO_BUCKET: cvs

@@ -13,7 +13,6 @@ data:
   MINIO_HOST: minio-pickpro-dev.pickpro-dev.svc.cluster.local:9000
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
   PHOENIX_HOST: http://phoenix-svc.soludev.svc.cluster.local:6006
-  PYTHONPATH: ./pickpro_indexing_api
   RECALL_AI_REGION: eu-central-1
   SUMMARY_MODEL: anthropic/claude-haiku-4.5:nitro
   TEMPERATURE: "0.0"

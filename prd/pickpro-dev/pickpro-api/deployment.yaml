@@ -21,6 +21,9 @@ spec:
           image: kaiohz/pickpro:pickpro-back-6e1f428c5d433c9614502de6a5403ca2ecf1dad1
           ports:
             - containerPort: 8000
+          env:
+            - name: PYTHONPATH
+              value: /app/pickpro_api
           envFrom:
             - configMapRef:
                 name: pickpro-api-config

@@ -28,6 +28,9 @@ spec:
           image: kaiohz/pickpro:pickpro-notifications-4aa0d511a97c3f3a3d60e55a820b27c0a9c456e5
           ports:
             - containerPort: 8000
+          env:
+            - name: PYTHONPATH
+              value: /app/pickpro_notification
           envFrom:
             - configMapRef:
                 name: pickpro-notifications-config

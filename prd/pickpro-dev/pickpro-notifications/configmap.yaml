@@ -7,7 +7,6 @@ data:
   ALLOWED_ORIGINS: '["https://pickpro.soludev.tech"]'
   ENVIRONMENT: "development"
   LOG_LEVEL: "INFO"
-  PYTHONPATH: "./pickpro_notification"
   # NATS
   NATS_USER: "pickpro"
   NATS_URL: "nats://nats.soludev.svc.cluster.local:4222"

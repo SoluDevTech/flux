@@ -28,6 +28,9 @@ spec:
           image: kaiohz/pickpro:pickpro-indexing-api-3e78253b72e5bb9606a09c8b9982d616b855fc90
           ports:
             - containerPort: 8000
+          env:
+            - name: PYTHONPATH
+              value: /app/pickpro_indexing_api
           envFrom:
             - configMapRef:
                 name: pickpro-indexing-api-config
