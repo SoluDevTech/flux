@@ -4708,6 +4708,7 @@ kubectl exec -n soludev openbao-0 -- bao status | grep Sealed       # doit affic
 | Configmap édité + `rollout restart` | Si Flux reconcile **entre les deux**, l'annotation `restartedAt` est retirée et le restart annulé — refaire le restart après le reconcile |
 | Cache valkey | **NFS interdit** pour valkey/redis (locks, fsync, gel du montage) — Docker Storage 30, bind Tailscale only |
 | App Logto sans `alwaysIssueRefreshToken` | Sessions sans refresh token → expiration 1 h → 401 en boucle ; aligner `custom_client_metadata` + `postLogoutRedirectUris` |
+| `idTokenTtl` (1h) < `cookie_refresh` (4h) | Reloads/déconnexions silencieuses à CHAQUE retour après >1h d'absence → **`idTokenTtl` 21600 (6h) sur toutes les apps** (fix 12 oct 2026, voir section dédiée) |
 
 **Architecture actuelle (post-migration sept 2026):**
 ```
@@ -4818,6 +4819,47 @@ Avec 2 replicas, les deux pods courent la course au seed → CrashLoopBackOff. *
 command** (uniquement utile au premier install, migrations v1.41.0 appliquées depuis longtemps) et
 **retour à 1 replica**. Pour une future montée de version : exécuter l'alteration manuellement
 avant le rollout.
+
+### Fix reloads intra-journée: `idTokenTtl` (1h) désaligné de `cookie_refresh` (4h) — 12 oct 2026
+
+**Symptomatique utilisateurs:** revient sur l'app après >1h d'absence → reconnexion silencieuse
+(complete OAuth round-trip) → page qui recharge, saisies perdues. Répétable chaque jour.
+
+**Diagnostic (preuves en prod):**
+- oauth2-proxy détruit la session dès qu'un refresh échoue et que le token est déjà expiré:
+  log `Unable to refresh session ... context canceled` + `session is expired, removing session`
+  (`stored_session.go:219/122`, v7.15.2: après un refresh FAILED non-fatal, `validateSession`
+  → `IsExpired()` → session Clear). Erreurs fréquentes car Logto lent au retour simultané
+  de plusieurs users/requests (220ms-8,4s observés).
+- `ExpiresOn` d'une session oauth2-proxy = expiration de l'id_token Logto (oidc.go:233) → 1h.
+- Le refresh n'est trigger que si `SessionAge > cookie_refresh` (4h) → entre 1h et 4h le token
+  est expiré et rien ne le renouvelle.
+- Logto DB: refresh tokens PickPro émis SANS `offline_access` (oauth2-proxy n'envoie pas
+  `prompt=consent` → scopes `expiresWithSession: true`, refresh token lié à la session logto
+  → mort avec elle). La session logto est rolling 14j (étendue à chaque usage, table
+  `oidc_session_extensions`), donc seule la mécanique ci-dessus tue les sessions intra-journée.
+
+**Fix appliqué:** `idTokenTtl` 3600 → **21600** (6h) sur les 7 apps du tenant `default`
+(PickPro, pickpro-dev, Ubby, Moltbot, opencode, ComposableAgent, Unispace).
+
+**Règle:** `idTokenTtl > cookie_refresh` avec marge. Ce réglage n'est PAS exposé dans la
+console Logto v1.44 (confirmé dans les sources: seulement RefreshTokenSettings/TokenExchange/
+BackchannelLogout/ConcurrentDeviceLimit) → seulement via Management API `PATCH
+/api/applications/:id` (`customClientMetadata` COMPLET) ou SQL direct:
+
+```sql
+UPDATE applications
+SET custom_client_metadata = custom_client_metadata || '{"idTokenTtl": 21600}'::jsonb
+WHERE tenant_id='default' AND custom_client_metadata ? 'idTokenTtl';
+```
+
+Backup préalable: `SELECT id, custom_client_metadata FROM applications WHERE tenant_id='default'
+AND custom_client_metadata ? 'idTokenTtl'` (fichier /tmp/logto-ccm-backup.json du jour).
+Pas de restart logto requis (métadonnées client relues en DB à chaque requête token).
+
+**Vérification:** nouveaux tokens avec `exp - iat = 21600` en `oidc_model_instances`; plus de
+churn `AuthSuccess` intra-journée dans les logs oauth2-proxy. Tradeoff connu: leBearer id_token
+injeté à l'API valable jusqu'à 6h → délai de propagation des changements de rôles ≤ 6h.
 
 ### Résultat final
 
