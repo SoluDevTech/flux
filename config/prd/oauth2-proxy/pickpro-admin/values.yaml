@@ -1,0 +1,39 @@
+config:
+  existingSecret: "oauth2-proxy-admin-secret"
+  existingConfig: "oauth2-proxy-admin-config"
+  cookieName: "oauth2-proxy-pickpro-admin"
+
+# Aligné sur pickpro (config/prd/oauth2-proxy/pickpro/values.yaml) :
+# même version d'image. Épinglage explicite pour éviter les surprises
+# d'appVersion au prochain upgrade de chart. Le chart préfixe avec
+# image.registry — laisser le repository relatif pour éviter le
+# quay.io/quay.io dupliqué.
+image:
+  repository: "oauth2-proxy/oauth2-proxy"
+  tag: "v7.15.2"
+
+alphaConfig:
+  enabled: true
+  existingConfig: "oauth2-proxy-admin-alpha-config"
+
+sessionStorage:
+  type: redis
+  redis:
+    clientType: standalone
+    standalone:
+      connectionUrl: redis://100.64.0.7:6379
+
+ingress:
+  enabled: false
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "64Mi"
+  limits:
+    cpu: "1000m"
+    memory: "256Mi"
+
+service:
+  type: ClusterIP
+  portNumber: 4180

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pickpro-admin
+  namespace: pickpro
+  labels:
+    app: pickpro-admin
+spec:
+  type: ClusterIP
+  selector:
+    app: pickpro-admin
+  ports:
+    - port: 5173
+      targetPort: 80
+      protocol: TCP
+      name: http

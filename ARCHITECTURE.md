@@ -101,7 +101,9 @@ Server (hors k8s, docker Storage 30, mesh Tailscale only) :
 | `soludev` | **minio-soludev** (helm) | observabilité ; image chart 5.4.0 |
 | `soludev` | nats (local-path), cloudflared ×2, headlamp | infra |
 | `pickpro` | pickpro-api ×2, indexing ×2, notifications, front, landing, oauth2-proxy, cloudflared ×2 | DB → `pgvector.pickpro:5432`, MinIO → `minio-pickpro:9000` |
+| `pickpro` | **pickpro-admin** (SPA admin extraite de pickpro-front, nginx :5173→80), **oauth2-proxy-admin** (helm) : gating `allowedGroups` Logto org admin, upstreams `/pickpro/rest` → pickpro-api + `/` → front admin ; hôtes `admin.pickpro.io` + `admin.pickpro.soludev.tech` | endpoints back `/admin/*` inchangés |
 | `pickpro-dev` | idem (replicas 1) | DB → `pgvector.pickpro-dev:5432`, MinIO → `minio-pickpro-dev:9000` |
+| `pickpro-dev` | **pickpro-admin** + **oauth2-proxy-admin** (Deployment brut, idem prod) ; hôte `pickpro-admin.soludev.tech` | idem |
 
 ## Flux GitOps
 
@@ -110,7 +112,7 @@ Server (hors k8s, docker Storage 30, mesh Tailscale only) :
   (prune=true, interval 2 min, wait=true pour apps)
 - Helm-managed (install manuel via helm CLI, values versionnées dans
   `config/prd/*`) : openbao, phoenix, sonarqube, openobserve, oauth2-proxy,
-  nats, **minio-soludev**, **minio-pickpro**
+  nats, **minio-soludev**, **minio-pickpro**, **oauth2-proxy-admin**
 - Manifests Flux raw : logto, pgbouncer, cloudflared, headlamp,
   postgres, postgres-telemetry, pgvector ×2, minio-pickpro-dev,
   ingresses, PVs locaux, ExternalSecrets
@@ -138,3 +140,13 @@ Server (hors k8s, docker Storage 30, mesh Tailscale only) :
   des VPS (mêmes chemins), binômes URLs → `*.svc.cluster.local` via
   OpenBao + configmaps ; minio pickpro + soludev en Helm VALUES
   versionnées ; opentrack du docker (valkey reste dockerisé).
+- **12 oct** : **pickpro-admin** (extraction du panneau `/admin` de
+  pickpro-front en repo dédié `SoluDevTech/pickpro-admin`) : SPA nginx +
+  `oauth2-proxy-admin` DÉDIÉ par env (helm PRD / raw DEV) avec gating
+  `allowedGroups` `<org_id>:admin` sur le claim `organization_roles` de
+  l'ID-token Logto ; upstreams `/pickpro/rest` → pickpro-api (les appels API
+  passent par le proxy admin, same-origin — un pod sert 2 hôtes PRD :
+  `admin.pickpro.io` + `admin.pickpro.soludev.tech`, callback par hôte,
+  `redirect_url` omis) ; DEV `pickpro-admin.soludev.tech` ; runbook
+  (Logto ×2, OpenBao ×2, org id placeholder, DNS, helm) dans le README du
+  repo pickpro-admin.

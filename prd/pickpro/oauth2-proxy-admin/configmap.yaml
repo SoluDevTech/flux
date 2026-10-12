@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-admin-config
+  namespace: pickpro
+data:
+  oauth2_proxy.cfg: |
+    # redirect_url omis (verifié docker v7.15.2 : sans cette option, les
+    # proxys derivent redirect_uri de l'hote demande — /oauth2/start sur
+    # admin.pickpro.io => callback admin.pickpro.io, sur
+    # admin.pickpro.soludev.tech => callback admin.pickpro.soludev.tech, et
+    # le cookie CSRF/etat est emis avec le Domain du meme hote) : les deux
+    # callbacks sont whitelistes dans Logto (REQ-OPS-002), chaque hote
+    # complete son propre round-trip OAuth (AC-002). Une redirect_url
+    # absolut epinglerait le callback sur admin.pickpro.io alors que le
+    # cookie d'etat serait emis sur le domaine de l'hote d'origine —
+    # jamais transmis a l'apex, la connexion ne se terminerait jamais sur
+    # le second host (RFC 6265).
+
+    cookie_domains = [".pickpro.io", ".soludev.tech"]
+    whitelist_domains = [".pickpro.io", ".soludev.tech"]
+
+    # Cookie distinct de l'instance front (isolation des sessions, AC-017).
+    cookie_name = "oauth2-proxy-pickpro-admin"
+    email_domains = ["*"]
+
+    reverse_proxy = true
+
+    cookie_secure = true
+    cookie_httponly = true
+    cookie_path = "/"
+    cookie_samesite = "lax"
+    # Refresh toutes les 30min = fenetre de contention du lock Redis de la
+    # session (stored_session) toutes les 30min : pendant le refresh OIDC
+    # (~1-2.5s), TOUTES les requetes /oauth2/auth concurrentes du meme
+    # user attendent le lock => stalls 1-2.5s en rafale.
+    # 4h = au-dela de la duree d'une session de travail typique.
+    cookie_refresh = "4h"
+    cookie_csrf_per_request = true
+    cookie_csrf_expire = "15m"
+
+    skip_provider_button = true
+    silence_ping_logging = true
+
+    # NOTE: oidc_groups_claim (option legacy globale) est ABSENT ici car
+    # elle est refusee au demarrage quand --alpha-config est actif
+    # (verifie docker v7.15.2 : 'Options has invalid keys:
+    # oidc_groups_claim'). Le claim des groupes est declare au niveau du
+    # provider via oidcConfig.groupsClaim dans oauth2-proxy-admin-alpha-config
+    # (cf AC-016 pour la verification day-1 par ID token decode).
+
+    # Aucune route API publique ici : tout /pickpro/rest/* exige la session
+    # admin (contrairement au proxy front qui expose verify-invite etc.).
+    # favicon.ico/robots.txt hors auth sinon boucle de redirection pour un
+    # navigateur non authentifie qui ne demande que la favicon.
+    skip_auth_routes = [
+      "^/assets/",
+      "^/config\\.json",
+      "^/health",
+      "^/favicon\\.ico",
+      "^/robots\\.txt",
+    ]
