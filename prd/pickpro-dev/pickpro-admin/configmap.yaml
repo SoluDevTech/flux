@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pickpro-admin-config
+  namespace: pickpro-dev
+data:
+  # backendUrl/oauth2ProxyUrl vides => URLs relatives ("/pickpro/rest/...",
+  # "/oauth2/...") resolues sur l'origine COURANTE, comme en prod : evite tout
+  # host absolut dans la config du SPA (le reverse_url du proxy reste maître
+  # du callback) et garantit des fetchs same-origin avec le cookie
+  # SameSite=Lax, quel que soit l'hote servant le SPA. AC-002. L'hote dev est
+  # unique (pickpro-admin.soludev.tech) mais on garde la meme semantique que
+  # la prod.
+  config.json: |
+    {
+        "backendUrl": "",
+        "oauth2ProxyUrl": "",
+        "logtoUrl": "https://logto.soludev.tech",
+        "logtoAppId": "pickpro-admin-dev",
+        "useMock": false,
+        "devMode": true,
+        "environment": "DEV"
+    }

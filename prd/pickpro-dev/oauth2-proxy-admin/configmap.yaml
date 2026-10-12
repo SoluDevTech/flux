@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-admin-config
+  namespace: pickpro-dev
+data:
+  oauth2_proxy.cfg: |-
+    # redirect_url omis, aligne sur la PRD (verifie docker v7.15.2 : sans
+    # cette option le proxy derive redirect_uri de l'hote demande — ici
+    # unique, pickpro-admin.soludev.tech, donc callback identique a
+    # l'ancienne valeur absolue mais sans host en dur dans la config).
+    # L'option legacy oidc_groups_claim est elle aussi absente : refusee au
+    # demarrage quand --alpha-config est actif ('Options has invalid keys:
+    # oidc_groups_claim') — le claim est declare via oidcConfig.groupsClaim
+    # dans le alpha-configmap (AC-016, verification day-1 par ID token
+    # decode).
+
+    cookie_domains = [".soludev.tech"]
+    whitelist_domains = [".soludev.tech"]
+
+    # Cookie distinct de l'instance front dev (isolation des sessions, AC-017).
+    cookie_name = "oauth2-proxy-pickpro-admin-dev"
+    email_domains = ["*"]
+
+    reverse_proxy = true
+
+    cookie_secure = true
+    cookie_httponly = true
+    cookie_path = "/"
+    cookie_samesite = "lax"
+    # Aligne prod : refresh 30m -> 4h (fenetre de contention du lock Redis
+    # de session pendant le refresh OIDC, cf prd/pickpro/oauth2-proxy).
+    cookie_refresh = "4h"
+    cookie_csrf_per_request = true
+    cookie_csrf_expire = "15m"
+
+    skip_provider_button = true
+    silence_ping_logging = true
+
+    # Aucune route API publique ici : tout /pickpro/rest/* exige la session
+    # admin (contrairement au proxy front qui expose verify-invite etc.).
+    # favicon.ico/robots.txt hors auth sinon boucle de redirection pour un
+    # navigateur non authentifie qui ne demande que la favicon.
+    skip_auth_routes = [
+      "^/assets/",
+      "^/config\\.json",
+      "^/health",
+      "^/favicon\\.ico",
+      "^/robots\\.txt",
+    ]

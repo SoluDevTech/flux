@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pickpro-admin-config
+  namespace: pickpro
+data:
+  # backendUrl/oauth2ProxyUrl vides => URLs relatives ("/pickpro/rest/...",
+  # "/oauth2/...") resolues sur l'origine COURANTE : le meme serve nginx sert
+  # admin.pickpro.io ET admin.pickpro.soludev.tech (deux regles du meme
+  # Ingress), et en absolut les fetchs depuis le second host seraient
+  # cross-site — le cookie de session SameSite=Lax n'y serait jamais envoye
+  # (domaines registrables differents). AC-002. Choisir /oauth2/start en
+  # relatif renvoie l'utilisateur vers L'HOTE d'origine via rd.
+  config.json: |
+    {
+        "backendUrl": "",
+        "oauth2ProxyUrl": "",
+        "logtoUrl": "https://logto.soludev.tech",
+        "logtoAppId": "<pickpro-admin Logto app id>",
+        "useMock": false,
+        "devMode": false,
+        "environment": "PRD"
+    }

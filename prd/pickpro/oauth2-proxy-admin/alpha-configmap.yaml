@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-admin-alpha-config
+  namespace: pickpro
+data:
+  oauth2_proxy.yml: |
+    server:
+      BindAddress: "0.0.0.0:4180"
+
+    upstreamConfig:
+      upstreams:
+      # API même-origine d'abord : /pickpro/rest/* part vers le back
+      # (pas de CORS, Authorization: Bearer id_token injecté ci-dessous).
+      # path = PREFIXE simple : les regex (^/...) sont refusees au
+      # demarrage pour les upstreams http en v7.15.2 (verifie docker, erreur
+      # 'mux: path must start with a slash').
+      - id: pickpro-api
+        path: /pickpro/rest
+        uri: "http://pickpro-api.pickpro.svc.cluster.local:8000"
+        passHostHeader: true
+        proxyWebSockets: true
+      # SPA admin ensuite (catch-all en dernier).
+      - id: pickpro-admin
+        path: /
+        uri: "http://pickpro-admin.pickpro.svc.cluster.local:5173"
+        passHostHeader: true
+        proxyWebSockets: true
+
+    providers:
+    - id: pickpro-admin-oidc
+      provider: oidc
+      clientID: ${OAUTH2_PROXY_CLIENT_ID}
+      clientSecret: ${OAUTH2_PROXY_CLIENT_SECRET}
+      # OPS: allowedGroups remplace ${PICKPRO_ORGANIZATION_ID} par le vrai id
+      # de l'organisation PickPro avant la mise en prod :
+      # kubectl exec -n pickpro deploy/pickpro-api -- printenv PICKPRO_ORGANIZATION_ID
+      # puis kv OpenBao/flux sync. Gate dur (AC-007) : sans ce remplacement,
+      # aucun login n'est accepté (comportement sûr par défaut).
+      allowedGroups: ["${PICKPRO_ORGANIZATION_ID}:admin"]
+      oidcConfig:
+        issuerURL: "https://logto.soludev.tech/oidc"
+        # Claim des groupes/roles explicite sur le provider (alpha-config
+        # natif, doc OIDCOptions) : le legacy oidc_groups_claim du .cfg
+        # n'est pas garanti honore quand --alpha-config est active — AC-016,
+        # a verifier day-1 avec un vrai ID token decode.
+        groupsClaim: "organization_roles"
+      loginURL: "https://logto.soludev.tech/oidc/auth"
+      redeemURL: "http://logto.soludev.svc.cluster.local:3001/oidc/token"
+      profileURL: "http://logto.soludev.svc.cluster.local:3001/oidc/me"
+      validateURL: "http://logto.soludev.svc.cluster.local:3001/oidc/jwks"
+      scope: "openid email profile offline_access identities roles urn:logto:scope:organizations urn:logto:scope:organization_roles"
+      loginURLParameters:
+        - name: one_time_token
+          allow:
+            - pattern: '^.+$'
+        - name: login_hint
+          allow:
+            - pattern: '^.+$'
+
+    injectRequestHeaders:
+    # Authorization: Bearer <id_token> vers l'upstream API.
+    - name: Authorization
+      values:
+      - claimSource:
+          claim: id_token
+          prefix: "Bearer "
+
+    injectResponseHeaders:
+    - name: X-Auth-Request-User
+      values:
+      - claimSource:
+          claim: user
+    - name: X-Auth-Request-Email
+      values:
+      - claimSource:
+          claim: email
+    - name: X-Auth-Request-Preferred-Username
+      values:
+      - claimSource:
+          claim: preferred_username
+    - name: X-Auth-Request-Groups
+      values:
+      - claimSource:
+          claim: groups
+    - name: X-Auth-Request-Access-Token
+      values:
+      - claimSource:
+          claim: access_token
+    - name: Authorization
+      values:
+      - claimSource:
+          claim: id_token
+          prefix: "Bearer "
