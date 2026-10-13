@@ -1,0 +1,75 @@
+# RustFS Soludev (observabilité) — helm manuel
+# Install : helm upgrade --install rustfs-soludev rustfs/rustfs -n soludev -f config/prd/rustfs/soludev/values.yaml
+# Remplace minio-soludev (helm minio/minio 5.4.0). Données migrées via mc mirror (bucket observability).
+# PV/PVC + secret gérés par Flux dans prd/soludev/rustfs/ :
+#   - PVC rustfs-soludev (PV local /srv/nfs/soludev/rustfs sur storage10)
+#   - secret rustfs-soludev (ExternalSecret, OpenBao path soludev/rustfs)
+# Chart officiel : https://charts.rustfs.com (chart rustfs, version 1.0.1)
+fullnameOverride: rustfs-soludev
+
+mode:
+  standalone:
+    enabled: true
+    existingClaim:
+      dataClaim: rustfs-soludev
+
+replicaCount: 1
+drivesPerNode: 1
+
+image:
+  rustfs:
+    tag: "1.0.1"
+
+# Creds : le secret (Flux) est injecté en envFrom — ses clés RUSTFS_ACCESS/RUSTFS_SECRET
+# (noms OpenBao choisis) ne sont pas lues par le binaire, qui attend RUSTFS_ACCESS_KEY /
+# RUSTFS_SECRET_KEY : extraEnv fait le pont à partir des mêmes clés.
+secret:
+  existingSecret: rustfs-soludev
+extraEnv:
+  - name: RUSTFS_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: rustfs-soludev
+        key: RUSTFS_ACCESS
+  - name: RUSTFS_SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        name: rustfs-soludev
+        key: RUSTFS_SECRET
+
+config:
+  rustfs:
+    address: ":9000"
+    console_enable: "true"
+    console_address: ":9001"
+    region: "us-east-1"
+
+service:
+  type: ClusterIP
+  endpoint:
+    port: 9000
+  console:
+    port: 9001
+
+ingress:
+  enabled: false
+
+nodeSelector:
+  storage/nodename: storage10
+tolerations:
+  - key: storage/role
+    operator: Equal
+    value: data
+    effect: NoSchedule
+
+affinity:
+  podAntiAffinity:
+    enabled: false
+
+resources:
+  requests:
+    memory: "768Mi"
+    cpu: "250m"
+  limits:
+    memory: "2Gi"
+    cpu: "1000m"

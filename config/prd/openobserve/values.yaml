@@ -1,7 +1,7 @@
 # OpenObserve — values (helm manuel : helm upgrade --install openobserve openobserve/openobserve-standalone -n soludev -f config/prd/openobserve/values.yaml)
 # Snapshot de `helm get values openobserve -n soludev` pour que les upgrades suivants ne régressent pas,
 # avec 2 flips de la migration MinIO -> RustFS :
-#   ZO_S3_SERVER_URL : minio-soludev -> rustfs-soludev
+#   ZO_S3_SERVER_URL : minio-soludev -> rustfs-soludev-svc (chart officiel rustfs)
 #   ZO_S3_PROVIDER   : minio -> s3 (doc officielle OpenObserve : RustFS passe par le provider s3, path-style par défaut)
 # Les autres clés sont UNCHANGED (bucket observability, us-east-1, path-style).
 # Creds : ZO_S3_ACCESS/SECRET prennent désormais les clés RUSTFS_ACCESS/RUSTFS_SECRET
@@ -46,7 +46,7 @@ extraEnv:
 - name: ZO_S3_PROVIDER
   value: s3
 - name: ZO_S3_SERVER_URL
-  value: http://rustfs-soludev.soludev.svc.cluster.local:9000
+  value: http://rustfs-soludev-svc.soludev.svc.cluster.local:9000
 - name: ZO_S3_REGION_NAME
   value: us-east-1
 - name: ZO_S3_BUCKET_NAME
