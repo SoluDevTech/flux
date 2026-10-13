@@ -12,14 +12,14 @@ This documentation covers the complete setup of a K3s cluster with Flux for GitO
 - [Flux Installation](#flux-installation)
 - [Helm Installation](#helm-installation)
 - [Vault Installation](#vault-installation)
-- [MinIO Installation](#minio-installation)
+- [RustFS Installation](#rustfs-installation)
 - [Phoenix Installation](#phoenix-installation)
 - [OpenObserve Installation](#openobserve-installation)
 - [Inference API Services](#inference-api-services)
 - [PickPro Application Setup](#pickpro-application-setup)
   - [OAuth2 Proxy](#1-oauth2-proxy-installation)
   - [Traefik Forward Auth Middleware](#2-traefik-forward-auth-middleware)
-  - [MinIO for PickPro](#3-minio-for-pickpro)
+  - [RustFS for PickPro](#3-rustfs-for-pickpro)
   - [NATS JetStream for Mass Import](#4-nats-jetstream-for-mass-import)
   - [Valkey (Redis-compatible cache) for Logto](#5-valkey-redis-compatible-cache-for-logto)
   - [Application Ingress Protection](#6-application-ingress-protection)
@@ -1099,270 +1099,110 @@ telnet <IP_HEADSCALE_COLIMA> 2049
 
 nmap -p 2049 <IP_HEADSCALE_COLIMA>
 
-## MinIO Installation
+## RustFS Installation
 
-MinIO is a high-performance, S3-compatible object storage service. This section covers deploying MinIO in your K3s cluster using Helm.
+RustFS is the S3-compatible object storage used by all soludev namespaces (replaced MinIO on 13 Oct 2026). Official Helm chart: `https://charts.rustfs.com`. Three releases: `rustfs-soludev`, `rustfs-pickpro`, `rustfs-pickpro-dev` — Helm for the workload + Services, Flux raw manifests for PV/PVC/ExternalSecret.
 
-### 1. Add MinIO Helm Repository
+### 1. Helm Repository
 
 ```bash
-helm repo add minio https://charts.min.io/
+helm repo add rustfs https://charts.rustfs.com
 helm repo update
 ```
 
-### 2. Create MinIO Namespace
+### 2. Flux Manifests (per namespace)
+
+`prd/<ns>/rustfs/` holds three Flux-applied manifests:
+
+- `persistent-volume.yaml`: local PV `/srv/nfs/<ns>/rustfs` on the storage node (nodeAffinity `storage/nodename`, `Retain`)
+- `volume-claim.yaml`: PVC `rustfs-<ns>`
+- `external-secret.yaml`: ExternalSecret targeting OpenBao path `<ns>/rustfs` with keys `RUSTFS_ACCESS` / `RUSTFS_SECRET`
+
+### 3. Node Preparation (one-time, on the storage VPS)
 
 ```bash
-kubectl create namespace minio
+# UID 10001 = official non-root rustfs user
+mkdir -p /srv/nfs/<ns>/rustfs && chown 10001:10001 /srv/nfs/<ns>/rustfs && chmod 750 /srv/nfs/pickpro/rustfs
 ```
 
-### 3. Configure MinIO Values
+### 4. Values (versioned in git)
 
-Create or update your `config/dev/minio/values.yaml` file with the following configuration:
+`config/prd/rustfs/<ns>/values.yaml` — key parts:
 
 ```yaml
-# MinIO Helm values
-mode: standalone
-replicas: 1
-
-# Root credentials (change these in production!)
-rootUser: minioadmin
-rootPassword: minioadmin
-
-# Storage configuration
-persistence:
-  enabled: true
-  storageClass: nfs-cluster-global  # Use your storage class
-  size: 50Gi                        # Adjust based on your PV capacity
-
-# Resource limits
+fullnameOverride: rustfs-<ns>
+mode:
+  standalone:
+    enabled: true
+    existingClaim:
+      dataClaim: rustfs-<ns>   # bind the Flux-owned PVC
+  distributed:
+    enabled: false             # chart requires exclusive mode
+image:
+  rustfs:
+    tag: "1.0.1"               # pinned, never latest
+secret:
+  existingSecret: rustfs-<ns>  # ExternalSecret (OpenBao)
+extraEnv:                       # bridge OpenBao key names -> binary env
+  - name: RUSTFS_ACCESS_KEY
+    valueFrom: {secretKeyRef: {name: rustfs-<ns>, key: RUSTFS_ACCESS}}
+  - name: RUSTFS_SECRET_KEY
+    valueFrom: {secretKeyRef: {name: rustfs-<ns>, key: RUSTFS_SECRET}}
 resources:
-  requests:
-    memory: 512Mi
-    cpu: 250m
-  limits:
-    memory: 1Gi
-    cpu: 500m
-
-# Service configuration
-service:
-  type: ClusterIP
-  port: 9000
-
-consoleService:
-  type: ClusterIP
-  port: 9001
-
-# Auto-create buckets
-buckets:
-  - name: documents
-    policy: none
-  - name: uploads
-    policy: none
+  requests: {memory: "768Mi", cpu: "250m"}
+  limits:   {memory: "4Gi", cpu: "1000m"}   # 1Gi OOMKilled under bulk load
 ```
 
-### 4. Install MinIO with Helm
+### 5. Install
 
 ```bash
-helm install minio minio/minio \
-  -n minio \
-  -f config/dev/minio/values.yaml
+helm upgrade --install rustfs-<ns> rustfs/rustfs \
+  -n <ns> \
+  -f config/prd/rustfs/<ns>/values.yaml
+kubectl rollout status deploy/rustfs-<ns> -n <ns>
 ```
 
-### 5. Verify MinIO Installation
+### 6. Services
+
+The chart creates `<fullname>-svc` (ClusterIP: endpoint 9000 + console 9001). Consoles are accessed by port-forward only (no ingress, by choice):
 
 ```bash
-# Check if MinIO pod is running
-kubectl get pods -n minio
-
-# Check PVC binding
-kubectl get pvc -n minio
-
-# View MinIO service
-kubectl get svc -n minio
+kubectl port-forward -n <ns> svc/rustfs-<ns>-svc 9031:9001
 ```
 
-### 6. Access MinIO Console
+### 7. Credentials & Buckets
 
-#### Port Forward (Development)
+- Credentials live in OpenBao path `<ns>/rustfs` (`RUSTFS_ACCESS` / `RUSTFS_SECRET`), synced to the k8s secret by ExternalSecrets (read-only kubernetes-auth role)
+- Buckets are created with `mc` via the `MC_HOST_` env convention:
 
 ```bash
-kubectl port-forward -n minio svc/minio 9001:9001
+MC_HOST_dst="http://$RUSTFS_ACCESS:$RUSTFS_SECRET@rustfs-<ns>-svc:9000" mc ls dst
+MC_HOST_dst=... mc mb --ignore-existing dst/my-bucket
 ```
 
-Then access the console at: `http://localhost:9001`
-
-#### Using Ingress (Production)
-
-Create an Ingress resource to expose MinIO API and Console:
+### 8. Consuming From Applications
 
 ```yaml
-# dev/minio/ingress.yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: minio-ingress
-  namespace: minio
-spec:
-  rules:
-    # MinIO Console
-    - host: minio-console.local
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: minio
-                port:
-                  number: 9001
-    # MinIO API
-    - host: minio-api.local
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: minio
-                port:
-                  number: 9000
+# pickpro apps: ConfigMap MINIO_HOST=rustfs-<ns>-svc.<ns>.svc.cluster.local:9000 (+ secret creds)
+# OpenObserve: ZO_S3_PROVIDER=s3 + ZO_S3_SERVER_URL=http://rustfs-<ns>-svc...:9000 (path-style default)
 ```
 
-Apply the ingress:
+RustFS supports SigV4 presigned GET/PUT, ListObjectsV2, multipart upload and copy — the standard S3 surface used by pickpro and OpenObserve.
+
+### 9. Management
 
 ```bash
-kubectl apply -f dev/minio/ingress.yaml
+kubectl get pods -n <ns> -l app.kubernetes.io/name=rustfs
+kubectl logs -n <ns> deploy/rustfs-<ns> --tail=100
+helm upgrade rustfs-<ns> rustfs/rustfs -n <ns> -f config/prd/rustfs/<ns>/values.yaml
 ```
 
-### 7. Create Access Keys
+### 10. Troubleshooting
 
-After MinIO is running, create access keys for applications:
-
-```bash
-# Port forward to MinIO
-kubectl port-forward -n minio svc/minio 9001:9001 &
-
-# Access console at http://localhost:9001
-# Login with minioadmin/minioadmin
-# Create new access key under "Access Keys"
-```
-
-Or use MinIO CLI:
-
-```bash
-# Install MinIO CLI
-curl https://dl.min.io/client/mc/release/darwin-amd64/mc \
-  -o /usr/local/bin/mc
-chmod +x /usr/local/bin/mc
-
-# Configure MinIO alias
-mc config host add minio http://localhost:9000 minioadmin minioadmin
-
-# Create service account
-mc admin user svcacct add minio minioadmin
-```
-
-### 8. Use MinIO in Applications
-
-#### Store Credentials in Kubernetes Secret
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: minio-credentials
-  namespace: default
-type: Opaque
-stringData:
-  MINIO_ROOT_USER: minioadmin
-  MINIO_ROOT_PASSWORD: minioadmin
-  MINIO_ENDPOINT: minio.minio.svc.cluster.local:9000
-  MINIO_USE_SSL: "false"
-```
-
-#### Use in Deployment
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: app-with-minio
-  namespace: default
-spec:
-  template:
-    spec:
-      containers:
-        - name: app
-          image: myapp:latest
-          envFrom:
-            - secretRef:
-                name: minio-credentials
-          env:
-            - name: MINIO_BUCKET
-              value: "uploads"
-```
-
-### 9. Configure MinIO for Multiple Namespaces
-
-If you need MinIO access from multiple namespaces, create a PersistentVolumeClaim in each namespace:
-
-```yaml
-# Each namespace needs its own PVC
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: minio-pvc
-  namespace: my-app-namespace
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: nfs-cluster-global
-  resources:
-    requests:
-      storage: 20Gi  # Size per namespace claim
-```
-
-### 10. MinIO Management Commands
-
-```bash
-# Check MinIO status
-kubectl get all -n minio
-
-# View MinIO logs
-kubectl logs -n minio -l app=minio -f
-
-# Scale MinIO (for HA setup, change mode to distributed)
-kubectl scale statefulset minio -n minio --replicas=3
-
-# Delete MinIO (data persists if using Retain policy)
-helm uninstall minio -n minio
-
-# Delete MinIO with data
-kubectl delete namespace minio
-```
-
-### 11. Troubleshooting MinIO
-
-**PVC not binding:**
-
-```bash
-kubectl describe pvc -n minio
-kubectl get pv
-```
-
-**Pod stuck in Pending:**
-
-```bash
-kubectl describe pod -n minio -l app=minio
-```
-
-**Connection issues from applications:**
-
-- Verify DNS resolution: `kubectl run -it --rm debug --image=busybox --restart=Never -- nslookup minio.minio.svc.cluster.local`
-- Check network policies and firewall rules
-- Verify credentials are correct
-
+- **Pod OOMKilled** under bulk copy load: raise `resources.limits.memory` (4Gi on the 8GB storage nodes); consider `config.rustfs.scanner.speed: "slow"` to cut background scanner churn.
+- **ContainerCreating forever**: the PV directory does not exist / wrong owner on the node — redo section 3.
+- **helm "requires exclusive mode"**: set `mode.distributed.enabled: false` when installing standalone.
+- **DNS**: `nslookup rustfs-<ns>-svc.<ns>.svc.cluster.local`.
 ## Phoenix Installation
 
 Phoenix is an open-source AI observability platform for LLM applications. This section covers deploying Phoenix in your K3s cluster with external PostgreSQL and secrets managed by OpenBao.
@@ -1908,11 +1748,11 @@ Chart 6.0.2 already supports `additionalEnv`, `createSecret: false` with `auth.n
 
 ## OpenObserve Installation
 
-OpenObserve is a cloud-native observability platform for logs, metrics, and traces. This section covers deploying OpenObserve with MinIO for object storage and PostgreSQL for metadata.
+OpenObserve is a cloud-native observability platform for logs, metrics, and traces. This section covers deploying OpenObserve with RustFS for object storage (S3-compatible) and PostgreSQL for metadata.
 
 ### Prerequisites
 
-- MinIO instance running in the cluster
+- RustFS release running in the cluster (see [RustFS Installation](#rustfs-installation))
 - PostgreSQL instance running in the cluster
 - OpenBao/Vault configured and unsealed
 - External Secrets Operator installed
@@ -1923,7 +1763,7 @@ OpenObserve is a cloud-native observability platform for logs, metrics, and trac
 
 OpenObserve deployment uses:
 
-- **MinIO**: For storing logs, metrics, and traces (object storage)
+- **RustFS**: For storing logs, metrics, and traces (object storage)
 - **PostgreSQL**: For metadata storage
 - **NFS**: For local cache/temporary data
 - **External Secrets**: For secure credential management
@@ -1963,55 +1803,22 @@ GRANT ALL ON SCHEMA public TO openobserve;
 \du -- List users
 ```
 
-### 2. Prepare MinIO Bucket
+### 2. Prepare RustFS Bucket
 
-Create a dedicated bucket in MinIO for OpenObserve data.
-
-#### Using MinIO Console
+Create a dedicated bucket in RustFS for OpenObserve data. Credentials live in OpenBao path `soludev/rustfs` (keys `RUSTFS_ACCESS` / `RUSTFS_SECRET`).
 
 ```bash
-# Port forward to MinIO console
-kubectl port-forward -n soludev svc/minio 9001:9001
+# Read the credentials (already synced to the k8s secret by ExternalSecrets)
+export RUSTFS_ACCESS=$(kubectl get secret -n soludev rustfs-soludev -o jsonpath='{.data.RUSTFS_ACCESS}' | base64 -d)
+export RUSTFS_SECRET=$(kubectl get secret -n soludev rustfs-soludev -o jsonpath='{.data.RUSTFS_SECRET}' | base64 -d)
 
-# Access console at http://localhost:9001
-# Login with your MinIO credentials
-# Navigate to "Buckets" and create a new bucket named "observability"
+# Create the bucket via mc using the MC_HOST_ env convention
+MC_HOST_dst="http://$RUSTFS_ACCESS:$RUSTFS_SECRET@rustfs-soludev-svc.soludev.svc.cluster.local:9000" \
+  mc mb --ignore-existing dst/observability
+MC_HOST_dst="..." mc ls dst
 ```
 
-#### Using MinIO CLI
-
-```bash
-# Install MinIO CLI if not already installed
-curl https://dl.min.io/client/mc/release/darwin-amd64/mc \
-  -o /usr/local/bin/mc
-chmod +x /usr/local/bin/mc
-
-# Port forward to MinIO API
-kubectl port-forward -n soludev svc/minio 9000:9000 &
-
-# Configure MinIO alias
-mc alias set minio http://localhost:9000 <MINIO_USER> <MINIO_PASSWORD>
-
-# Create bucket
-mc mb minio/observability
-
-# Verify
-mc ls minio
-```
-
-#### Create Access Keys for OpenObserve
-
-```bash
-# Using MinIO console:
-# 1. Go to "Access Keys"
-# 2. Click "Create Access Key"
-# 3. Save the Access Key and Secret Key
-
-# Or using CLI:
-mc admin user svcacct add minio <MINIO_USER> \
-  --access-key "openobserve-access" \
-  --secret-key "your-secret-key"
-```
+OpenObserve uses the dedicated creds `soludev-rustfs` (not the old minioadmin) — no per-app service accounts needed.
 
 ### 3. Create Secrets in OpenBao
 
@@ -2021,8 +1828,7 @@ OpenObserve requires several secrets to be stored in OpenBao.
 
 1. `ZO_ROOT_USER_EMAIL`: Admin email for OpenObserve login
 2. `ZO_ROOT_USER_PASSWORD`: Admin password for OpenObserve
-3. `MINIO_ACCESS`: MinIO access key
-4. `MINIO_SECRET`: MinIO secret key
+3. `ZO_S3_ACCESS_KEY` / `ZO_S3_SECRET_KEY`: NO — these come from the dedicated secret `rustfs-soludev` (OpenBao `soludev/rustfs`), not from this path
 5. `ZO_META_POSTGRES_DSN`: PostgreSQL connection string
 
 #### Generate PostgreSQL DSN
@@ -2055,8 +1861,8 @@ kubectl exec -n soludev openbao-0 -- env VAULT_TOKEN="$VAULT_TOKEN" \
   bao kv put soludev/openobserve \
   ZO_ROOT_USER_EMAIL="admin@yourdomain.com" \
   ZO_ROOT_USER_PASSWORD="your-secure-password" \
-  MINIO_ACCESS="openobserve-access-key" \
-  MINIO_SECRET="your-minio-secret-key" \
+  # ZO_S3 creds do NOT live here anymore: they come from OpenBao soludev/rustfs
+  # (synced into the rustfs-soludev secret), see section 2 \
   ZO_META_POSTGRES_DSN="postgresql://openobserve:your-db-password@postgres.soludev.svc.cluster.local:5432/openobserve"
 ```
 
@@ -2109,11 +1915,10 @@ kubectl get externalsecret -n soludev soludev-openobserve-external-secret
 kubectl get secret -n soludev soludev-openobserve-secret -o jsonpath='{.data}' | jq -r 'keys[]'
 
 # Expected output:
-# MINIO_ACCESS
-# MINIO_SECRET
 # ZO_META_POSTGRES_DSN
 # ZO_ROOT_USER_EMAIL
 # ZO_ROOT_USER_PASSWORD
+# (ZO_S3 creds come from the separate rustfs-soludev secret)
 ```
 
 ### 5. Create NFS PersistentVolume
@@ -2196,13 +2001,13 @@ extraEnv:
   - name: ZO_S3_ACCESS_KEY
     valueFrom:
       secretKeyRef:
-        name: soludev-openobserve-secret
-        key: MINIO_ACCESS
+        name: rustfs-soludev
+        key: RUSTFS_ACCESS
   - name: ZO_S3_SECRET_KEY
     valueFrom:
       secretKeyRef:
-        name: soludev-openobserve-secret
-        key: MINIO_SECRET
+        name: rustfs-soludev
+        key: RUSTFS_SECRET
   - name: ZO_META_POSTGRES_DSN
     valueFrom:
       secretKeyRef:
@@ -2221,13 +2026,13 @@ config:
   ZO_META_CONNECTION_POOL_MIN_SIZE: "2"
   ZO_META_CONNECTION_POOL_MAX_SIZE: "10"
   
-  # Local mode with S3/MinIO storage
+  # Local mode with S3-compatible object storage (RustFS)
   ZO_LOCAL_MODE: "true"
   ZO_LOCAL_MODE_STORAGE: "s3"
   
-  # MinIO configuration
-  ZO_S3_PROVIDER: "minio"
-  ZO_S3_SERVER_URL: "http://minio.soludev.svc.cluster.local:9000"
+  # RustFS configuration (official OpenObserve doc: provider s3 + path-style)
+  ZO_S3_PROVIDER: "s3"
+  ZO_S3_SERVER_URL: "http://rustfs-soludev-svc.soludev.svc.cluster.local:9000"
   ZO_S3_REGION_NAME: "us-east-1"
   ZO_S3_BUCKET_NAME: "observability"
   ZO_S3_BUCKET_PREFIX: ""
@@ -2263,7 +2068,7 @@ service:
 ingress:
   enabled: false
 
-# Disable built-in MinIO (using external MinIO)
+# Disable built-in MinIO subchart (using external RustFS)
 minio:
   enabled: false
 ```
@@ -2323,7 +2128,7 @@ For major version upgrades that include database migrations, use the upgrade scr
 **Dashboard & RUM preservation:**
 
 - Dashboards are stored in PostgreSQL and auto-migrated by OpenObserve during startup
-- RUM data (session replays, errors) is stored in MinIO and preserved across upgrades
+- RUM data (session replays, errors) is stored in RustFS and preserved across upgrades
 - The backup script exports dashboards via API as a safety net for rollback scenarios
 
 ### 8. Verify OpenObserve Installation
@@ -2345,7 +2150,7 @@ kubectl logs -n soludev -l app.kubernetes.io/name=openobserve --tail=50
 # Look for successful startup messages:
 # - "Starting OpenObserve"
 # - PostgreSQL connection established
-# - MinIO/S3 connection verified
+# - RustFS/S3 connection verified
 ```
 
 ### 9. Configure Ingress
@@ -2484,7 +2289,7 @@ Error: failed to connect to PostgreSQL
 - Verify database and user exist in PostgreSQL
 - Check PostgreSQL logs for authentication errors
 
-**2. MinIO/S3 Connection Errors**
+**2. RustFS/S3 Connection Errors**
 
 ```
 Error: failed to connect to S3
@@ -2492,14 +2297,14 @@ Error: failed to connect to S3
 
 **Solution:**
 
-- Verify MinIO is running: `kubectl get pods -n soludev | grep minio`
-- Check MinIO access keys in secret
-- Verify bucket exists: `mc ls minio/observability`
-- Test connectivity from OpenObserve pod:
+- Verify RustFS is running: `kubectl get pods -n soludev -l app.kubernetes.io/name=rustfs`
+- Check creds in secret `rustfs-soludev` (keys RUSTFS_ACCESS/RUSTFS_SECRET)
+- Verify bucket exists: `MC_HOST_dst=... mc ls dst/observability`
+- Test connectivity from the RustFS pod itself:
 
   ```bash
-  kubectl exec -it -n soludev <openobserve-pod> -- \
-    curl http://minio.soludev.svc.cluster.local:9000/minio/health/live
+  kubectl exec -n soludev deploy/rustfs-soludev -- \
+    curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9000/health
   ```
 
 **3. PVC Not Binding**
@@ -2546,7 +2351,7 @@ kubectl logs -n external-secrets-system -l app.kubernetes.io/name=external-secre
 - Check data is being sent to correct endpoint
 - Verify authentication credentials
 - Check OpenObserve logs for ingestion errors
-- Verify MinIO bucket has data: `mc ls minio/observability`
+- Verify bucket has data: `MC_HOST_dst=... mc ls dst/observability`
 - Check PostgreSQL for metadata entries
 
 **6. High Memory Usage**
@@ -2556,7 +2361,7 @@ kubectl logs -n external-secrets-system -l app.kubernetes.io/name=external-secre
 - Reduce `ZO_META_CONNECTION_POOL_MAX_SIZE`
 - Increase resource limits in values.yml
 - Adjust `ZO_COMPACT_DATA_RETENTION_DAYS` to retain less data
-- Monitor MinIO bucket size
+- Monitor RustFS bucket size
 
 ### 13. Monitoring and Maintenance
 
@@ -2573,8 +2378,8 @@ curl http://openobserve.yourdomain.com/metrics
 #### Monitor Storage Usage
 
 ```bash
-# Check MinIO bucket size
-mc du minio/observability
+# Check RustFS bucket size
+MC_HOST_dst=... mc du dst/observability
 
 # Check PVC usage
 kubectl exec -it -n soludev <openobserve-pod> -- df -h /data
@@ -2606,11 +2411,11 @@ kubectl exec -n soludev <postgres-pod> -- \
   pg_dump -U openobserve openobserve > openobserve-metadata-backup.sql
 ```
 
-**MinIO Data:**
+**RustFS Data:**
 
 ```bash
-# Backup MinIO bucket
-mc mirror minio/observability /path/to/backup/
+# Backup RustFS bucket
+MC_HOST_dst=... mc mirror dst/observability /path/to/backup/
 ```
 
 ### 14. Scaling OpenObserve
@@ -2663,13 +2468,13 @@ config:
 
 - ✅ Use persistent storage for local cache
 - ✅ Backup PostgreSQL metadata regularly
-- ✅ Monitor MinIO bucket size
+- ✅ Monitor RustFS bucket size
 - ✅ Set up proper monitoring and alerting
 
 **Cost Optimization:**
 
 - ✅ Adjust data retention to balance storage costs
-- ✅ Use MinIO lifecycle policies for old data
+- ✅ Rely on ZO_COMPACT_DATA_RETENTION_DAYS for old data
 - ✅ Right-size resource requests and limits
 
 ### 16. Integration Examples
@@ -2716,7 +2521,7 @@ exporters:
 
 ## PickPro Application Setup
 
-This section covers the deployment of the PickPro application stack, including OAuth2 Proxy for authentication, MinIO for storage, and Traefik middleware integration.
+This section covers the deployment of the PickPro application stack, including OAuth2 Proxy for authentication, RustFS for storage, and Traefik middleware integration.
 
 ### 1. OAuth2 Proxy Installation
 
@@ -2784,23 +2589,27 @@ spec:
 kubectl apply -f dev/pickpro/traefik/middleware.yaml
 ```
 
-### 3. MinIO for PickPro
+### 3. RustFS for PickPro
 
-PickPro uses a dedicated MinIO instance for storing CVs and other documents.
+PickPro uses a dedicated RustFS instance (`rustfs-pickpro`) for storing CVs, photos and transcripts.
 
-#### Deployment
+#### Deployment (workload via Helm, storage via Flux)
 
 ```bash
-helm upgrade --install minio-pickpro minio/minio \
+helm upgrade --install rustfs-pickpro rustfs/rustfs \
   --namespace pickpro \
-  -f config/dev/minio/pickpro/values.yaml
+  -f config/prd/rustfs/pickpro/values.yaml
 ```
 
-This configuration:
+With the corresponding Flux manifests in `prd/pickpro/rustfs/`:
 
-- Creates a bucket named `cvs`
-- Uses NFS storage class `nfs-pickpro-minio`
-- Sets up a standalone MinIO instance
+- `persistent-volume.yaml`: local PV `/srv/nfs/pickpro/rustfs` on storage30 (`Retain`)
+- `volume-claim.yaml`: PVC `rustfs-pickpro`
+- `external-secret.yaml`: creds from OpenBao `pickpro/rustfs` (`RUSTFS_ACCESS`/`RUSTFS_SECRET`)
+
+Buckets `cvs` / `photos` / `transcripts` are mirrored/created as needed (no auto-create: create with `mc mb --ignore-existing`).
+
+Apps consume it via ConfigMap `MINIO_HOST=rustfs-pickpro-svc.pickpro.svc.cluster.local:9000` + `MINIO_ACCESS` / OpenBao `pickpro/{api,indexing}` secrets.
 
 ### 4. NATS JetStream for Mass Import
 
@@ -3063,8 +2872,8 @@ kubectl delete ingress nats-monitoring-ingress -n soludev
 
 Valkey is a Redis-compatible key/value store used as the cache backend for Logto
 (`CACHE_ENGINE=redis`). It is deployed in the `soludev` namespace via plain
-Flux-managed manifests (no Helm), following the same pattern as `postgres` and
-`minio` (Deployment + NFS-backed PV/PVC + ClusterIP Service).
+Flux-managed manifests (no Helm), following the same pattern as `postgres`
+(Deployment + PV/PVC + ClusterIP Service).
 
 #### Architecture
 
@@ -3412,49 +3221,30 @@ kubectl exec -n soludev "$OPENBAO_POD" -- \
 
 ## Storage Maintenance
 
-### Cleaning Old Data Files
+### ⚠️ Old MinIO cleanup commands — DEPRECATED
 
-OpenObserve and MinIO may accumulate old data files that are not automatically cleaned up due to cache or compaction issues. Use the following command to manually clean files older than a specific number of days.
+Since the RustFS migration (13 Oct 2026):
 
-#### Delete files older than N days
+- **Do NOT run `find ... -delete` against `/srv/nfs/soludev/minio`** — this
+  directory is the frozen pre-migration archive (old MinIO scaled 0, kept as
+  rollback). The legacy cron jobs below must be removed from the storage
+  servers:
+  ```bash
+  # REMOVE these (they would destroy the archive):
+  # 0 3 * * * find .../soludev/minio -type f -mtime +10 -delete
+  ```
+- Old OpenObserve data is cleaned server-side by **compaction + retention**
+  (`ZO_COMPACT_DATA_RETENTION_DAYS`, currently 10) — no `find`-based cleanup
+  should be run against the rustfs data directories either.
 
-```bash
-# Preview files that would be deleted (dry run)
-find /path/to/storage -type f -mtime +10 -ls
+### Cleaning Old Cache Files (legitimate)
 
-# Delete files older than 10 days (keeps directories intact)
-find /path/to/storage -type f -mtime +10 -delete
-```
-
-**Parameters:**
-- `-type f`: Only target files (not directories)
-- `-mtime +10`: Files modified more than 10 days ago
-- `-delete`: Remove the matched files
-- `-ls`: (dry run) List files instead of deleting
-
-**Example for NFS storage paths:**
-
-```bash
-# Clean OpenObserve cache (older than 10 days)
-find /home/lima.linux/k3s-storage/soludev/openobserve -type f -mtime +10 -delete
-
-# Clean MinIO data (older than 10 days)
-find /home/lima.linux/k3s-storage/soludev/minio -type f -mtime +10 -delete
-```
-
-**Note:** This command recursively explores all subdirectories. Always run the dry run (`-ls` instead of `-delete`) first to verify which files will be affected.
-
-#### Schedule automatic cleanup (cron)
-
-To automate cleanup, add a cron job on your NFS server:
+The only remaining legit use is the OpenObserve **local cache** PVC (disk
+cache), which is self-managed by `ZO_DISK_CACHE_GC_*` settings — no manual
+cleanup needed. Verify with:
 
 ```bash
-# Edit crontab
-crontab -e
-
-# Add this line to run cleanup daily at 3 AM
-0 3 * * * find /home/lima.linux/k3s-storage/soludev/minio -type f -mtime +10 -delete
-0 3 * * * find /home/lima.linux/k3s-storage/soludev/openobserve -type f -mtime +10 -delete
+kubectl exec -n soludev deploy/openobserve-openobserve-standalone -- df -h /data
 ```
 
 ## Troubleshooting

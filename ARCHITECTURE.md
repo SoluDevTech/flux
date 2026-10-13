@@ -1,6 +1,6 @@
 # Architecture — Cluster K3s SoluDev + VPS Storage
 
-Dernière mise à jour : 19 septembre 2026
+Dernière mise à jour : 13 octobre 2026
 
 ## Vue d'ensemble
 
@@ -18,12 +18,12 @@ Dernière mise à jour : 19 septembre 2026
                 │  tous les pods stateless                            │
                 │                                                     │
                 │  ┌─────────────────────────┐  ┌──────────────────┐  │
-                │  │ STORAGE 30 vmi3549084   │  │ STORAGE 10       │  │
-                │  │ 100.64.0.7 — TAINTED    │  │ vmi3322106 .5    │  │
-                │  │ postgres + pgvector ×2  │  │ — TAINTED        │  │
-                │  │ minio ×2 (disque local) │  │ postgres-telemetry│ │
-                │  │                         │  │ + minio-soludev  │  │
-                │  └─────────────────────────┘  └──────────────────┘  │
+                 │  │ STORAGE 30 vmi3549084   │  │ STORAGE 10       │  │
+                 │  │ 100.64.0.7 — TAINTED    │  │ vmi3322106 .5    │  │
+                 │  │ postgres + pgvector ×2  │  │ — TAINTED        │  │
+                 │  │ rustfs ×2 (disque local)│  │ postgres-telemetry│ │
+                 │  │                         │  │ + rustfs-soludev │  │
+                 │  └─────────────────────────┘  └──────────────────┘  │
                 │   (valkey + serveur NFS : docker/hors k8s)          │
                 └─────────────────────────────────────────────────────┘
 ```
@@ -37,13 +37,13 @@ Dernière mise à jour : 19 septembre 2026
 | **vmi3322099** | Worker k3s | 84.247.189.239 | **100.64.0.2** | 6 / 8 GB | pods compute |
 | **vmi3322100** | Worker k3s | 84.247.190.97 | **100.64.0.4** | 6 / 8 GB | pods compute |
 | **vmi3549081** | Worker k3s | 173.212.219.98 | **100.64.0.6** | 6 / 8 GB | pods compute |
-| **vmi3549084** | **Storage VPS 30** — Agent k3s TAINTÉ | 164.68.123.88 | **100.64.0.7** | 6 / 8 GB | postgres logto, pgvector prod+dev, minio prod+dev (PV local) |
-| **vmi3322106** | **Storage VPS 10** — Agent k3s TAINTED | 37.60.225.137 | **100.64.0.5** | 2 / 3.8 GB | postgres-telemetry, minio-soludev (PV local) |
+| **vmi3549084** | **Storage VPS 30** — Agent k3s TAINTÉ | 164.68.123.88 | **100.64.0.7** | 6 / 8 GB | postgres logto, pgvector prod+dev, rustfs prod+dev (PV local) |
+| **vmi3322106** | **Storage VPS 10** — Agent k3s TAINTED | 37.60.225.137 | **100.64.0.5** | 2 / 3.8 GB | postgres-telemetry, rustfs-soludev (PV local) + archive MinIO éteinte |
 | *(hors cluster)* MacBook de Yohan | Client tailnet | — | **100.64.0.8** | — | kubectl, tests |
 
 > 19 sept 2026 : les Storage VPS rejoignent le cluster comme **agents
 > k3s taintés** `storage/role=data:NoSchedule` — seuls les workloads
-> minio/postgres/pgvector y sont tolérés (nodeSelector + toleration).
+> rustfs/minio/postgres/pgvector y sont tolérés (nodeSelector + toleration).
 > Le docker-direct de la période 7-19 sept est remplacé : tout redevance
 > k8s/Flux. Restent hors k8s : `valkey-soludev` (Docker Storage 30) et
 > le serveur **NFS** de Storage 30 (couche stockage pour openbao /
@@ -72,15 +72,16 @@ Dernière mise à jour : 19 septembre 2026
 | `postgres` (logto) | `postgres:17-alpine` | `/srv/nfs/soludev/postgres` (~1.3 Go) | logto via pgbouncer (k8s:6432) |
 | `pgvector` pickpro | `pgvector/pgvector:0.8.0-pg17` | `/srv/nfs/pickpro/pgvector` | pickpro prod (api, indexing, notifications) |
 | `pgvector` pickpro-dev | idem | `/srv/nfs/pickpro-dev/pgvector` | pickpro-dev |
-| `minio-pickpro` (helm) | `RELEASE.2025-09-07T16-13-09Z` | `/srv/nfs/pickpro/minio` (cvs, photos, transcripts) | pickpro prod |
-| `minio-pickpro-dev` (Deployment raw Flux) | idem | `/srv/nfs/pickpro-dev/minio` | pickpro-dev |
+| `rustfs-pickpro` (helm chart `rustfs/rustfs` 1.0.1) | `rustfs/rustfs:1.0.1` | `/srv/nfs/pickpro/rustfs` (cvs, photos, transcripts) | pickpro prod (api, indexing) |
+| `rustfs-pickpro-dev` (helm chart `rustfs/rustfs` 1.0.1) | idem | `/srv/nfs/pickpro-dev/rustfs` (cvs, photos, transcripts) | pickpro-dev (api, indexing) |
 
 ### Storage 10 (100.64.0.5) — agent tainté
 
 | Workload | Image | Données (PV local) | Servi par |
 |---|---|---|---|
 | `postgres-telemetry` | `postgres:17-alpine` | `/srv/nfs/soludev/postgres` (~3 Go, le disque Storage **10**) | phoenix, sonarqube, openobserve |
-| `minio-soludev` (helm) | `RELEASE.2024-12-18T13-15-44Z` | `/srv/nfs/soludev/minio` (bucket `observability`) | openobserve S3 |
+| `rustfs-soludev` (helm chart `rustfs/rustfs` 1.0.1) | `rustfs/rustfs:1.0.1` | `/srv/nfs/soludev/rustfs` (bucket `observability`) | openobserve S3 (ZO_S3_PROVIDER=s3) |
+| `minio-soludev` — **archive éteinte** (helm, scale 0) | `RELEASE.2024-12-18T13-15-44Z` | `/srv/nfs/soludev/minio` (historique observability — copie complète pré-migration, gardée en rollback) | — (à désinstaller après la fenêtre de confiance) |
 
 Server (hors k8s, docker Storage 30, mesh Tailscale only) :
 
@@ -97,11 +98,11 @@ Server (hors k8s, docker Storage 30, mesh Tailscale only) :
 | `soludev` | **pgbouncer** | session mode :6432 → logto ; userlist auto-généré depuis OpenBao `soludev/pgbouncer` |
 | `soludev` | **postgres** + **postgres-telemetry** | instances k8s, PV local node-pinned |
 | `soludev` | **openbao** | secrets (ClusterSecretStore → ExternalSecrets 60s) |
-| `soludev` | **phoenix**, **sonarqube**, **openobserve** | DB → postgres-telemetry interne; openobserve S3 → minio-soludev interne |
-| `soludev` | **minio-soludev** (helm) | observabilité ; image chart 5.4.0 |
+| `soludev` | **phoenix**, **sonarqube**, **openobserve** | DB → postgres-telemetry interne; openobserve S3 → rustfs-soludev interne (provider s3, path-style) |
+| `soludev` | **rustfs-soludev** (helm chart rustfs 1.0.1) | observabilité ; creds OpenBao `soludev/rustfs` ; + archive minio-soludev scale 0 |
 | `soludev` | nats (local-path), cloudflared ×2, headlamp | infra |
-| `pickpro` | pickpro-api ×2, indexing ×2, notifications, front, landing, oauth2-proxy, cloudflared ×2 | DB → `pgvector.pickpro:5432`, MinIO → `minio-pickpro:9000` |
-| `pickpro-dev` | idem (replicas 1) | DB → `pgvector.pickpro-dev:5432`, MinIO → `minio-pickpro-dev:9000` |
+| `pickpro` | pickpro-api ×2, indexing ×2, notifications, front, landing, oauth2-proxy, cloudflared ×2 | DB → `pgvector.pickpro:5432`, RustFS → `rustfs-pickpro-svc:9000` |
+| `pickpro-dev` | idem (replicas 1) | DB → `pgvector.pickpro-dev:5432`, RustFS → `rustfs-pickpro-dev-svc:9000` |
 
 ## Flux GitOps
 
@@ -110,20 +111,24 @@ Server (hors k8s, docker Storage 30, mesh Tailscale only) :
   (prune=true, interval 2 min, wait=true pour apps)
 - Helm-managed (install manuel via helm CLI, values versionnées dans
   `config/prd/*`) : openbao, phoenix, sonarqube, openobserve, oauth2-proxy,
-  nats, **minio-soludev**, **minio-pickpro**
+  nats, **rustfs-soludev, rustfs-pickpro, rustfs-pickpro-dev**
+  (chart `rustfs/rustfs`, repo `https://charts.rustfs.com`)
 - Manifests Flux raw : logto, pgbouncer, cloudflared, headlamp,
-  postgres, postgres-telemetry, pgvector ×2, minio-pickpro-dev,
-  ingresses, PVs locaux, ExternalSecrets
+  postgres, postgres-telemetry, pgvector ×2, PVs locaux (dont les
+  `local-*-rustfs`), ExternalSecrets, configmaps consumers
 
 ## Secrets & connexions (OpenBao)
 
-| Clé OpenBao | Pointe vers (post-19 sept) |
+| Clé OpenBao | Pointe vers (post-13 oct) |
 |---|---|
-| `pickpro/{api,indexing,notifications}` | `@pgvector.pickpro.svc.cluster.local:5432` (+ `MINIO_HOST` configmap → `minio-pickpro:9000`) |
-| `pickpro-dev/{api,indexing,notifications}` | `@pgvector.pickpro-dev.svc.cluster.local:5432` |
+| `pickpro/{api,indexing,notifications}` | `@pgvector.pickpro.svc.cluster.local:5432` ; api: `MINIO_SECRET` (paire rustfs) ; configmap `MINIO_HOST` → `rustfs-pickpro-svc:9000` |
+| `pickpro-dev/{api,indexing,notifications}` | `@pgvector.pickpro-dev.svc.cluster.local:5432` ; `MINIO_ACCESS`/`MINIO_SECRET` (paire `pickpro-dev-rustfs`) |
+| `pickpro/rustfs` | creds root RustFS prod (`RUSTFS_ACCESS`/`RUSTFS_SECRET`) |
+| `pickpro-dev/rustfs` | creds root RustFS dev (`RUSTFS_ACCESS`/`RUSTFS_SECRET`) |
+| `soludev/rustfs` | creds root RustFS observabilité (`RUSTFS_ACCESS`/`RUSTFS_SECRET`) |
 | `soludev/pgbouncer` | `@postgres.soludev.svc.cluster.local:5432` |
-| `soludev/logto` | `pgbouncer.soludev.svc.cluster.local:6432` (inchangé) |
-| `soludev/openobserve` | `@postgres-telemetry.soludev...:5432` + `http://minio-soludev...:9000` |
+| `soludev/logto` | pgbouncer.soludev.svc.cluster.local:6432 (inchangé) |
+| `soludev/openobserve` | `@postgres-telemetry.soludev...:5432` ; storage `rustfs-soludev-svc:9000` (creds via secret `rustfs-soludev`) ; clés `MINIO_*` obsolètes |
 | `soludev/{phoenix,sonarqube}` secrets | postgres-telemetry interne (host/jdbcUrl aussi dans values git) |
 
 ## Historique
@@ -138,3 +143,15 @@ Server (hors k8s, docker Storage 30, mesh Tailscale only) :
   des VPS (mêmes chemins), binômes URLs → `*.svc.cluster.local` via
   OpenBao + configmaps ; minio pickpro + soludev en Helm VALUES
   versionnées ; opentrack du docker (valkey reste dockerisé).
+- **13 oct** : **migration MinIO → RustFS** (chart officiel
+  `rustfs/rustfs` 1.0.1, values `config/prd/rustfs/<ns>/values.yaml`,
+  PV/PVC/ExternalSecrets raw Flux dans `prd/<ns>/rustfs/`) sur les 3
+  namespaces : pickpro, pickpro-dev (mirror `mc` complet vérifié :
+  cvs 9672, photos 10613 / 160, 122) et soludev (OpenObserve via
+  `ZO_S3_PROVIDER=s3`, creds OpenBao `*/rustfs` → `RUSTFS_ACCESS`
+  /`RUSTFS_SECRET`) ; mirror soludev **abandonné en cours d'index/**
+  → trous de query possibles sur les ~10 derniers jours (rétention
+  OO = 10j), ingestion intacte ; ancien MinIO prod/dev **supprimé**
+  (deploy/PV/PVC/data+repo), `minio-soludev` laissé en **archive
+  scale 0** (PV Retain `/srv/nfs/soludev/minio`) — désinstallation
+  différée.
