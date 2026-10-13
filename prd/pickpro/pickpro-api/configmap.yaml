@@ -32,8 +32,8 @@ data:
   CONCURRENT_CALLS: "20"
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
   PHOENIX_HOST: http://phoenix-svc.soludev.svc.cluster.local:6006
-  MINIO_HOST: minio-pickpro.pickpro.svc.cluster.local:9000
-  MINIO_ACCESS: minioadmin
+  MINIO_HOST: rustfs-pickpro-svc.pickpro.svc.cluster.local:9000
+  MINIO_ACCESS: pickpro-rustfs
   MINIO_BUCKET: cvs
   MINIO_ALLOWED_EXTENSION: .pdf
   INDEXING_API_URL: http://pickpro-indexing-api.pickpro.svc.cluster.local:8000/pickpro/rest/v1

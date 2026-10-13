@@ -1,0 +1,27 @@
+# RustFS PickPro PROD (pickpro) — stockage local sur Storage30
+# Data: /srv/nfs/pickpro/rustfs
+# Remplace MinIO (deployment minio-pickpro, héritage helm, non versionné) :
+# format disque MinIO incompatible avec RustFS -> données migrées via mc mirror
+# (buckets cvs / photos / transcripts).
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pickpro-rustfs
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-pickpro-rustfs
+  local:
+    path: /srv/nfs/pickpro/rustfs
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: storage/nodename
+              operator: In
+              values:
+                - storage30
