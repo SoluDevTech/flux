@@ -1,0 +1,26 @@
+# RustFS Soludev (observabilité) — stockage local sur Storage10
+# Data: /srv/nfs/soludev/rustfs
+# Remplace MinIO (helm minio-soludev) : format disque MinIO incompatible avec RustFS
+# -> données migrées via mc mirror (bucket observability), voir ARCHITECTURE.md
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-soludev-rustfs
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-soludev-rustfs
+  local:
+    path: /srv/nfs/soludev/rustfs
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: storage/nodename
+              operator: In
+              values:
+                - storage10
