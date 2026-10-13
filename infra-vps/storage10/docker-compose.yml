@@ -1,28 +1,12 @@
-# Storage VPS 10 — minio soludev (observability)
+# Storage VPS 10 — postgres-telemetry (telemetry DB)
 # Sécurité: bind UNIQUEMENT sur l'IP Tailscale + ufw deny eth0
 # Credentials dans /opt/pickpro-stack/.env (chmod 600, hors git)
+#
+# NOTE 13 oct 2026: l'observabilité (openobserve) est passée sur RustFS k8s
+# (helm release rustfs-soludev) — l'ancien service docker minio-soludev a
+# été retiré (données disque supprimées avec).
 
 services:
-  minio-soludev:
-    image: quay.io/minio/minio:RELEASE.2024-12-18T13-15-44Z
-    container_name: minio-soludev
-    restart: always
-    environment:
-      MINIO_ROOT_USER: ${MINIO_SOLUDEV_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_SOLUDEV_PASSWORD}
-      MINIO_IAM_REFRESH: "3600"
-    command: server /data --console-address ":9001"
-    ports:
-      - "100.64.0.5:9032:9000"
-      - "100.64.0.5:9034:9001"
-    volumes:
-      - /srv/nfs/soludev/minio:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   postgres-telemetry:
     image: postgres:17-alpine
     container_name: postgres-telemetry

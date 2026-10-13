@@ -3225,14 +3225,12 @@ kubectl exec -n soludev "$OPENBAO_POD" -- \
 
 Since the RustFS migration (13 Oct 2026):
 
-- **Do NOT run `find ... -delete` against `/srv/nfs/soludev/minio`** — this
-  directory is the frozen pre-migration archive (old MinIO scaled 0, kept as
-  rollback). The legacy cron jobs below must be removed from the storage
-  servers:
-  ```bash
-  # REMOVE these (they would destroy the archive):
-  # 0 3 * * * find .../soludev/minio -type f -mtime +10 -delete
-  ```
+- **Do NOT re-create the legacy cleanup crons** (e.g.
+  `find .../soludev/minio -type f -mtime +10 -delete`) — the old MinIO data
+  directory has been **deleted** with the migration (13 Oct 2026) along with its
+  Helm release, PV/PVC and manifests; the legacy crons now point at a
+  non-existent path and serve no purpose. If one still exists in a crontab on
+  Storage10, remove it.
 - Old OpenObserve data is cleaned server-side by **compaction + retention**
   (`ZO_COMPACT_DATA_RETENTION_DAYS`, currently 10) — no `find`-based cleanup
   should be run against the rustfs data directories either.
