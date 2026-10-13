@@ -1,0 +1,14 @@
+# RustFS PickPro DEV (pickpro-dev) — PVC lié au PV local sur Storage30
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rustfs-pickpro-dev
+  namespace: pickpro-dev
+spec:
+  volumeName: local-pickpro-dev-rustfs
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-pickpro-dev-rustfs
+  resources:
+    requests:
+      storage: 5Gi

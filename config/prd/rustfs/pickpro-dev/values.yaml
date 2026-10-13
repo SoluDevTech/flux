@@ -1,0 +1,77 @@
+# RustFS PickPro DEV (pickpro-dev) — helm manuel
+# Install : helm upgrade --install rustfs-pickpro-dev rustfs/rustfs -n pickpro-dev -f config/prd/rustfs/pickpro-dev/values.yaml
+# Remplace minio-pickpro-dev (raw Deployment prd/pickpro-dev/minio/). Données migrées via mc mirror.
+# PV/PVC + secret gérés par Flux dans prd/pickpro-dev/rustfs/ :
+#   - PVC rustfs-pickpro-dev (PV local /srv/nfs/pickpro-dev/rustfs sur storage30)
+#   - secret rustfs-pickpro-dev (ExternalSecret, OpenBao path pickpro-dev/rustfs)
+# Chart officiel : https://charts.rustfs.com (chart rustfs, version 1.0.1)
+fullnameOverride: rustfs-pickpro-dev
+
+mode:
+  standalone:
+    enabled: true
+    existingClaim:
+      dataClaim: rustfs-pickpro-dev
+  distributed:
+    enabled: false
+
+replicaCount: 1
+drivesPerNode: 1
+
+image:
+  rustfs:
+    tag: "1.0.1"
+
+# Creds : le secret (Flux) est injecté en envFrom — ses clés RUSTFS_ACCESS/RUSTFS_SECRET
+# (noms OpenBao choisis) ne sont pas lues par le binaire, qui attend RUSTFS_ACCESS_KEY /
+# RUSTFS_SECRET_KEY : extraEnv fait le pont à partir des mêmes clés.
+secret:
+  existingSecret: rustfs-pickpro-dev
+extraEnv:
+  - name: RUSTFS_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: rustfs-pickpro-dev
+        key: RUSTFS_ACCESS
+  - name: RUSTFS_SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        name: rustfs-pickpro-dev
+        key: RUSTFS_SECRET
+
+config:
+  rustfs:
+    address: ":9000"
+    console_enable: "true"
+    console_address: ":9001"
+    region: "us-east-1"
+
+service:
+  type: ClusterIP
+  endpoint:
+    port: 9000
+  console:
+    port: 9001
+
+ingress:
+  enabled: false
+
+nodeSelector:
+  storage/nodename: storage30
+tolerations:
+  - key: storage/role
+    operator: Equal
+    value: data
+    effect: NoSchedule
+
+affinity:
+  podAntiAffinity:
+    enabled: false
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "1Gi"
+    cpu: "2000m"
