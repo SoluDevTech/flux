@@ -46,6 +46,10 @@ config:
     console_enable: "true"
     console_address: ":9001"
     region: "us-east-1"
+    # Node storage30 = 8GB RAM partagés : scanner lent pour limiter le churn
+    # CPU/mémoire de fond (heal/capacity scan sur ~20k fichiers)
+    scanner:
+      speed: "slow"
 
 service:
   type: ClusterIP
@@ -74,5 +78,5 @@ resources:
     memory: "768Mi"
     cpu: "250m"
   limits:
-    memory: "2Gi"
+    memory: "4Gi"
     cpu: "1000m"
