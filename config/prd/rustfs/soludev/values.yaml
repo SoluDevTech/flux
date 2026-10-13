@@ -12,6 +12,8 @@ mode:
     enabled: true
     existingClaim:
       dataClaim: rustfs-soludev
+  distributed:
+    enabled: false
 
 replicaCount: 1
 drivesPerNode: 1
