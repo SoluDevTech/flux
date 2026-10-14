@@ -45,6 +45,17 @@ config:
     console_enable: "true"
     console_address: ":9001"
     region: "us-east-1"
+    # Disque VPS storage10 lent + ingestion openobserve continue (métriques
+    # chaque minute) -> churn scanner/heal de fond = stalls I/O (30s+) ->
+    # liveness probe 3s ratée -> boucle de restart (81x/22h, oct 2026).
+    # Même fix que pickpro (scanner churn, commit 86ce4e7).
+    scanner:
+      speed: "slow"
+      cycle_max_duration_secs: "300"
+      bitrot_cycle_secs: "disabled"
+    # Tolère la latence disque du VPS (timeouts plus larges pour les ops
+    # scanner-sensibles).
+    timeout_profile: "high_latency"
 
 service:
   type: ClusterIP
@@ -55,6 +66,18 @@ service:
 
 ingress:
   enabled: false
+
+# Probes tolérantes : le disque VPS peut stall 30s+ sous contention
+# (postgres-telemetry + ingestion openobserve). Défaut chart (period 5s,
+# timeout 3s, 3 échecs) tue le pod au premier stall (81 restarts/16h).
+livenessProbe:
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 5
+readinessProbe:
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 5
 
 nodeSelector:
   storage/nodename: storage10
