@@ -28,7 +28,6 @@ data:
   SCORER_CHUNK_SIZE: "10"
   SCORER_MAX_CONCURRENT: "5"
   TEMPERATURE: "0.0"
-  CONCURRENT_CALLS: "20"
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
   PHOENIX_HOST: http://phoenix-svc.soludev.svc.cluster.local:6006
   MINIO_HOST: rustfs-pickpro-svc.pickpro.svc.cluster.local:9000
