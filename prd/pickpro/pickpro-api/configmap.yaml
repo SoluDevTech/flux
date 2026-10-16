@@ -10,7 +10,6 @@ data:
   TITLE_MODEL: google/gemini-2.5-flash:nitro
   GRADER_MODEL: google/gemini-2.5-flash:nitro
   JOB_STRUCTURE_MODEL: google/gemini-2.5-flash:nitro
-  SEARCH_MODEL: google/gemini-2.5-flash:nitro
   DEEP_AGENT_MODEL: z-ai/glm-5.3-flash:nitro
   DEEP_AGENT_MAX_TOKENS: "16384"
   DEEP_AGENT_REASONING_EFFORT: high
@@ -19,17 +18,12 @@ data:
   DEEP_AGENT_SQL_BUDGET: "25"
   DEEP_AGENT_JOB_STRUCTURE_CACHE_MAX: "32"
   DEEP_AGENT_PUBLISH_VALIDATION_MAX_RETRIES: "2"
-  GRADER_MAX_CONCURRENT: "10"
-  GRADER_CHUNK_SIZE: "50"
-  GRADER_MAX_CANDIDATES: "500"
-  SEARCH_FILTER_CHUNK_SIZE: "200"
-  SEARCH_FILTER_MAX_CONCURRENT: "10"
-  SEARCH_FILTER_GRADE_THRESHOLD: "60"
-  SEARCH_PROFILE_GRADE_THRESHOLD: "60"
+  # Search deep agent (issue #305 stream feature): REQUIRED env (the API
+  # refuses to start without it) — same model family as the chat deep agent.
+  SEARCH_AGENT_MODEL: z-ai/glm-5.3-flash:nitro
+  SEARCH_AGENT_REASONING_EFFORT: low
   SCORER_CHUNK_SIZE: "10"
   SCORER_MAX_CONCURRENT: "5"
-  TEMPERATURE: "0.0"
-  CONCURRENT_CALLS: "20"
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
   PHOENIX_HOST: http://phoenix-svc.soludev.svc.cluster.local:6006
   MINIO_HOST: rustfs-pickpro-svc.pickpro.svc.cluster.local:9000
@@ -56,8 +50,6 @@ data:
   SMTP_FROM: soludevtech@gmail.com
   SMTP_SECURE: "true"
   APP_BASE_URL: https://app.pickpro.io
-  NOTIFICATION_CRON_TIME: 12:00
-  NOTIFICATION_MAIL_CRON_TIME: 12:00
   NATS_USER: "pickpro"
   NATS_URL: "nats://nats.soludev.svc.cluster.local:4222"
   NATS_STREAM_NAME: "RESUMES"
