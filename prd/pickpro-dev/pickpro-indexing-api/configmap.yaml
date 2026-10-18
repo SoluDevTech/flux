@@ -47,3 +47,7 @@ data:
   NATS_RECALL_STREAM_NAME: RECALL-DEV
   NATS_RECALL_SUBJECT: transcript-dev
   NATS_RECALL_DURABLE: transcript-dev-consumer
+  # REFERENTIAL MATCHING (conformité des job_label/industries LLM au
+  # référentiel job_names/industries — pipeline 4 chemins + retry forcé).
+  # Lu au démarrage : un changement de valeur exige un restart du déploiement.
+  REFERENTIAL_FUZZY_THRESHOLD: "80"
