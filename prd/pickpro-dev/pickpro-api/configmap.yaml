@@ -10,6 +10,8 @@ data:
   TITLE_MODEL: google/gemini-2.5-flash-lite:nitro
   GRADER_MODEL: google/gemini-2.5-flash-lite:nitro
   JOB_STRUCTURE_MODEL: google/gemini-2.5-flash-lite:nitro
+  STUDIO_MODEL: z-ai/glm-5.3-flash:nitro
+  STUDIO_REASONING_EFFORT: "low"
   DEEP_AGENT_MODEL: z-ai/glm-5.3-flash:nitro
   DEEP_AGENT_MAX_TOKENS: "16384"
   DEEP_AGENT_REASONING_EFFORT: high
