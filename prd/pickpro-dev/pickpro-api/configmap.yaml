@@ -6,10 +6,16 @@ metadata:
 data:
   ALLOWED_ORIGINS: '["https://pickpro.soludev.tech"]'
   DEV_MODE: "true"
-  CHAT_MODEL: anthropic/claude-haiku-4.5:nitro
-  TITLE_MODEL: google/gemini-2.5-flash-lite:nitro
-  GRADER_MODEL: google/gemini-2.5-flash-lite:nitro
-  JOB_STRUCTURE_MODEL: google/gemini-2.5-flash-lite:nitro
+  CHAT_MODEL: z-ai/glm-5.3-flash:nitro
+  TITLE_MODEL: z-ai/glm-5.3-flash:nitro
+  TITLE_REASONING_EFFORT: low
+  EXTRACT_MODEL: z-ai/glm-5.3-flash:nitro
+  EXTRACT_REASONING_EFFORT: low
+  GRADER_MODEL: z-ai/glm-5.3-flash:nitro
+  GRADER_REASONING_EFFORT: low
+  JOB_STRUCTURE_MODEL: z-ai/glm-5.3-flash:nitro
+  JOB_STRUCTURE_REASONING_EFFORT: low
+  PROJECT_SUMMARY_REASONING_EFFORT: low
   STUDIO_MODEL: z-ai/glm-5.3-flash:nitro
   STUDIO_REASONING_EFFORT: "low"
   DEEP_AGENT_MODEL: z-ai/glm-5.3-flash:nitro
