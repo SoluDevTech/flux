@@ -8,7 +8,7 @@ data:
   ALLOWED_TRANSCRIPT_DOMAINS: '["recall.ai"]'
   EMBEDDING_CLIENT: openai/text-embedding-3-large
   ENVIRONMENT: development
-  INDEXING_MODEL: google/gemini-2.5-flash-lite:nitro
+  EXTRACTION_MODEL: google/gemini-2.5-flash-lite:nitro
   MAX_WORKERS: "2"
   MINIO_HOST: rustfs-pickpro-dev-svc.pickpro-dev.svc.cluster.local:9000
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
