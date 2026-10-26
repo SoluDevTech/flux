@@ -19,12 +19,17 @@ data:
     cookie_httponly = true
     cookie_path = "/"
     cookie_samesite = "lax"
-    # Refresh toutes les 30min = fenetre de contention du lock Redis de la
-    # session (stored_session) toutes les 30min : pendant le refresh OIDC
-    # (~1-2.5s), TOUTES les requetes /oauth2/auth concurrentes du meme
-    # user attendent le lock => stalls 1-2.5s en rafale sur le vivier.
-    # 4h = au-dela de la duree d'une session de travail typique.
-    cookie_refresh = "4h"
+    # TTL access token Logto = 1h (défaut OIDC) : oauth2-proxy ne
+    # rafraichit le token qu'a cookie_refresh — au-dela, le token
+    # transmis en X-Auth-Request-Access-Token est EXPIRE => 401 sur
+    # /api/verifications/social + /api/my-account (connect Google
+    # Calendar). 50m = refresh juste avant l'expiration du token.
+    #
+    # Arbitrage: a chaque refresh, contention du lock Redis de la
+    # session (stored_session) ~1-2.5s pour les requetes concurrentes
+    # du meme user sur /oauth2/auth (stalls en rafale). Un refresh
+    # toutes les 50min reste preferable a un calendrier mort 3h/4h.
+    cookie_refresh = "50m"
     cookie_csrf_per_request = true
     cookie_csrf_expire = "15m"
 

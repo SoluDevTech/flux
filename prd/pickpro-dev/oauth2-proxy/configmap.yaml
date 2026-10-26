@@ -19,9 +19,10 @@ data:
     cookie_httponly = true
     cookie_path = "/"
     cookie_samesite = "lax"
-    # Aligne prod : refresh 30m -> 4h (fenetre de contention du lock Redis
-    # de session pendant le refresh OIDC, cf prd/pickpro/oauth2-proxy).
-    cookie_refresh = "4h"
+    # Aligne prod : 50m — le TTL access token Logto (1h) exige un refresh
+    # avant expiration, sinon 401 sur /api/verifications/social et
+    # /api/my-account (connect Google Calendar). cf prd/pickpro.
+    cookie_refresh = "50m"
     cookie_csrf_per_request = true
     cookie_csrf_expire = "15m"
 
