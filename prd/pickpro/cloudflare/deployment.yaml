@@ -52,7 +52,7 @@ spec:
       dnsPolicy: ClusterFirst
       containers:
       - name: cloudflared
-        image: cloudflare/cloudflared:2026.8.3
+        image: cloudflare/cloudflared:2026.10.3
         args:
         - tunnel
         - --no-autoupdate
