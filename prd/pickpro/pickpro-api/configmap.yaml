@@ -12,12 +12,25 @@ data:
   EXTRACT_MODEL: z-ai/glm-5.3-flash:nitro
   EXTRACT_REASONING_EFFORT: low
   GRADER_MODEL: z-ai/glm-5.3-flash:nitro
-  GRADER_REASONING_EFFORT: low
+  GRADER_REASONING_EFFORT: high
   JOB_STRUCTURE_MODEL: z-ai/glm-5.3-flash:nitro
   JOB_STRUCTURE_REASONING_EFFORT: low
   PROJECT_SUMMARY_REASONING_EFFORT: low
   STUDIO_MODEL: z-ai/glm-5.3-flash:nitro
   STUDIO_REASONING_EFFORT: "high"
+  # Deep agent CV Studio : REQUIRED env (config.py fail-fast, l'API refuse
+  # de booter sans — CrashLoopBackOff sinon au prochain deploiement d'image).
+  STUDIO_AGENT_MODEL: z-ai/glm-5.3-flash:nitro
+  STUDIO_AGENT_REASONING_EFFORT: high
+  # Crawler studio : epingles pour parite avec le local
+  # (defauts codes 16 / 6 / 200000).
+  CRAWLER_MAX_PAGES_PER_THREAD: "48"
+  CRAWLER_GITHUB_MAX_REPOS_PER_THREAD: "24"
+  CRAWLER_MAX_CHARS_PER_THREAD: "400000"
+  # Vars process (libs, pas pydantic) : notice crawl4ai sans cloud + cap OTel
+  # (sinon l'OTel cappe a 128 attributs et les traces Phoenix sont tronquees).
+  CRAWL4AI_NO_CLOUD_NOTICE: "1"
+  OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT: "512"
   DEEP_AGENT_MODEL: z-ai/glm-5.3-flash:nitro
   DEEP_AGENT_MAX_TOKENS: "16384"
   DEEP_AGENT_REASONING_EFFORT: high
