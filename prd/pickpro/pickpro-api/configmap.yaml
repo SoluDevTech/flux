@@ -78,6 +78,13 @@ data:
   NATS_MAX_PAYLOAD: "15728640"
   NATS_MAX_AGE: "604800"
   NATS_PUB_TIMEOUT: "30"
+  # Stream des événements de completion du mass-import (issue #349) :
+  # publié par pickpro-indexing-api, consommé par le back du kanban.
+  # Épinglé explicitement (defauts codes identiques) pour garder prod et
+  # dev disjoints sur le serveur NATS partage.
+  NATS_COMPLETED_STREAM_NAME: "MASS_IMPORT_COMPLETED"
+  NATS_COMPLETED_STREAM_SUBJECT: "mass_import.completed"
+  NATS_COMPLETED_DURABLE_NAME: "pickpro-back-project-association"
   VALKEY_HOST: 100.64.0.7
   VALKEY_PORT: "6379"
   VALKEY_DB: "0"

@@ -80,6 +80,19 @@ data:
   NATS_MAX_PAYLOAD: "15728640"
   NATS_MAX_AGE: "604800"
   NATS_PUB_TIMEOUT: "30"
+  # NOTIFICATIONS — le back publie les notifications in-app/email sur ce
+  # stream ; le service notifications-dev consomme NOTIFICATIONS-DEV.
+  # Sans ces vars le back retomberait sur les defauts codes
+  # (NOTIFICATIONS/notifications) = le stream de PROD.
+  NATS_NOTIF_STREAM_NAME: "NOTIFICATIONS-DEV"
+  NATS_NOTIF_STREAM_SUBJECT: "notifications-dev"
+  # Stream des événements de completion du mass-import (issue #349) : le
+  # serveur NATS est partage avec la prod → suffixe -DEV obligatoire,
+  # sinon vol d'evenements via le durable partage
+  # pickpro-back-project-association.
+  NATS_COMPLETED_STREAM_NAME: "MASS_IMPORT_COMPLETED-DEV"
+  NATS_COMPLETED_STREAM_SUBJECT: "mass_import.completed-dev"
+  NATS_COMPLETED_DURABLE_NAME: "pickpro-back-project-association-dev"
   VALKEY_HOST: 100.64.0.7
   VALKEY_PORT: "6379"
   VALKEY_DB: "0"
