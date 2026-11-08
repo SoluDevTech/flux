@@ -20,8 +20,8 @@ Dernière mise à jour : 13 octobre 2026
                 │  ┌─────────────────────────┐  ┌──────────────────┐  │
                  │  │ STORAGE 30 vmi3549084   │  │ STORAGE 10       │  │
                  │  │ 100.64.0.7 — TAINTED    │  │ vmi3322106 .5    │  │
-                 │  │ postgres + pgvector ×2  │  │ — TAINTED        │  │
-                 │  │ rustfs ×2 (disque local)│  │ postgres-telemetry│ │
+                 │  │ postgres + pgvector ×3  │  │ — TAINTED        │  │
+                 │  │ rustfs ×3 (disque local)│  │ postgres-telemetry│ │
                  │  │                         │  │ + rustfs-soludev │  │
                  │  └─────────────────────────┘  └──────────────────┘  │
                 │   (valkey + serveur NFS : docker/hors k8s)          │
@@ -37,7 +37,7 @@ Dernière mise à jour : 13 octobre 2026
 | **vmi3322099** | Worker k3s | 84.247.189.239 | **100.64.0.2** | 6 / 8 GB | pods compute |
 | **vmi3322100** | Worker k3s | 84.247.190.97 | **100.64.0.4** | 6 / 8 GB | pods compute |
 | **vmi3549081** | Worker k3s | 173.212.219.98 | **100.64.0.6** | 6 / 8 GB | pods compute |
-| **vmi3549084** | **Storage VPS 30** — Agent k3s TAINTÉ | 164.68.123.88 | **100.64.0.7** | 6 / 8 GB | postgres logto, pgvector prod+dev, rustfs prod+dev (PV local) |
+| **vmi3549084** | **Storage VPS 30** — Agent k3s TAINTÉ | 164.68.123.88 | **100.64.0.7** | 6 / 8 GB | postgres logto, pgvector prod+dev+composables, rustfs prod+dev+composables (PV local) |
 | **vmi3322106** | **Storage VPS 10** — Agent k3s TAINTED | 37.60.225.137 | **100.64.0.5** | 2 / 3.8 GB | postgres-telemetry, rustfs-soludev (PV local) |
 | *(hors cluster)* MacBook de Yohan | Client tailnet | — | **100.64.0.8** | — | kubectl, tests |
 
@@ -74,6 +74,8 @@ Dernière mise à jour : 13 octobre 2026
 | `pgvector` pickpro-dev | idem | `/srv/nfs/pickpro-dev/pgvector` | pickpro-dev |
 | `rustfs-pickpro` (helm chart `rustfs/rustfs` 1.0.1) | `rustfs/rustfs:1.0.1` | `/srv/nfs/pickpro/rustfs` (cvs, photos, transcripts) | pickpro prod (api, indexing) |
 | `rustfs-pickpro-dev` (helm chart `rustfs/rustfs` 1.0.1) | idem | `/srv/nfs/pickpro-dev/rustfs` (cvs, photos, transcripts) | pickpro-dev (api, indexing) |
+| `pgvector` composables (RAG) | `kaiohz/pickpro:postgres-raganything-*` | `/srv/nfs/composables/postgres` (5Gi, données 2025-2026 reprises à l'identique) | composable-agents, raganything |
+| `rustfs-composables` (helm chart `rustfs/rustfs` 1.0.1) | idem | `/srv/nfs/composables/rustfs` (buckets `composable-agents`, `raganything` via mc mirror) | composable-agents (MCP/docs), raganything (fichiers) |
 
 ### Storage 10 (100.64.0.5) — agent tainté
 
@@ -107,16 +109,18 @@ Server (hors k8s, docker Storage 30, mesh Tailscale only) :
 | `soludev` | nats (local-path), cloudflared ×2, headlamp | infra |
 | `pickpro` | pickpro-api ×2, indexing ×2, notifications, front, landing, oauth2-proxy, cloudflared ×2 | DB → `pgvector.pickpro:5432`, RustFS → `rustfs-pickpro-svc:9000` |
 | `pickpro-dev` | idem (replicas 1) | DB → `pgvector.pickpro-dev:5432`, RustFS → `rustfs-pickpro-dev-svc:9000` |
+| `composables` | composable-agents, composable-ui, raganything, oauth2-proxy (helm), postgres RAG, rustfs | DB → `postgres.composables:5432`, RustFS → `rustfs-composables-svc:9000`, UI ingress `composables.soludev.tech` + agents `composables-agent.soludev.tech` + rag `raganything.soludev.tech` (forwardAuth oauth2-proxy) |
 
 ## Flux GitOps
 
 - Repo : `SoluDevTech/flux` (push = flux sync en 1-2 min)
-- Kustomizations : `soludev`, `pickpro`, `pickpro-dev`, `cluster`
+- Kustomizations : `soludev`, `pickpro`, `pickpro-dev`, `cluster`,
+  `composables`
   (prune=true, interval 2 min, wait=true pour apps)
 - Helm-managed (install manuel via helm CLI, values versionnées dans
   `config/prd/*`) : openbao, phoenix, sonarqube, openobserve, oauth2-proxy,
-  nats, **rustfs-soludev, rustfs-pickpro, rustfs-pickpro-dev**
-  (chart `rustfs/rustfs`, repo `https://charts.rustfs.com`)
+  nats, **rustfs-soludev, rustfs-pickpro, rustfs-pickpro-dev,
+  rustfs-composables** (chart `rustfs/rustfs`, repo `https://charts.rustfs.com`)
 - Manifests Flux raw : logto, pgbouncer, cloudflared, headlamp,
   postgres, postgres-telemetry, pgvector ×2, PVs locaux (dont les
   `local-*-rustfs`), ExternalSecrets, configmaps consumers
@@ -130,6 +134,8 @@ Server (hors k8s, docker Storage 30, mesh Tailscale only) :
 | `pickpro/rustfs` | creds root RustFS prod (`RUSTFS_ACCESS`/`RUSTFS_SECRET`) |
 | `pickpro-dev/rustfs` | creds root RustFS dev (`RUSTFS_ACCESS`/`RUSTFS_SECRET`) |
 | `soludev/rustfs` | creds root RustFS observabilité (`RUSTFS_ACCESS`/`RUSTFS_SECRET`) |
+| `composables/rustfs` | creds root RustFS composables (`RUSTFS_ACCESS`/`RUSTFS_SECRET`) — **à recréer à la main** (l'ancien `composables/minio` a été soft-deleted au cleanup du 23 sept ; la version v1 reste récupérable via `bao kv rollback` / undelete) |
+| `composables/{composable-agents,composable-ui,raganything,oauth2-proxy,postgres}` | inchangés (creds API keys, Logto, DB, oauth2) — toujours présents dans OpenBao |
 | `soludev/pgbouncer` | `@postgres.soludev.svc.cluster.local:5432` |
 | `soludev/logto` | pgbouncer.soludev.svc.cluster.local:6432 (inchangé) |
 | `soludev/openobserve` | `@postgres-telemetry.soludev...:5432` ; storage `rustfs-soludev-svc:9000` (creds via secret `rustfs-soludev`) ; clés `MINIO_*` obsolètes |
@@ -157,3 +163,19 @@ Server (hors k8s, docker Storage 30, mesh Tailscale only) :
   → trous de query possibles sur les ~10 derniers jours (rétention
   OO = 10j), ingestion intacte ; les 3 anciens MinIO **supprimés**
   (helm uninstall, PV/PVC, data disque, manifests repo).
+- **8 nov** : **retour de la plateforme composables** (restauration
+  depuis 22e3a85^) directement en **RustFS** : helm
+  `rustfs-composables` (storage30, `/srv/nfs/composables/rustfs`,
+  values `config/prd/rustfs/composables/values.yaml`), PV local
+  `/srv/nfs/composables/postgres` **repris avec les données d'époque**
+  (RAG pgvector inchangées), namespace + Kustomization Flux
+  `prd/composables` (prune on). ConfigMaps : `MINIO_ENDPOINT` /
+  `MINIO_HOST` → `rustfs-composables-svc:9000` (les apps lisent les
+  vars `MINIO_*`, S3-compatible RustFS). Buckets à récupérer depuis
+  l'ancien MinIO via mc mirror : sur storage30
+  `docker run -d --name minio-old -p 19000:9000 -v /srv/nfs/composables/minio:/data quay.io/minio/minio server /data`,
+  puis depuis un pod `mc` dans le namespace composables (creds du secret
+  `rustfs-composables`) : `mc alias set old http://<hostStorage30:19000>`,
+  `mc alias set comp http://rustfs-composables-svc:9000`,
+  `mc mb -p comp/composable-agents comp/raganything` puis
+  `mc mirror --preserve old/composable-agents` / `mc mirror --preserve old/raganything`.
