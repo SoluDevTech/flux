@@ -171,11 +171,10 @@ Server (hors k8s, docker Storage 30, mesh Tailscale only) :
   (RAG pgvector inchangées), namespace + Kustomization Flux
   `prd/composables` (prune on). ConfigMaps : `MINIO_ENDPOINT` /
   `MINIO_HOST` → `rustfs-composables-svc:9000` (les apps lisent les
-  vars `MINIO_*`, S3-compatible RustFS). Buckets à récupérer depuis
-  l'ancien MinIO via mc mirror : sur storage30
-  `docker run -d --name minio-old -p 19000:9000 -v /srv/nfs/composables/minio:/data quay.io/minio/minio server /data`,
-  puis depuis un pod `mc` dans le namespace composables (creds du secret
-  `rustfs-composables`) : `mc alias set old http://<hostStorage30:19000>`,
-  `mc alias set comp http://rustfs-composables-svc:9000`,
-  `mc mb -p comp/composable-agents comp/raganything` puis
-  `mc mirror --preserve old/composable-agents` / `mc mirror --preserve old/raganything`.
+  vars `MINIO_*`, S3-compatible RustFS). **Données migrées le 8 nov via une
+  copie de travail + MinIO temporaire en pod sur storage30 et transfert
+  in-cluster depuis le pod composable-agents (miniopy-async, presigned
+  URLs + urllib)** : buckets `composable-agents` (3 YAML) et
+  `raganything` (7 PDF, 15.4 Mo) vérifiés SRC=DST. L'ancien disque MinIO
+  `/srv/nfs/composables/minio` est conservé untouched sur storage30
+  (supprimable après validation).
