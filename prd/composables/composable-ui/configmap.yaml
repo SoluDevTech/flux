@@ -8,5 +8,8 @@ data:
     {
       "apiBaseUrl": "https://composables-agent.soludev.tech",
       "wsBaseUrl": "wss://composables-agent.soludev.tech",
-      "ragApiBaseUrl": "https://raganything.soludev.tech"
+      "ragApiBaseUrl": "https://raganything.soludev.tech",
+      "oauth2ProxyUrl": "https://composables.soludev.tech",
+      "logtoUrl": "https://logto.soludev.tech",
+      "logtoAppId": "trangw5kf2ii6tcmcdzzy"
     }
