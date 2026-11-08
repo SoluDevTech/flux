@@ -11,5 +11,9 @@ data:
       "ragApiBaseUrl": "https://raganything.soludev.tech",
       "oauth2ProxyUrl": "https://composables.soludev.tech",
       "logtoUrl": "https://logto.soludev.tech",
-      "logtoAppId": "trangw5kf2ii6tcmcdzzy"
+      "logtoAppId": "trangw5kf2ii6tcmcdzzy",
+      "builtInMcpServers": [
+        { "name": "raganything-files", "url": "https://raganything.soludev.tech/files/mcp", "transport": "http" },
+        { "name": "raganything-classical", "url": "https://raganything.soludev.tech/classical/mcp", "transport": "http" }
+      ]
     }

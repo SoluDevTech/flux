@@ -13,13 +13,27 @@ sessionStorage:
 ingress:
   enabled: false
 
+# Parité pickpro : même image épinglée, sessions en Redis (valkey
+# partagé 100.64.0.7:6379 — pattern déjà validé pickpro + pickpro-dev),
+# 256Mi de limit (sessions Redis + SSE).
+image:
+  repository: "oauth2-proxy/oauth2-proxy"
+  tag: "v7.15.2"
+
+sessionStorage:
+  type: redis
+  redis:
+    clientType: standalone
+    standalone:
+      connectionUrl: redis://100.64.0.7:6379
+
 resources:
   requests:
     cpu: "200m"
     memory: "64Mi"
   limits:
     cpu: "1000m"
-    memory: "128Mi"
+    memory: "256Mi"
 
 service:
   type: ClusterIP
