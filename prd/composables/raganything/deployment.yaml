@@ -12,6 +12,8 @@ spec:
       app: raganything
   template:
     metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-11-08T09:10:00Z"
       labels:
         app: raganything
         app.kubernetes.io/part-of: soludev-workload
