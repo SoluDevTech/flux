@@ -17,11 +17,6 @@ spec:
         app.kubernetes.io/part-of: soludev-workload
     spec:
       enableServiceLinks: false
-      # Opt-out injection OTel python (namespace) : l'app s'instrumente elle-même
-      # via phoenix.otel.register -> l'agent injecté (/otel-auto-instrumentation-python)
-      # shadow le venv et casse openinference (wrap_function_wrapper module kwarg)
-      annotations:
-        instrumentation.opentelemetry.io/inject-python: "false"
       tolerations:
         - key: "klipperlb-exclude"
           value: "true"
