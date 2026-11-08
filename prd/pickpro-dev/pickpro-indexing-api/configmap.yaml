@@ -22,7 +22,13 @@ data:
   ENABLE_HIERARCHY_DETECTION: "true"
   INCLUDE_HEADERS: "false"
   INCLUDE_FOOTERS: "false"
-  FORCE_OCR: "true"
+  # text-first (CI-2026-11-07 / 08): the native PDF text layer (~0s, exact)
+  # covers ~90% of CVs; the OCR fallback (VLM then tesseract, TEXT_MIN_CHARS)
+  # remains for genuine scans. The previous global FORCE_OCR=true vision-OCR'd
+  # EVERY CV page-by-page via OpenRouter (~3-12s/page, degraded markdown) and
+  # blew the mass-import pipeline budget on multi-page CVs — a degraded
+  # OpenRouter moment dropped the CV forever (see indexing-api bounded retry).
+  FORCE_OCR: "false"
   OCR_MODE: "vlm"
   VLM_MODEL: google/gemini-2.5-flash-lite:nitro
   VLM_TEMPERATURE: "0.0"
