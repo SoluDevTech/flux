@@ -34,6 +34,9 @@ spec:
           image: kaiohz/pickpro:composable-agents-eb174aca82e1a73a7bd178b8c3d69b82569e4181
           ports:
             - containerPort: 8000
+          env:
+            - name: PYTHONPATH
+              value: /app
           envFrom:
             - configMapRef:
                 name: composable-agents-config
