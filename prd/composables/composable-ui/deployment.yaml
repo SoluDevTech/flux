@@ -12,6 +12,8 @@ spec:
       app: composable-ui
   template:
     metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-11-08T11:25:00Z"
       labels:
         app: composable-ui
         app.kubernetes.io/part-of: soludev-workload
