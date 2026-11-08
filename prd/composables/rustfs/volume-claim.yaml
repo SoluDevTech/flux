@@ -1,0 +1,14 @@
+# RustFS Composables — PVC lié au PV local sur Storage30
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rustfs-composables
+  namespace: composables
+spec:
+  volumeName: local-composables-rustfs
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-composables-rustfs
+  resources:
+    requests:
+      storage: 5Gi

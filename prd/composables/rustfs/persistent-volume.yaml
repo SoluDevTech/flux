@@ -1,0 +1,27 @@
+# RustFS Composables — stockage local sur Storage30
+# Data: /srv/nfs/composables/rustfs
+# Remplace MinIO (deployment minio-composables) : format disque MinIO incompatible
+# avec RustFS -> données migrées via mc mirror (buckets composable-agents /
+# raganything), voir ARCHITECTURE.md
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-composables-rustfs
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-composables-rustfs
+  local:
+    path: /srv/nfs/composables/rustfs
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: storage/nodename
+              operator: In
+              values:
+                - storage30
