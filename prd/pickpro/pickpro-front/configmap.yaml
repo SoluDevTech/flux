@@ -6,8 +6,8 @@ metadata:
 data:
   config.json: |
     {
-        "backendUrl": "https://api.pickpro.io",
-        "oauth2ProxyUrl": "https://app.pickpro.io",
+        "backendUrl": "https://api.pickorp.ai",
+        "oauth2ProxyUrl": "https://app.pickorp.ai",
         "logtoUrl": "https://logto.soludev.tech",
         "logtoAppId": "sazp1vx8ah3pwv56rqm9v",
         "cvExtractionTimeoutMs": 120000,

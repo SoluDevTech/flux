@@ -9,7 +9,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.middlewares: pickpro-security-headers@kubernetescrd
 spec:
   rules:
-    - host: app.pickpro.io
+    - host: app.pickorp.ai
       http:
         paths:
           - path: /

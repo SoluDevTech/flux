@@ -19,7 +19,7 @@ spec:
       - "Accept"
       - "Origin"
     accessControlAllowOriginList:
-      - "https://app.pickpro.io"
+      - "https://app.pickorp.ai"
       - "http://localhost:5173"
     accessControlMaxAge: 100
     addVaryHeader: true

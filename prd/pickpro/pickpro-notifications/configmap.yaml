@@ -4,7 +4,7 @@ metadata:
   name: pickpro-notifications-config
   namespace: pickpro
 data:
-  ALLOWED_ORIGINS: '["https://app.pickpro.io"]'
+  ALLOWED_ORIGINS: '["https://app.pickorp.ai"]'
   ENVIRONMENT: "production"
   LOG_LEVEL: "INFO"
   # NATS
@@ -35,7 +35,7 @@ data:
   SMTP_PORT: "587"
   SMTP_FROM_EMAIL: soludevtech@gmail.com
   SMTP_USE_TLS: "true"
-  APP_BASE_URL: https://app.pickpro.io
+  APP_BASE_URL: https://app.pickorp.ai
   # Logto
   LOGTO_URL: http://logto.soludev.svc.cluster.local:3001
   LOGTO_M2M_APP_ID: s44irlst66e578jqdyeaq

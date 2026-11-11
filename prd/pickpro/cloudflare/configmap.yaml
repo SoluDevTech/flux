@@ -16,22 +16,22 @@ data:
 
     ingress:
 
-      - hostname: pickpro.io
+      - hostname: pickorp.ai
         service: http://traefik.kube-system.svc.cluster.local:80
 
-      - hostname: www.pickpro.io
+      - hostname: www.pickorp.ai
         service: http://traefik.kube-system.svc.cluster.local:80
 
-      - hostname: app.pickpro.io
+      - hostname: app.pickorp.ai
         service: http://traefik.kube-system.svc.cluster.local:80
 
-      - hostname: api.pickpro.io
+      - hostname: api.pickorp.ai
         service: http://traefik.kube-system.svc.cluster.local:80
 
-      - hostname: indexing-api.pickpro.io
+      - hostname: indexing-api.pickorp.ai
         service: http://traefik.kube-system.svc.cluster.local:80
 
-      - hostname: oauth2-proxy.pickpro.io
+      - hostname: oauth2-proxy.pickorp.ai
         service: http://traefik.kube-system.svc.cluster.local:80
 
       - service: http_status:404

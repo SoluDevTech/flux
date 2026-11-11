@@ -8,7 +8,7 @@ metadata:
     traefik.ingress.kubernetes.io/redirect-scheme: https
 spec:
   rules:
-    - host: pickpro.io
+    - host: pickorp.ai
       http:
         paths:
           - path: /
@@ -18,7 +18,7 @@ spec:
                 name: pickpro-landing
                 port:
                   number: 80
-    - host: www.pickpro.io
+    - host: www.pickorp.ai
       http:
         paths:
           - path: /

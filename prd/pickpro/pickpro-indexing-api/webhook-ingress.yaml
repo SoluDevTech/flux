@@ -8,7 +8,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.priority: "100"
 spec:
   rules:
-    - host: indexing-api.pickpro.io
+    - host: indexing-api.pickorp.ai
       http:
         paths:
           - path: /pickpro/rest/v1/webhooks

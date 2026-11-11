@@ -4,7 +4,7 @@ metadata:
   name: pickpro-indexing-api-config
   namespace: pickpro
 data:
-  ALLOWED_ORIGINS: '["https://app.pickpro.io"]'
+  ALLOWED_ORIGINS: '["https://app.pickorp.ai"]'
   EXTRACTION_MODEL: z-ai/glm-5.3-flash:nitro
   EMBEDDING_CLIENT: openai/text-embedding-3-large
   TEMPERATURE: "0.0"
