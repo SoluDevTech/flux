@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: pickpro-api
-          image: kaiohz/pickpro:pickpro-back-519b31a957f4eb3d59af50f48352d4b5f1805fe7
+          image: kaiohz/pickpro:pickpro-back-74920c44ed72d8b6a6e7bfc110ea24e8b7d383e9
           ports:
             - containerPort: 8000
           env:
