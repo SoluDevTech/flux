@@ -13,6 +13,7 @@ data:
   MINIO_HOST: rustfs-pickpro-dev-svc.pickpro-dev.svc.cluster.local:9000
   OPEN_ROUTER_API_URL: https://openrouter.ai/api/v1
   PHOENIX_HOST: http://phoenix-svc.soludev.svc.cluster.local:6006
+  OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT: "512"
   RECALL_AI_REGION: eu-central-1
   SUMMARY_MODEL: anthropic/claude-haiku-4.5:nitro
   TEMPERATURE: "0.0"
@@ -28,7 +29,7 @@ data:
   # EVERY CV page-by-page via OpenRouter (~3-12s/page, degraded markdown) and
   # blew the mass-import pipeline budget on multi-page CVs — a degraded
   # OpenRouter moment dropped the CV forever (see indexing-api bounded retry).
-  FORCE_OCR: "false"
+  FORCE_OCR: "true"
   OCR_MODE: "vlm"
   VLM_MODEL: google/gemini-2.5-flash-lite:nitro
   VLM_TEMPERATURE: "0.0"
