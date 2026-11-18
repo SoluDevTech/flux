@@ -25,6 +25,13 @@ data:
   # === MCP ===
   MCP_TOOL_TIMEOUT: "600"
   AGENT_STREAM_IDLE_TIMEOUT: "600"
+  # === Chat attachments limits (bytes unless stated otherwise) ===
+  CHAT_ATTACHMENT_MAX_COUNT: "10"
+  CHAT_ATTACHMENT_MAX_TOTAL_BYTES: "52428800"
+  CHAT_ATTACHMENT_MAX_IMAGE_BYTES: "10485760"
+  CHAT_ATTACHMENT_MAX_DOCUMENT_BYTES: "52428800"
+  # Max Markdown chars accepted by the create_pdf tool (chars, not bytes)
+  CREATE_PDF_MAX_MARKDOWN_CHARS: "1000000"
   # === Dual auth (JWT via Logto OIDC + per-user API keys) ===
   LOGTO_URL: "https://logto.soludev.tech"
   JWT_AUDIENCE: "trangw5kf2ii6tcmcdzzy"
