@@ -30,7 +30,7 @@ spec:
               app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: pickpro-landing
-          image: kaiohz/pickpro:pickpro-landing-b425236ac0d6a1a33e7112489ca67bf92b8e8513
+          image: kaiohz/pickpro:pickpro-landing-7af31eec19a8595f9f1e6f111e70fd2932b4e36b
           ports:
             - containerPort: 80
           env:
