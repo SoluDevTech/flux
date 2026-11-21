@@ -6,14 +6,18 @@
 
 set -e
 
+# Run from the flux repo root regardless of the caller's CWD
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/../.."
+
 # Configuration
 NAMESPACE="soludev"
 RELEASE_NAME="openobserve"
 CHART_REPO="openobserve"
 CHART_REPO_URL="https://charts.openobserve.ai"
 CHART_NAME="openobserve/openobserve-standalone"
-CHART_VERSION="0.70.4"
-VALUES_FILE="./config/dev/openobserve/values.yml"
+CHART_VERSION="1.1.6"
+VALUES_FILE="./config/prd/openobserve/values.yaml"
 
 # MinIO Configuration
 MINIO_RELEASE_NAME="minio"

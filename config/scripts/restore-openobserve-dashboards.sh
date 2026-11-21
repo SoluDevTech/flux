@@ -47,16 +47,15 @@ sleep 3
 
 LOCAL_URL="http://localhost:15080"
 
-# --- Auth ---
-AUTH_TOKEN=$(curl -s -X POST "$LOCAL_URL/auth/login" \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"$ZO_EMAIL\",\"password\":\"$ZO_PASS\"}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('auth',''))" 2>/dev/null)
-
-if [ -z "$AUTH_TOKEN" ]; then
-  log_err "Authentication failed."
+# --- Auth (HTTP Basic) ---
+# NOTE: the /auth/login token flow stopped working on v1.0.x (422 missing `name`
+# then 401 invalid credentials) — the API fully supports HTTP Basic auth instead.
+API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/default/dashboards")
+if [ "$API_STATUS" != "200" ]; then
+  log_err "API authentication failed (HTTP $API_STATUS)."
   exit 1
 fi
-log_ok "Authenticated"
+log_ok "API access verified"
 
 # --- Restore dashboards per org ---
 RESTORED=0
@@ -86,9 +85,9 @@ if 'data' in data:
 elif 'dashboard' in data:
     dash = {**data}
 else:
-    dash = data
-# Remove fields that prevent re-creation
-for key in ['_id', 'dashboard_id', 'dashBoardId', 'created_at', 'updated_at']:
+    dash = data# Remove fields that prevent re-creation (dashboard detail is a versioned
+# v1..v8 wrapper since v1.0.x — strip metadata, keep the versioned body)
+for key in ['_id', 'dashboard_id', 'dashBoardId', 'created_at', 'updated_at', 'updatedAt', 'hash']:
     dash.pop(key, None)
 print(json.dumps(dash))
 " 2>/dev/null)
@@ -101,7 +100,7 @@ print(json.dumps(dash))
 
     HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
       -X POST "$LOCAL_URL/api/default/$ORG/dashboards" \
-      -H "Authorization: Bearer $AUTH_TOKEN" \
+      -u "$ZO_EMAIL:$ZO_PASS" \
       -H "Content-Type: application/json" \
       -d "$PAYLOAD" 2>/dev/null || echo "000")
 

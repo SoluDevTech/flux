@@ -1,17 +1,23 @@
 #!/bin/bash
 #
-# OpenObserve Upgrade Script v0.60.1 → v0.70.3
-# Chart: 0.70.4 | Image: v0.70.3
+# OpenObserve Upgrade Script v1.0.4 → v1.1.2
+# Chart: 1.1.6 | Image: v1.1.2
 #
 # Includes: backup, upgrade, verification, rollback
 #
 set -euo pipefail
 
+# Run from the flux repo root regardless of the caller's CWD
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FLUX_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$FLUX_ROOT"
+
 NAMESPACE="soludev"
 RELEASE_NAME="openobserve"
 CHART_NAME="openobserve/openobserve-standalone"
-CHART_VERSION="0.70.4"
-VALUES_FILE="./config/dev/openobserve/values.yml"
+CHART_VERSION="1.1.6"
+IMAGE_TAG="v1.1.2"
+VALUES_FILE="./config/prd/openobserve/values.yaml"
 BACKUP_DIR="./backups/openobserve/$(date +%Y%m%d_%H%M%S)"
 
 # Colors
@@ -48,33 +54,68 @@ backup_data() {
 
     mkdir -p "$BACKUP_DIR"
 
-    # 1a. Backup dashboards via API
+    # 1a. Backup dashboards via API (funnel into this run's backup dir)
     log_info "Running dashboard backup script..."
     if [ -f "./config/scripts/backup-openobserve.sh" ]; then
-        ./config/scripts/backup-openobserve.sh
-        # Move backup to our backup dir
-        LATEST_BACKUP=$(ls -td ./backups/openobserve/*/ 2>/dev/null | head -1)
-        if [ -n "$LATEST_BACKUP" ] && [ "$LATEST_BACKUP" != "$BACKUP_DIR/" ]; then
-            log_info "Dashboard backup at: $LATEST_BACKUP"
-        fi
+        O2_BACKUP_DIR="$BACKUP_DIR" bash ./config/scripts/backup-openobserve.sh
+        log_info "Dashboard backup at: $BACKUP_DIR"
     else
         log_warn "Backup script not found at ./config/scripts/backup-openobserve.sh"
         log_warn "Consider running it manually before proceeding."
     fi
 
     # 1b. Backup PostgreSQL metadata
+    # OpenObserve metadata live in postgres-telemetry (per ZO_META_POSTGRES_DSN),
+    # user/db "openobserve" — NOT the soludev postgres (app=postgres, used by Logto).
     log_info "Backing up PostgreSQL metadata..."
-    POSTGRES_POD=$(kubectl get pods -n "$NAMESPACE" -l app=postgres -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+    POSTGRES_POD=$(kubectl get pods -n "$NAMESPACE" -l app=postgres-telemetry -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
 
     if [ -n "$POSTGRES_POD" ]; then
-        kubectl exec -n "$NAMESPACE" "$POSTGRES_POD" -- \
-            pg_dump -U openobserve openobserve > "$BACKUP_DIR/openobserve-metadata.sql" 2>/dev/null || {
-            log_warn "PostgreSQL dump failed. Trying with different user..."
-            kubectl exec -n "$NAMESPACE" "$POSTGRES_POD" -- \
-                pg_dump -U logto openobserve > "$BACKUP_DIR/openobserve-metadata.sql" 2>/dev/null || \
-                log_warn "Could not dump PostgreSQL. Continuing without DB backup."
-        }
-        log_ok "PostgreSQL metadata backed up to $BACKUP_DIR/openobserve-metadata.sql"
+        # Kill orphaned pg_dump processes from a previous interrupted run.
+        # If the kubectl exec client is cut, the remote pg_dump keeps running inside
+        # the pod and its AccessShareLocks block the post-upgrade DB migrations
+        # (this stalled the v1.0.4 -> v1.1.2 migration for ~3h: ALTER TABLE
+        # file_list waited on locks held by a 1h45-old orphaned dump).
+        ORPHANS=$(kubectl exec -n "$NAMESPACE" "$POSTGRES_POD" -- pgrep -fc pg_dump 2>/dev/null || echo "0")
+        ORPHANS=$(echo "$ORPHANS" | tr -d '[:space:]')
+        if [ -n "$ORPHANS" ] && [ "$ORPHANS" != "0" ]; then
+            log_warn "Found $ORPHANS orphaned pg_dump process(es) on $POSTGRES_POD — killing (locks block migrations)."
+            kubectl exec -n "$NAMESPACE" "$POSTGRES_POD" -- pkill -f pg_dump 2>/dev/null || true
+            sleep 2
+        fi
+        # Dump DETACHED inside the pod, then kubectl cp out.
+        # Streaming `kubectl exec pg_dump > local-file` over this link times out
+        # after ~15 min (i/o timeout on the API server stream): the local file is
+        # truncated AND the remote pg_dump survives as an orphan holding
+        # AccessShareLocks that block the post-upgrade DB migrations.
+        # file_list DATA is excluded: the full DB is ~11 GB / ~172 MB gzipped
+        # (file_list partitions dominate) — untransferable over the exec stream.
+        # Its DDL is kept; the metadata tables (dashboards/users/orgs/alerts...)
+        # are what this safety net protects.
+        DUMP_TMP_SQL=/tmp/oo-upgrade-metadata.sql.gz
+        DUMP_TMP_ERR=/tmp/oo-upgrade-metadata.err
+        log_info "Launching pg_dump inside $POSTGRES_POD (detached, metadata only)..."
+        kubectl exec -n "$NAMESPACE" "$POSTGRES_POD" -- sh -c \
+            "nohup sh -c \"pg_dump -U openobserve openobserve --exclude-table-data='file_list*' | gzip > $DUMP_TMP_SQL 2> $DUMP_TMP_ERR\" < /dev/null > /dev/null 2>&1 &"
+        sleep 5 # let the detached pg_dump spawn before probing
+        DUMP_OK=""
+        for _ in $(seq 1 60); do # up to 20 min
+            if ! kubectl exec -n "$NAMESPACE" "$POSTGRES_POD" -- pgrep -x pg_dump >/dev/null 2>&1; then
+                DUMP_OK=1; break
+            fi
+            sleep 20
+        done
+        if [ -n "$DUMP_OK" ]; then
+            kubectl cp "$NAMESPACE/$POSTGRES_POD:$DUMP_TMP_SQL" "$BACKUP_DIR/openobserve-metadata.sql.gz" \
+                && gunzip -f "$BACKUP_DIR/openobserve-metadata.sql.gz" \
+                && kubectl exec -n "$NAMESPACE" "$POSTGRES_POD" -- rm -f "$DUMP_TMP_SQL" "$DUMP_TMP_ERR"
+        fi
+        if tail -6 "$BACKUP_DIR/openobserve-metadata.sql" 2>/dev/null | grep -q "PostgreSQL database dump complete"; then
+            log_ok "PostgreSQL metadata backed up to $BACKUP_DIR/openobserve-metadata.sql"
+        else
+            log_err "PostgreSQL dump INCOMPLETE (no completion marker) — restore fidelity is NOT guaranteed."
+            log_err "Check for orphaned pg_dump on $POSTGRES_POD before proceeding with any rollback."
+        fi
     else
         log_warn "PostgreSQL pod not found. Skipping DB backup."
     fi
@@ -95,7 +136,7 @@ helm_upgrade() {
 
     helm repo update openobserve 2>/dev/null || helm repo add openobserve https://charts.openobserve.ai
 
-    log_info "Upgrading to chart $CHART_VERSION with image v0.70.3..."
+    log_info "Upgrading to chart $CHART_VERSION with image $IMAGE_TAG..."
     helm upgrade "$RELEASE_NAME" "$CHART_NAME" \
         --version "$CHART_VERSION" \
         --namespace "$NAMESPACE" \
@@ -114,23 +155,23 @@ verify_upgrade() {
     # Wait for pod
     log_info "Waiting for OpenObserve pod to be ready..."
     kubectl wait --for=condition=ready pod \
-        -l app.kubernetes.io/name=openobserve \
+        -l app.kubernetes.io/name=openobserve-standalone \
         -n "$NAMESPACE" \
         --timeout=300s || {
         log_err "Pod not ready after 5 minutes!"
-        log_err "Check logs: kubectl logs -n $NAMESPACE -l app.kubernetes.io/name=openobserve --tail=100"
+        log_err "Check logs: kubectl logs -n $NAMESPACE -l app.kubernetes.io/name=openobserve-standalone --tail=100"
         log_err "To rollback: $0 rollback $BACKUP_DIR"
         exit 1
     }
 
     # Check image version
-    IMAGE=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=openobserve \
+    IMAGE=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=openobserve-standalone \
         -o jsonpath='{.items[0].spec.containers[0].image}' 2>/dev/null || echo "unknown")
     log_info "Running image: $IMAGE"
 
     # Check DB migration in logs
     log_info "Checking for migration messages in logs..."
-    POD_NAME=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=openobserve \
+    POD_NAME=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=openobserve-standalone \
         -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
     if [ -n "$POD_NAME" ]; then
         MIGRATION_LOGS=$(kubectl logs -n "$NAMESPACE" "$POD_NAME" --tail=200 2>/dev/null | grep -i "migrat" || echo "No migration messages found")
@@ -143,7 +184,7 @@ verify_upgrade() {
     # Health check
     log_info "Running health check..."
     sleep 5
-    kubectl exec -n "$NAMESPACE" -l app.kubernetes.io/name=openobserve -- \
+    kubectl exec -n "$NAMESPACE" -l app.kubernetes.io/name=openobserve-standalone -- \
         curl -sf http://localhost:5080/healthz 2>/dev/null && \
         log_ok "Health check passed" || \
         log_warn "Health check not reachable (may need more time to start)"
@@ -183,13 +224,13 @@ do_rollback() {
     # Wait for pod
     log_info "Waiting for rollback pod..."
     kubectl wait --for=condition=ready pod \
-        -l app.kubernetes.io/name=openobserve \
+        -l app.kubernetes.io/name=openobserve-standalone \
         -n "$NAMESPACE" \
         --timeout=300s || true
 
     # Restore PostgreSQL if needed
     if [ -n "$BACKUP_TO_USE" ] && [ -f "$BACKUP_TO_USE/openobserve-metadata.sql" ]; then
-        log_warn "If v0.70 DB migration already ran, you may need to restore PostgreSQL."
+        log_warn "If v1.1.2 DB migration already ran, you may need to restore PostgreSQL."
         log_warn "SQL backup: $BACKUP_TO_USE/openobserve-metadata.sql"
         log_warn "To restore:"
         log_warn "  kubectl exec -n $NAMESPACE <postgres-pod> -- psql -U openobserve openobserve < $BACKUP_TO_USE/openobserve-metadata.sql"
@@ -202,7 +243,7 @@ do_rollback() {
     fi
 
     log_info "Helm rollback executed. Check pod status."
-    kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=openobserve
+    kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=openobserve-standalone
 }
 
 # --- Full upgrade flow ---
@@ -211,9 +252,9 @@ full_upgrade() {
     backup_data
 
     echo ""
-    log_warn "About to upgrade OpenObserve from v0.60.1 to v0.70.3"
+    log_warn "About to upgrade OpenObserve from v1.0.4 to v1.1.2 (chart $CHART_VERSION)"
     log_warn "Dashboards and metadata stored in PostgreSQL will be auto-migrated."
-    log_warn "Data in MinIO (logs/metrics/traces) is preserved."
+    log_warn "Data in RustFS (logs/metrics/traces) is preserved."
     log_warn "Backup is at: $BACKUP_DIR"
     echo ""
     read -p "Continue with upgrade? (y/N) " -n 1 -r
@@ -231,14 +272,14 @@ full_upgrade() {
     log_ok "  UPGRADE COMPLETE!"
     log_ok "============================================="
     echo ""
-    log_info "Image: o2cr.ai/openobserve/openobserve:v0.70.3"
+    log_info "Image: o2cr.ai/openobserve/openobserve:$IMAGE_TAG"
     log_info "Access: https://openobserve.soludev.tech"
     echo ""
     log_info "Verify your dashboards and RUM data are intact."
     log_info "If issues, rollback with: $0 rollback $BACKUP_DIR"
     echo ""
     log_info "To check migration logs:"
-    log_info "  kubectl logs -n $NAMESPACE -l app.kubernetes.io/name=openobserve | grep -i migrat"
+    log_info "  kubectl logs -n $NAMESPACE -l app.kubernetes.io/name=openobserve-standalone | grep -i migrat"
 }
 
 # --- Main ---

@@ -1977,7 +1977,7 @@ kubectl get pv nfs-soludev-openobserve
 Create a values file that references external secrets and configures OpenObserve:
 
 ```yaml
-# config/dev/openobserve/values.yml
+# config/prd/openobserve/values.yaml
 
 # Empty auth section - credentials injected via extraEnv
 auth:
@@ -2087,7 +2087,7 @@ helm repo update
 ```bash
 helm install openobserve openobserve/openobserve-standalone \
   -n soludev \
-  -f config/dev/openobserve/values.yml
+  -f config/prd/openobserve/values.yaml
 ```
 
 #### Upgrade OpenObserve
@@ -2097,7 +2097,7 @@ When you need to update configuration:
 ```bash
 helm upgrade openobserve openobserve/openobserve-standalone \
   -n soludev \
-  -f config/dev/openobserve/values.yml
+  -f config/prd/openobserve/values.yaml
 ```
 
 #### Major Version Upgrade (e.g., v0.60 → v0.70)
@@ -2123,7 +2123,7 @@ For major version upgrades that include database migrations, use the upgrade scr
 1. Back up dashboards via API: `./config/scripts/backup-openobserve.sh`
 2. Back up PostgreSQL metadata: `kubectl exec -n soludev <postgres-pod> -- pg_dump -U openobserve openobserve > backup.sql`
 3. Read the release notes for breaking changes and DB migration notes
-4. Test with `helm template` first: `helm template openobserve openobserve/openobserve-standalone --version <chart-version> -f config/dev/openobserve/values.yml`
+4. Test with `helm template` first: `helm template openobserve openobserve/openobserve-standalone --version <chart-version> -f config/prd/openobserve/values.yaml`
 
 **Dashboard & RUM preservation:**
 
@@ -2359,7 +2359,7 @@ kubectl logs -n external-secrets-system -l app.kubernetes.io/name=external-secre
 **Solution:**
 
 - Reduce `ZO_META_CONNECTION_POOL_MAX_SIZE`
-- Increase resource limits in values.yml
+- Increase resource limits in values.yaml
 - Adjust `ZO_COMPACT_DATA_RETENTION_DAYS` to retain less data
 - Monitor RustFS bucket size
 
@@ -4997,7 +4997,7 @@ helm upgrade phoenix oci://registry-1.docker.io/arizephoenix/phoenix-helm \
   --version 9.0.12 -n soludev -f config/phoenix/prd/values.yaml \
   --reuse-values --force-conflicts
 helm upgrade openobserve openobserve/openobserve-standalone -n soludev \
-  -f config/prd/openobserve/values.yml
+  -f config/prd/openobserve/values.yaml
 ```
 
 FC: le `minio-pickpro-dev` reste un **Deployment raw Flux** (pas Helm),

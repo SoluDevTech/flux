@@ -6,6 +6,7 @@
 # Les autres clés sont UNCHANGED (bucket observability, us-east-1, path-style).
 # Creds : ZO_S3_ACCESS/SECRET prennent désormais les clés RUSTFS_ACCESS/RUSTFS_SECRET
 # du secret rustfs-soludev (OpenBao soludev/rustfs — creds dédiés, plus de MINIO_*).
+# 2026-11-20 : upgrade v1.0.4 -> v1.1.2 (chart 1.1.6) — seul flip : image.oss.tag.
 
 auth:
   ZO_S3_ACCESS_KEY: ""
@@ -97,29 +98,33 @@ extraEnv:
   value: "500"
 image:
   oss:
-    tag: v1.0.4
+    tag: v1.1.2
 ingress:
   enabled: false
-livenessProbe:
-  failureThreshold: 6
-  initialDelaySeconds: 60
+# Probes — le chart openobserve-standalone 1.1.6 n'expose qu'un bloc `probes`
+# unique (les keys livenessProbe/readinessProbe/startupProbe sont IGNOREES).
+# Pas de startupProbe supporte par ce chart : le budget de demarrage = budget
+# liveness. Budget genereux obligatoire : les migrations DB (schema 77->97 lors
+# de l'upgrade v1.0.4 -> v1.1.2) tournent AVANT l'ouverture du listener HTTP —
+# une fenetre de kill courte tue le container en pleine migration (CrashLoop
+# observe : fenetre 150s + OOM a 4Gi). 120s + 60x15s ~= 17 min de budget.
+probes:
+  enabled: true
+  path: /healthz
+  initialDelaySeconds: 120
   periodSeconds: 15
-  successThreshold: 1
-  timeoutSeconds: 5
+  failureThreshold: 60
 minio:
   enabled: false
 persistence:
   enabled: false
-readinessProbe:
-  failureThreshold: 6
-  initialDelaySeconds: 60
-  periodSeconds: 15
-  successThreshold: 1
-  timeoutSeconds: 5
 resources:
   limits:
     cpu: 1500m
-    memory: 4Gi
+    # 8Gi (up from 4Gi): big DB migrations (e.g. schema 77 -> 97 during the
+    # v1.0.4 -> v1.1.2 upgrade) OOM-killed the container at 4Gi (exit 137).
+    # Steady state stays well below; requests unchanged so scheduling is not impacted.
+    memory: 8Gi
   requests:
     cpu: 500m
     memory: 2Gi
@@ -128,9 +133,3 @@ service:
   grpc_port: 5081
   http_port: 5080
   type: ClusterIP
-startupProbe:
-  failureThreshold: 30
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  successThreshold: 1
-  timeoutSeconds: 5

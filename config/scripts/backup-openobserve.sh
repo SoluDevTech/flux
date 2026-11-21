@@ -1,13 +1,32 @@
 #!/bin/bash
 #
 # OpenObserve Dashboard & RUM Backup Script
-# Backs up all dashboards, alerts, pipelines, and RUM configuration
-# via the OpenObserve API before a migration/upgrade.
+# Backs up dashboards, folders, alerts, pipelines, functions, saved views
+# and RUM tokens via the OpenObserve API before a migration/upgrade.
+#
+# API map verified against v1.0.x (from /api-doc/openapi.json):
+#   orgs      : GET /api/organizations
+#   streams   : GET /api/{org}/streams
+#   folders   : GET /api/v2/{org}/folders/dashboards
+#   dashboards: GET /api/{org}/dashboards?folder={folderId}  (folder-less: no param)
+#   detail    : GET /api/{org}/dashboards/{dashboardId}      (versioned v1..v8 wrapper)
+#   alerts    : GET /api/v2/{org}/alerts
+#   pipelines : GET /api/{org}/pipelines
+#   functions : GET /api/{org}/functions
+#   savedviews: GET /api/{org}/savedviews
+#   rum token : GET /api/{org}/rumtoken
+# Auth: HTTP Basic (the /auth/login token flow stopped working on v1.0.x).
 #
 set -euo pipefail
 
+# Always write backups under the flux repo root, regardless of the caller's CWD
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/../.."
+
 NAMESPACE="soludev"
-BACKUP_DIR="./backups/openobserve/$(date +%Y%m%d_%H%M%S)"
+# Allow callers (e.g. upgrade-openobserve.sh) to funnel all backup artifacts
+# into a single directory instead of a fresh timestamped one per run.
+BACKUP_DIR="${O2_BACKUP_DIR:-./backups/openobserve/$(date +%Y%m%d_%H%M%S)}"
 mkdir -p "$BACKUP_DIR"
 
 # Colors
@@ -45,119 +64,121 @@ sleep 3
 
 LOCAL_URL="http://localhost:15080"
 
-# --- Auth ---
-log_info "Authenticating..."
-AUTH_TOKEN=$(curl -s -X POST "$LOCAL_URL/auth/login" \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"$ZO_EMAIL\",\"password\":\"$ZO_PASS\"}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('auth',''))" 2>/dev/null)
-
-if [ -z "$AUTH_TOKEN" ]; then
-  log_err "Authentication failed. Check credentials."
+# --- Auth (HTTP Basic) ---
+log_info "Verifying API access (HTTP Basic)..."
+API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/organizations")
+if [ "$API_STATUS" != "200" ]; then
+  log_err "API authentication failed (HTTP $API_STATUS). Check credentials."
   exit 1
 fi
-log_ok "Authenticated successfully"
+log_ok "API access verified"
 
 # --- List organizations ---
 log_info "Fetching organizations..."
-ORGS=$(curl -s "$LOCAL_URL/api/default/orgs" \
-  -H "Authorization: Bearer $AUTH_TOKEN")
-
-echo "$ORGS" | python3 -c "import sys,json; [print(o['identifier']) for o in json.load(sys.stdin).get('data',[])]" 2>/dev/null > "$BACKUP_DIR/orgs.txt"
-ORG_COUNT=$(wc -l < "$BACKUP_DIR/orgs.txt" | tr -d ' ')
+curl -s -m 30 -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/organizations" \
+  | python3 -c "import sys,json; [print(o['identifier']) for o in json.load(sys.stdin).get('data',[])]" \
+  > "$BACKUP_DIR/orgs.txt" 2>/dev/null
+ORG_COUNT=$(grep -c . "$BACKUP_DIR/orgs.txt" || true)
+if [ "$ORG_COUNT" = "0" ]; then
+  log_err "No organizations found — refusing to produce an empty backup."
+  exit 1
+fi
 log_ok "Found $ORG_COUNT organization(s)"
 
-# --- Fetch stream names ---
-log_info "Fetching stream names..."
-STREAMS=$(curl -s "$LOCAL_URL/api/default/default/streams" \
-  -H "Authorization: Bearer $AUTH_TOKEN")
-echo "$STREAMS" | python3 -m json.tool > "$BACKUP_DIR/streams.json" 2>/dev/null || true
-
-# --- Backup dashboards ---
-log_info "Backing up dashboards..."
+# --- Backup per org ---
 while IFS= read -r ORG; do
+  [ -z "$ORG" ] && continue
   ORG_DIR="$BACKUP_DIR/orgs/$ORG"
-  mkdir -p "$ORG_DIR/dashboards" "$ORG_DIR/alerts" "$ORG_DIR/pipelines" "$ORG_DIR/functions"
+  mkdir -p "$ORG_DIR/dashboards" "$ORG_DIR/alerts"
 
-  DASHBOARDS=$(curl -s "$LOCAL_URL/api/default/$ORG/dashboards" \
-    -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null)
+  # --- Streams ---
+  log_info "  [$ORG] Fetching streams..."
+  curl -s -m 30 -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/$ORG/streams" \
+    | python3 -m json.tool > "$ORG_DIR/streams.json" 2>/dev/null || true
 
-  DASH_IDS=$(echo "$DASHBOARDS" | python3 -c "
-import sys,json
+  # --- Folders (v2) ---
+  log_info "  [$ORG] Fetching dashboard folders..."
+  curl -s -m 30 -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/v2/$ORG/folders/dashboards" \
+    | python3 -m json.tool > "$ORG_DIR/folders.json" 2>/dev/null || true
+
+  # --- Dashboards: folder-less list + one list per folder ---
+  log_info "  [$ORG] Backing up dashboards..."
+  DASH_IDS_FILE="$ORG_DIR/dashboard_ids.txt"
+  : > "$DASH_IDS_FILE"
+
+  extract_ids() {
+    # Reads a dashboards list JSON on stdin, prints one dashboardId per line.
+    python3 -c "
+import sys, json
 try:
-  data = json.load(sys.stdin)
-  for d in data.get('data', data.get('dashboards', data.get('list', []))):
-    did = d.get('dashboard_id', d.get('dashBoardId', d.get('_id', d.get('id',''))))
-    if did: print(did)
-except: pass
-" 2>/dev/null || true)
+    data = json.load(sys.stdin)
+    for d in data.get('dashboards', []):
+        did = ''
+        for vkey in ['v1','v2','v3','v4','v5','v6','v7','v8']:
+            v = d.get(vkey)
+            if isinstance(v, dict) and v.get('dashboardId'):
+                did = v['dashboardId']
+                break
+        if not did:
+            did = d.get('dashboard_id', d.get('dashBoardId', d.get('_id', d.get('id',''))))
+        if did:
+            print(did)
+except Exception:
+    pass
+" 2>/dev/null || true
+  }
 
-  DASH_COUNT=$(echo "$DASH_IDS" | grep -c . 2>/dev/null || echo 0)
+  # Folder-less dashboards
+  curl -s -m 30 -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/$ORG/dashboards" | extract_ids >> "$DASH_IDS_FILE"
+
+  # Dashboards inside each folder
+  curl -s -m 30 -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/v2/$ORG/folders/dashboards" \
+    | python3 -c "import sys,json; [print(f['folderId']) for f in json.load(sys.stdin).get('list',[])]" 2>/dev/null \
+    | while IFS= read -r FID; do
+        [ -z "$FID" ] && continue
+        curl -s -m 30 -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/$ORG/dashboards?folder=$FID" \
+          | extract_ids >> "$DASH_IDS_FILE"
+      done
+
+  DASH_COUNT=$(sort -u "$DASH_IDS_FILE" | grep -c . || true)
   log_info "  [$ORG] Found $DASH_COUNT dashboard(s)"
 
-  while IFS= read -r DASH_ID; do
+  sort -u "$DASH_IDS_FILE" | while IFS= read -r DASH_ID; do
     [ -z "$DASH_ID" ] && continue
-    DASH_DATA=$(curl -s "$LOCAL_URL/api/default/$ORG/dashboards/$DASH_ID" \
-      -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null)
-    echo "$DASH_DATA" | python3 -m json.tool > "$ORG_DIR/dashboards/${DASH_ID}.json" 2>/dev/null || true
-  done <<< "$DASH_IDS"
-
-  # --- Backup alerts ---
-  log_info "  [$ORG] Backing up alerts..."
-  ALERTS=$(curl -s "$LOCAL_URL/api/default/$ORG/alerts" \
-    -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null)
-  echo "$ALERTS" | python3 -m json.tool > "$ORG_DIR/alerts/all_alerts.json" 2>/dev/null || true
-
-  for stream_type in logs metrics traces; do
-    STREAMS_OF_TYPE=$(echo "$STREAMS" | python3 -c "
-import sys,json
-try:
-  data = json.load(sys.stdin)
-  for s in data.get('data',[]).get('list',data.get('data',[])):
-    if s.get('stream_type','') == '$stream_type':
-      print(s.get('name',''))
-except: pass
-" 2>/dev/null || true)
-
-    while IFS= read -r STREAM; do
-      [ -z "$STREAM" ] && continue
-      STREAM_ALERTS=$(curl -s "$LOCAL_URL/api/default/$ORG/$stream_type/$STREAM/alerts" \
-        -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null || true)
-      if [ -n "$STREAM_ALERTS" ] && echo "$STREAM_ALERTS" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
-        mkdir -p "$ORG_DIR/alerts/$stream_type"
-        echo "$STREAM_ALERTS" | python3 -m json.tool > "$ORG_DIR/alerts/$stream_type/${STREAM}.json" 2>/dev/null || true
-      fi
-    done <<< "$STREAMS_OF_TYPE"
+    curl -s -m 30 -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/$ORG/dashboards/$DASH_ID" \
+      | python3 -m json.tool > "$ORG_DIR/dashboards/${DASH_ID}.json" 2>/dev/null || true
   done
 
-  # --- Backup pipelines ---
+  # --- Alerts (v2 org-wide list) ---
+  log_info "  [$ORG] Backing up alerts..."
+  curl -s -m 30 -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/v2/$ORG/alerts" \
+    | python3 -m json.tool > "$ORG_DIR/alerts/all_alerts.json" 2>/dev/null || true
+
+  # --- Alert destinations & templates ---
+  curl -s -m 30 -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/$ORG/alerts/destinations" \
+    | python3 -m json.tool > "$ORG_DIR/alerts/destinations.json" 2>/dev/null || true
+  curl -s -m 30 -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/$ORG/alerts/templates" \
+    | python3 -m json.tool > "$ORG_DIR/alerts/templates.json" 2>/dev/null || true
+
+  # --- Pipelines ---
   log_info "  [$ORG] Backing up pipelines..."
-  PIPELINES=$(curl -s "$LOCAL_URL/api/default/$ORG/pipelines" \
-    -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null || true)
-  echo "$PIPELINES" | python3 -m json.tool > "$ORG_DIR/pipelines/all_pipelines.json" 2>/dev/null || true
+  curl -s -m 30 -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/$ORG/pipelines" \
+    | python3 -m json.tool > "$ORG_DIR/pipelines.json" 2>/dev/null || true
 
-  # --- Backup functions ---
+  # --- Functions ---
   log_info "  [$ORG] Backing up functions..."
-  FUNCTIONS=$(curl -s "$LOCAL_URL/api/default/$ORG/functions" \
-    -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null || true)
-  echo "$FUNCTIONS" | python3 -m json.tool > "$ORG_DIR/functions/all_functions.json" 2>/dev/null || true
+  curl -s -m 30 -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/$ORG/functions" \
+    | python3 -m json.tool > "$ORG_DIR/functions.json" 2>/dev/null || true
 
-  # --- Backup RUM config ---
-  log_info "  [$ORG] Backing up RUM configuration..."
-  RUM_CONFIG=$(curl -s "$LOCAL_URL/api/default/$ORG/rum/config" \
-    -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null || true)
-  echo "$RUM_CONFIG" | python3 -m json.tool > "$ORG_DIR/rum_config.json" 2>/dev/null || true
+  # --- Saved views ---
+  log_info "  [$ORG] Backing up saved views..."
+  curl -s -m 30 -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/$ORG/savedviews" \
+    | python3 -m json.tool > "$ORG_DIR/saved_views.json" 2>/dev/null || true
 
-  # --- Backup saved searches ---
-  log_info "  [$ORG] Backing up saved searches..."
-  SEARCHES=$(curl -s "$LOCAL_URL/api/default/$ORG/search/saved" \
-    -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null || true)
-  echo "$SEARCHES" | python3 -m json.tool > "$ORG_DIR/saved_searches.json" 2>/dev/null || true
-
-  # --- Backup settings/folders ---
-  log_info "  [$ORG] Backing up folders..."
-  FOLDERS=$(curl -s "$LOCAL_URL/api/default/$ORG/folders" \
-    -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null || true)
-  echo "$FOLDERS" | python3 -m json.tool > "$ORG_DIR/folders.json" 2>/dev/null || true
+  # --- RUM token ---
+  log_info "  [$ORG] Backing up RUM token..."
+  curl -s -m 30 -u "$ZO_EMAIL:$ZO_PASS" "$LOCAL_URL/api/$ORG/rumtoken" \
+    | python3 -m json.tool > "$ORG_DIR/rum_token.json" 2>/dev/null || true
 
 done < "$BACKUP_DIR/orgs.txt"
 
@@ -171,17 +192,13 @@ log_info "Backup location: $BACKUP_DIR"
 echo ""
 
 TOTAL_DASHBOARDS=$(find "$BACKUP_DIR" -name "*.json" -path "*/dashboards/*" | wc -l | tr -d ' ')
-TOTAL_ALERTS=$(find "$BACKUP_DIR" -name "*.json" -path "*/alerts/*" | wc -l | tr -d ' ')
-TOTAL_PIPELINES=$(find "$BACKUP_DIR" -name "all_pipelines.json" | wc -l | tr -d ' ')
 
 log_info "Dashboards: $TOTAL_DASHBOARDS"
-log_info "Alert files: $TOTAL_ALERTS"
-log_info "Pipelines:  $TOTAL_PIPELINES"
 echo ""
 log_info "To restore dashboards after upgrade:"
 log_info "  Use: ./config/scripts/restore-openobserve-dashboards.sh $BACKUP_DIR"
 echo ""
-log_warn "IMPORTANT: Data in MinIO (logs/metrics/traces) and PostgreSQL (metadata)"
+log_warn "IMPORTANT: Data in RustFS (logs/metrics/traces) and PostgreSQL (metadata)"
 log_warn "is preserved during upgrade. Dashboards stored in PostgreSQL will be"
 log_warn "migrated automatically by OpenObserve's internal migration system."
 log_warn "This backup is a safety net in case rollback is needed."

@@ -2,3 +2,5 @@ openbao-credentials.json
 secret.yaml
 .serena
 docker-secret.yaml
+# OpenObserve / infra backups — contain RUM tokens & DB metadata, never commit
+backups/
