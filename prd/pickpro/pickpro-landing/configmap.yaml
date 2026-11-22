@@ -1,0 +1,33 @@
+# Runtime config served at /config.json by pickpro-landing (nginx static site).
+# Mounted into the pod at /usr/share/nginx/html/config.json (subPath), same
+# pattern as pickpro-front. Config changes need a pod restart (no checksum
+# annotation) and never a new image.
+# hubspot: public form identifiers (portal 149733618, eu1 region) used by the
+# newsletter and contact form submissions (api-eu1.hsforms.com).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pickpro-landing-config
+  namespace: pickpro
+data:
+  config.json: |
+    {
+      "openobserve": {
+        "enabled": true,
+        "site": "openobserve.soludev.tech",
+        "clientToken": "rumWf3mnqgZHLkSPfQr",
+        "organizationIdentifier": "default",
+        "applicationId": "pickpro-landing",
+        "service": "pickpro-landing",
+        "version": "0.0.1",
+        "insecureHTTP": false,
+        "apiVersion": "v1"
+      },
+      "hubspot": {
+        "portalId": "149733618",
+        "newsletterFormId": "0cd42b18-360a-49bd-b2fb-ee5221b21970",
+        "contactFormId": "2d02e3d4-e3cb-4ab1-975a-054c7b0d6ca7",
+        "subscriptionTypeId": "4183533045",
+        "region": "eu1"
+      }
+    }
