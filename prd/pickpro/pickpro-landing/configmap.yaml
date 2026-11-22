@@ -19,6 +19,7 @@ data:
         "organizationIdentifier": "default",
         "applicationId": "pickpro-landing",
         "service": "pickpro-landing",
+        "env": "prd",
         "version": "0.0.1",
         "insecureHTTP": false,
         "apiVersion": "v1"
