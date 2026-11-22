@@ -32,7 +32,7 @@ spec:
               app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: composable-ui
-          image: kaiohz/pickpro:composable-ui-c969f808c1e5b940f6a951c4fc2302505aa0e6f5
+          image: kaiohz/pickpro:composable-ui-9644a72c3ed5241d5ae097ef8fd5d2de7862fbfa
           ports:
             - containerPort: 80
           volumeMounts:
