@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: pickpro-notifications
-          image: kaiohz/pickpro:pickpro-notifications-99e9ab235df63c48dccaca3a931c1d07b79f4085
+          image: kaiohz/pickpro:pickpro-notifications-7845b7da190e7ffd3f78f8950440335c29013788
           ports:
             - containerPort: 8000
           env:
