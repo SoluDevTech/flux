@@ -36,10 +36,6 @@ data:
   DEEP_AGENT_REASONING_EFFORT: high
   DEEP_AGENT_MAX_INPUT_TOKENS: "1310720"
   DEEP_AGENT_RECURSION_LIMIT: "150"
-  # Deep agent tool-call budget (QA 2026-11-24): derived default is
-  # max(5, min(80% of RECURSION, RECURSION//2 - 10)) = 65 for 150 — set
-  # explicitly so the guard ceiling is visible and tunable per env.
-  DEEP_AGENT_TOOL_CALL_BUDGET: "65"
   DEEP_AGENT_SQL_BUDGET: "25"
   DEEP_AGENT_JOB_STRUCTURE_CACHE_MAX: "32"
   DEEP_AGENT_PUBLISH_VALIDATION_MAX_RETRIES: "2"
