@@ -2673,7 +2673,7 @@ cp dev/soludev/nats/secret.yaml.example dev/soludev/nats/secret.yaml
 kubectl apply -f dev/soludev/nats/secret.yaml
 
 # 4. Reinstall NATS in soludev
-helm upgrade --install nats nats/nats \
+helm upgrade --install nats nats/nats --version 2.14.6 \
   --namespace soludev \
   -f config/dev/nats/values.yaml
 
@@ -2720,7 +2720,7 @@ helm repo update
 The Helm chart is NOT managed by Flux (it's a Helm release, not a Kustomization). Install it manually:
 
 ```bash
-helm upgrade --install nats nats/nats \
+helm upgrade --install nats nats/nats --version 2.14.6 \
   --namespace soludev \
   -f config/dev/nats/values.yaml
 ```
@@ -2856,7 +2856,7 @@ kubectl exec -n soludev nats-box-0 -- nats -s nats://pickpro:pickpro-nats-passwo
 When `config/dev/nats/values.yaml` is modified, apply the changes manually (Flux does not manage Helm releases):
 
 ```bash
-helm upgrade nats nats/nats --namespace soludev -f config/dev/nats/values.yaml
+helm upgrade nats nats/nats --version 2.14.6 --namespace soludev -f config/prd/nats/values.yaml
 ```
 
 #### Uninstallation
