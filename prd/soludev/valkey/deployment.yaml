@@ -1,0 +1,59 @@
+# Valkey (soludev) — cache backend for Logto.
+# Migrated from docker (Storage VPS 30, bind Tailscale 100.64.0.7:6379) into k8s.
+# Ephemeral by design: no PV, no RDB/AOF — a pod restart means a cold Logto
+# cache, which is acceptable. Sizing: CPU throttling incident (Sept 2026)
+# showed Logto cache needs 2 dedicated cores in burst.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: valkey
+  namespace: soludev
+  labels:
+    app: valkey
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: valkey
+  template:
+    metadata:
+      labels:
+        app: valkey
+        app.kubernetes.io/part-of: soludev-workload
+    spec:
+      containers:
+        - name: valkey
+          image: valkey/valkey:8.1.12
+          args:
+            - "--save"
+            - ""
+            - "--appendonly"
+            - "no"
+          ports:
+            - name: valkey
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ["valkey-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["valkey-cli", "ping"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "2"
+            limits:
+              memory: "512Mi"
+              cpu: "2"
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
