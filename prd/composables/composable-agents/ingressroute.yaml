@@ -17,9 +17,37 @@ spec:
       services:
         - name: composable-agents
           port: 8000
-    # Browser calls (cookie session) and direct Bearer JWT calls go through
-    # forwardAuth (oauth2-proxy validates the cookie/JWT and injects the
-    # Authorization header) + CORS.
+    # MCP OAuth2 discovery (REQ-002/REQ-007): the public RFC 9728
+    # protected-resource metadata documents MUST be reachable WITHOUT any
+    # credential — no forwardAuth. cors-middleware answers OPTIONS preflights
+    # (browser-based MCP clients). Priority 95 > catch-all (1), below the
+    # X-API-Key bypass (100) — a Bearer/API-key request to /.well-known goes to
+    # the same backend anyway (the documents are public).
+    - match: Host(`composables-agent.soludev.tech`) && PathPrefix(`/.well-known`)
+      kind: Rule
+      priority: 95
+      middlewares:
+        - name: cors-middleware
+          namespace: composables
+      services:
+        - name: composable-agents
+          port: 8000
+    # MCP OAuth2 Bearer JWTs (REQ-001/REQ-007): code agents (OpenCode) send
+    # `Authorization: Bearer <logto-jwt>`. The request goes STRAIGHT to the
+    # backend, which validates the JWT itself via the Logto JWKS endpoint
+    # (oauth2-proxy only understands browser cookie sessions and would 401
+    # every Bearer call). cors-middleware mirrors the catch-all behaviour.
+    - match: Host(`composables-agent.soludev.tech`) && HeaderRegexp(`Authorization`, `^Bearer `)
+      kind: Rule
+      priority: 90
+      middlewares:
+        - name: cors-middleware
+          namespace: composables
+      services:
+        - name: composable-agents
+          port: 8000
+    # Browser calls (cookie session) go through forwardAuth (oauth2-proxy
+    # validates the cookie and injects the Authorization header) + CORS.
     # cors-middleware is intentionally placed BEFORE traefik-forward-auth: the
     # Traefik headers middleware short-circuits CORS preflight (OPTIONS)
     # requests directly, so they never reach oauth2-proxy (which would return

@@ -35,3 +35,20 @@ data:
   # === Dual auth (JWT via Logto OIDC + per-user API keys) ===
   LOGTO_URL: "https://logto.soludev.tech"
   JWT_AUDIENCE: "trangw5kf2ii6tcmcdzzy"
+  # Multi-audience JWT (REQ-003/REQ-008, comma-separated — NEVER JSON):
+  # - trangw5kf2ii6tcmcdzzy = Logto app-id of Bricks OAuth2 Proxy (the UI
+  #   cookie-session ID tokens injected by forwardAuth)
+  # - OPENCODE_APP_ID_PLACEHOLDER = PENDING (REQ-009): explicit placeholder,
+  #   swapped with the real Logto "OpenCode" Native app-id as soon as the app
+  #   is created in the prod console (redirect http://127.0.0.1:19876/callback).
+  #   Until then, the placeholder value is simply never a valid audience.
+  JWT_AUDIENCES: "trangw5kf2ii6tcmcdzzy,OPENCODE_APP_ID_PLACEHOLDER"
+  # === MCP OAuth2 discovery (REQ-002/REQ-013) ===
+  # Host allow-list for the MCP transport security (comma-separated).
+  MCP_ALLOWED_HOSTS: "composables-agent.soludev.tech,127.0.0.1:*,localhost:*,[::1]:*"
+  # Public base URL used to derive the advertised `resource` when the Host
+  # header is not trustworthily derivable.
+  MCP_PUBLIC_BASE_URL: "https://composables-agent.soludev.tech"
+  # The PUBLICLY reachable authorization server advertised by the discovery
+  # document (decoupled from LOGTO_URL, which stays the container-side JWKS base).
+  MCP_AUTHORIZATION_SERVER: "https://logto.soludev.tech/oidc"
