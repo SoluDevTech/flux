@@ -4,7 +4,7 @@
 # PV/PVC + secret gérés par Flux dans prd/soludev/rustfs/ :
 #   - PVC rustfs-soludev (PV local /srv/nfs/soludev/rustfs sur storage10)
 #   - secret rustfs-soludev (ExternalSecret, OpenBao path soludev/rustfs)
-# Chart officiel : https://charts.rustfs.com (chart rustfs, version 1.0.1)
+# Chart officiel : https://charts.rustfs.com (chart rustfs, version 1.0.6)
 fullnameOverride: rustfs-soludev
 
 mode:
@@ -20,7 +20,7 @@ drivesPerNode: 1
 
 image:
   rustfs:
-    tag: "1.0.1"
+    tag: "1.0.6"
 
 # Creds : le secret (Flux) est injecté en envFrom — ses clés RUSTFS_ACCESS/RUSTFS_SECRET
 # (noms OpenBao choisis) ne sont pas lues par le binaire, qui attend RUSTFS_ACCESS_KEY /

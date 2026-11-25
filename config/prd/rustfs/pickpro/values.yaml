@@ -5,7 +5,7 @@
 # PV/PVC + secret gérés par Flux dans prd/pickpro/rustfs/ :
 #   - PVC rustfs-pickpro (PV local /srv/nfs/pickpro/rustfs sur storage30)
 #   - secret rustfs-pickpro (ExternalSecret, OpenBao path pickpro/rustfs)
-# Chart officiel : https://charts.rustfs.com (chart rustfs, version 1.0.1)
+# Chart officiel : https://charts.rustfs.com (chart rustfs, version 1.0.6)
 fullnameOverride: rustfs-pickpro
 
 mode:
@@ -21,7 +21,7 @@ drivesPerNode: 1
 
 image:
   rustfs:
-    tag: "1.0.1"
+    tag: "1.0.6"
 
 # Creds : le secret (Flux) est injecté en envFrom — ses clés RUSTFS_ACCESS/RUSTFS_SECRET
 # (noms OpenBao choisis) ne sont pas lues par le binaire, qui attend RUSTFS_ACCESS_KEY /
