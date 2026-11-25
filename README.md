@@ -4494,7 +4494,7 @@ kubectl exec -n soludev openbao-0 -- bao status | grep Sealed       # doit affic
 | Release helm manuel (openbao) | Webhook config supprimée en urgence = jamais recréée par Flux → crashloop injector silencieux |
 | Store de sessions oauth2-proxy | **Cookie store + refresh token rotatif = invalid_grant** sur requêtes parallèles → store Redis obligatoire (`--session-store-type=redis`) |
 | Configmap édité + `rollout restart` | Si Flux reconcile **entre les deux**, l'annotation `restartedAt` est retirée et le restart annulé — refaire le restart après le reconcile |
-| Cache valkey | **NFS interdit** pour valkey/redis (locks, fsync, gel du montage) — Docker Storage 30, bind Tailscale only |
+| Cache valkey | **NFS interdit** pour valkey/redis (locks, fsync, gel du montage) — migré en k8s le 25 nov 2026 : 4 pods éphémères (soludev/pickpro/pickpro-dev/composables, `valkey/valkey:8.1.12`), compute workers, un par environnement |
 | App Logto sans `alwaysIssueRefreshToken` | Sessions sans refresh token → expiration 1 h → 401 en boucle ; aligner `custom_client_metadata` + `postLogoutRedirectUris` |
 | `idTokenTtl` (1h) < `cookie_refresh` (4h) | Reloads/déconnexions silencieuses à CHAQUE retour après >1h d'absence → **`idTokenTtl` 21600 (6h) sur toutes les apps** (fix 12 oct 2026, voir section dédiée) |
 
@@ -4961,10 +4961,12 @@ CLUSTER K3S (7 nœuds)
 | Storage 10 | postgres-telemetry | `postgres:17-alpine` | `/srv/nfs/soludev/postgres` (le disque Storage 10 !) |
 | Storage 10 | minio-soludev (helm) | `minio/minio RELEASE.2024-12-18T13-15-44Z` | `/srv/nfs/soludev/minio` |
 
-Restés hors k8s (docker Storage 30, bind Tailscale) : `valkey-soludev:6379`
-(cache logto/pickpro/oauth2-proxy). Les PV NFS server (nfsd sur Storage 30)
-servent toujours openbao/openobserve/sonarqube — couche *stockage*, pas
-workload k8s : le taint ne la concerne pas.
+Migrés en k8s le 25 nov 2026 : valkey (×4, un par env, pods éphémères —
+`valkey.<ns>.svc.cluster.local:6379`, cache logto + session store oauth2-proxy
++ cache pickpro). Le conteneur docker `valkey-soludev` sur Storage 30 est
+obsolète (plus aucun consommateur) — à retirer via SSH. Les PV NFS server
+(nfsd sur Storage 30) servent toujours openbao/openobserve/sonarqube —
+couche *stockage*, pas workload k8s : le taint ne la concerne pas.
 
 ### URLs internes (basculées en `*.svc.cluster.local`)
 
@@ -4977,7 +4979,7 @@ workload k8s : le taint ne la concerne pas.
 | configmaps pickpro MINIO_HOST | `100.64.0.7:9030/9031` | `minio-pickpro[.dev].*.svc.cluster.local:9000` |
 | sonarqube jdbcUrl + phoenix host (values git) | `100.64.0.5:5436` | `postgres-telemetry.soludev.svc.cluster.local:5432` |
 | openobserve ZO_S3_SERVER_URL | docker `100.64.0.5:9032` | `http://minio-soludev.soludev.svc.cluster.local:9000` |
-| logto REDIS_URL + VALKEY_HOST ×6 | — | **inchangés** (`100.64.0.7:6379`, valkey reste docker) |
+| logto REDIS_URL + VALKEY_HOST ×6 | `100.64.0.7:6379` | `valkey.<ns>.svc.cluster.local:6379` (migration k8s 25 nov 2026) |
 
 Hosts **patchés dans OpenBao en read-modify-write** (hosts uniquement,
 credentials inchangés) : `pickpro/{api,indexing,notifications}`,
@@ -4994,7 +4996,7 @@ helm upgrade --install minio-pickpro minio/minio -n pickpro \
 helm upgrade sonarqube sonarqube/sonarqube -n soludev \
   -f config/prd/sonarqube/values.yaml --reuse-values
 helm upgrade phoenix oci://registry-1.docker.io/arizephoenix/phoenix-helm \
-  --version 9.0.12 -n soludev -f config/phoenix/prd/values.yaml \
+  --version 14.0.1 -n soludev -f config/prd/phoenix/values.yaml \
   --reuse-values --force-conflicts
 helm upgrade openobserve openobserve/openobserve-standalone -n soludev \
   -f config/prd/openobserve/values.yaml
@@ -5051,5 +5053,6 @@ sur PV `local-pickpro-dev-minio`.
 
 Les manifests docker-compose sont conservés dans `infra-vps/` (conteneurs
 stopeés avec `restart=no`) ; rollback = `flux` re-prune les manifests +
-`docker compose up -d` sur le même disque. Valkey / NFS n'ont **pas**
-migré : ils restent dockerisés depuis le début.
+`docker compose up -d` sur le même disque. NFS n'a **pas** migré : il reste
+dockerisé depuis le début. Valkey a depuis migré en k8s (25 nov 2026, ×4
+pods éphémères par environnement — voir section valkey).
