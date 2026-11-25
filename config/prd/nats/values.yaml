@@ -1,6 +1,12 @@
 # Chart: nats
 # Repo: https://nats-io.github.io/k8s/helm/charts/
 # Install: helm upgrade --install nats nats/nats --namespace soludev -f config/prd/nats/values.yaml
+# Chart 2.14.6 (latest 2.14 line) + server image pinned to 2.14.9-alpine:
+# 2.14.9 is the security backport release (GHSA-8xmc-886f-g496 critical MQTT
+# OCSP, GHSA-724w-jvcm-4c58 / GHSA-65q4-982r-rm5c / GHSA-gc58-jp35-x246 /
+# GHSA-5v9x-4f9q-q7qj high, CVE-2026-111943 Go mitigation) — the chart repo
+# does not publish a 2.14.9 chart, hence the image override.
+# 2.15.x (11 breaking changes + upgrade guide) to be planned separately.
 
 config:
   merge:
@@ -16,6 +22,8 @@ config:
         storageClassName: local-path
 
 container:
+  image:
+    tag: "2.14.9-alpine"
   env:
     NATS_PASSWORD:
       valueFrom:
