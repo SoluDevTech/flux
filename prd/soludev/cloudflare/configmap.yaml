@@ -34,18 +34,6 @@ data:
       - hostname: headlamp.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
 
-      - hostname: ubby.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-
-      - hostname: ubby-back.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-
-      - hostname: ubby-mcp-api.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-
-      - hostname: ubby-oauth2-proxy.soludev.tech
-        service: http://traefik.kube-system.svc.cluster.local:80
-
       - hostname: openclaw.soludev.tech
         service: http://traefik.kube-system.svc.cluster.local:80
 
