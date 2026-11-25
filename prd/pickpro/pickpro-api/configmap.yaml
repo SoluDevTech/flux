@@ -85,7 +85,7 @@ data:
   NATS_COMPLETED_STREAM_NAME: "MASS_IMPORT_COMPLETED"
   NATS_COMPLETED_STREAM_SUBJECT: "mass_import.completed"
   NATS_COMPLETED_DURABLE_NAME: "pickpro-back-project-association"
-  VALKEY_HOST: 100.64.0.7
+  VALKEY_HOST: valkey.pickpro.svc.cluster.local
   VALKEY_PORT: "6379"
   VALKEY_DB: "0"
   VALKEY_KEY_PREFIX: pickpro:back

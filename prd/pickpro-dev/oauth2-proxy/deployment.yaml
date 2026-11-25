@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: oauth2-proxy
-        image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.2
+        image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.6
         args:
         - --alpha-config=/etc/oauth2_proxy/oauth2_proxy.yml
         - --cookie-name=oauth2-proxy-pickpro-dev
@@ -27,7 +27,7 @@ spec:
         # Cookie store produit des invalid_grant sur refresh concurrents
         # (rotation Logto) et tue la session -> 401 apres ~1h.
         - --session-store-type=redis
-        - --redis-connection-url=redis://100.64.0.7:6379
+        - --redis-connection-url=redis://valkey.pickpro-dev.svc.cluster.local:6379
         env:
         - name: OAUTH2_PROXY_CLIENT_ID
           valueFrom:

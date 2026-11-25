@@ -7,25 +7,22 @@ alphaConfig:
   enabled: true
   existingConfig: "oauth2-proxy-alpha-config"
 
-sessionStorage:
-  type: cookie
-
 ingress:
   enabled: false
 
-# Parité pickpro : même image épinglée, sessions en Redis (valkey
-# partagé 100.64.0.7:6379 — pattern déjà validé pickpro + pickpro-dev),
-# 256Mi de limit (sessions Redis + SSE).
+# Parité pickpro : même image épinglée, sessions en Redis (valkey dédié
+# composables : valkey.composables.svc.cluster.local:6379 — pattern déjà
+# validé pickpro + pickpro-dev), 256Mi de limit (sessions Redis + SSE).
 image:
   repository: "oauth2-proxy/oauth2-proxy"
-  tag: "v7.15.2"
+  tag: "v7.15.6"
 
 sessionStorage:
   type: redis
   redis:
     clientType: standalone
     standalone:
-      connectionUrl: redis://100.64.0.7:6379
+      connectionUrl: redis://valkey.composables.svc.cluster.local:6379
 
 resources:
   requests:
