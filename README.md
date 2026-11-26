@@ -5111,7 +5111,7 @@ Dans `prd/composables/composable-agents/configmap.yaml` et
 
 | Clé | Valeur | Rôle |
 |---|---|---|
-| `JWT_AUDIENCES` | `trangw5kf2ii6tcmcdzzy,OPENCODE_APP_ID_PLACEHOLDER` | Liste d'audiences JWT acceptées (l'ancienne `JWT_AUDIENCE` reste valable, REQ-003 : unset = comportement identique à avant) |
+| `JWT_AUDIENCES` | `trangw5kf2ii6tcmcdzzy,https://<host>/mcp/,bli95stx6gvpbuga4fqx3` | Liste d'audiences JWT acceptées (l'ancienne `JWT_AUDIENCE` reste valable, REQ-003 : unset = comportement identique à avant). Compose : l'app-id legacy (OAuth2 Proxy) + **la porte MCP** (API resource, **trailing slash obligatoire** — le SDK MCP l'append) + l'app-id de l'appli Native **OpenCode** |
 | `MCP_ALLOWED_HOSTS` | `<host public>,127.0.0.1:*,localhost:*,[::1]:*` | Allow-list Host de la protection anti DNS-rebinding du serveur MCP (REQ-013/014 — protection TOUJOURS active, foreign Host = 421) |
 | `MCP_PUBLIC_BASE_URL` | `https://<host public>` | Origine canonique annoncée par la 401/discovery quand le Host n'est pas dérivable de façon fiable |
 | `MCP_AUTHORIZATION_SERVER` | `https://logto.soludev.tech/oidc` | Issuer PUBLIC annoncé par le document `/.well-known` (découplé de `LOGTO_URL`, qui reste la base JWKS côté conteneur — QA BUG-003) |
@@ -5119,20 +5119,25 @@ Dans `prd/composables/composable-agents/configmap.yaml` et
 Les valeurs sont explicitement en style comma-separated (`a,b,c`) : le
 backend REFUSE le style JSON (`["a","b"]`) sur ces clés.
 
-### ⚠️ PENDING — action manuelle (REQ-009)
+### ✅ DONE — Logto côté prod (REQ-009)
 
-`OPENCODE_APP_ID_PLACEHOLDER` est un placeholder EXPLICITE : tant que l'app
-Logto n'existe pas, la valeur n'est simplement jamais une audience valide
-(aucun effet de bord). Pour finaliser :
+Les valeurs ci-dessus sont les **réelles** (plus de placeholder) ;
 
-1. Créer dans la console Logto PROD (`https://logto.soludev.tech`) une
-   application **"OpenCode"** de type **Native** (client public, PKCE S256,
-   pas de secret) avec redirect URI `http://127.0.0.1:19876/callback`.
-2. Reporter son app-id dans les DEUX configmaps à la place de
-   `OPENCODE_APP_ID_PLACEHOLDER` (clé `JWT_AUDIENCES`), pousser, laisser Flux
-   reconcilier puis `kubectl rollout restart` des deux deployments.
-3. Config OpenCode côté client :
-   `{"type": "remote", "url": "https://<host>/mcp", "oauth": {"client_id": "<app-id>", "callback_port": 19876}}`
+- API resources enregistrées dans la console Logto PROD :
+  `https://composables-agent.soludev.tech/mcp/` et
+  `https://raganything.soludev.tech/mcp/` (**trailing slash** — le SDK MCP
+  l'append, un indicateur sans `/` final ne matcherait jamais),
+- application **"OpenCode"** de type **Native** (client public, PKCE S256,
+  pas de secret) avec redirect URI `http://127.0.0.1:19876/callback`,
+  app-id `bli95stx6gvpbuga4fqx3` — repris dans les DEUX configmaps
+  (clé `JWT_AUDIENCES`).
+
+Reste côté client :
+
+1. Laisser Flux reconcilier puis `kubectl rollout restart` des deux
+   deployments (après merge du PR flux).
+2. Config OpenCode côté client :
+   `{"type": "remote", "url": "https://<host>/mcp", "oauth": {"client_id": "bli95stx6gvpbuga4fqx3", "callback_port": 19876}}`
    — ou `{"oauth": false, "headers": {"X-API-Key": "..."}}` pour le mode API key.
 
 (La stack QA utilise le seed idempotent `soludev-compose-apps/bricks/init-logto.sql`,

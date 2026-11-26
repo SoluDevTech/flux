@@ -43,11 +43,11 @@ data:
   # Multi-audience JWT (REQ-003/REQ-008, comma-separated — NEVER JSON):
   # - trangw5kf2ii6tcmcdzzy = Logto app-id of Bricks OAuth2 Proxy (the UI
   #   cookie-session ID tokens injected by forwardAuth)
-  # - OPENCODE_APP_ID_PLACEHOLDER = PENDING (REQ-009): explicit placeholder,
-  #   swapped with the real Logto "OpenCode" Native app-id as soon as the app
-  #   is created in the prod console (redirect http://127.0.0.1:19876/callback).
-  #   Until then, the placeholder value is simply never a valid audience.
-  JWT_AUDIENCES: "trangw5kf2ii6tcmcdzzy,OPENCODE_APP_ID_PLACEHOLDER"
+  # - https://raganything.soludev.tech/mcp/ = registered API resource
+  #   (the MCP door; trailing slash mandatory — the MCP SDK appends it)
+  # - bli95stx6gvpbuga4fqx3 = Logto app-id of the "OpenCode" Native app
+  #   (REQ-009, redirect http://127.0.0.1:19876/callback)
+  JWT_AUDIENCES: "trangw5kf2ii6tcmcdzzy,https://raganything.soludev.tech/mcp/,bli95stx6gvpbuga4fqx3"
   # === MCP OAuth2 discovery (REQ-002/REQ-014) ===
   # Host allow-list for the MCP transport security (comma-separated) — see the
   # PRODUCTION PREREQUISITE block in mcp-raganything src/main.py (review M-4).
