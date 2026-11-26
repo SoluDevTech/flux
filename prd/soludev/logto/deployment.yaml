@@ -3,8 +3,6 @@ kind: Deployment
 metadata:
   name: logto
   namespace: soludev
-  annotations:
-    kubectl.kubernetes.io/restartedAt: "2026-11-26T06:04:31Z"
   labels:
     app: logto
 spec:
@@ -14,6 +12,8 @@ spec:
       app: logto
   template:
     metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-11-26T06:06:20Z"
       labels:
         app: logto
         app.kubernetes.io/part-of: soludev-workload
