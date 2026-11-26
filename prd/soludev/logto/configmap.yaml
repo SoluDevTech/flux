@@ -10,6 +10,8 @@ data:
   ADMIN_ENDPOINT: "https://logto-admin.soludev.tech"
   ADMIN_PORT: "3002"
   NODE_ENV: "production"
+  # TEMP debug (token auth diagnosis): remove after MCP OAuth flow validated
+  LOG_LEVEL: "debug"
   # Cache via Valkey (Redis-compatible) — service in same namespace
   CACHE_ENGINE: redis
   REDIS_URL: redis://valkey.soludev.svc.cluster.local:6379/0
