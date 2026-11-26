@@ -40,9 +40,9 @@ data:
   #   cookie-session ID tokens injected by forwardAuth)
   # - https://composables-agent.soludev.tech/mcp/ = registered API resource
   #   (the MCP door; trailing slash mandatory — the MCP SDK appends it)
-  # - bli95stx6gvpbuga4fqx3 = Logto app-id of the "OpenCode" Native app
+  # - o2dldt3qfogy2okntx4yb = Logto app-id of the "OpenCode" Native app
   #   (REQ-009, redirect http://127.0.0.1:19876/callback)
-  JWT_AUDIENCES: "trangw5kf2ii6tcmcdzzy,https://composables-agent.soludev.tech/mcp/,bli95stx6gvpbuga4fqx3"
+  JWT_AUDIENCES: "trangw5kf2ii6tcmcdzzy,https://composables-agent.soludev.tech/mcp/,o2dldt3qfogy2okntx4yb"
   # === MCP OAuth2 discovery (REQ-002/REQ-013) ===
   # Host allow-list for the MCP transport security (comma-separated).
   MCP_ALLOWED_HOSTS: "composables-agent.soludev.tech,127.0.0.1:*,localhost:*,[::1]:*"
