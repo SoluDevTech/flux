@@ -40,3 +40,21 @@ data:
   # === Dual auth (JWT via Logto OIDC + per-user API keys) ===
   LOGTO_URL: "https://logto.soludev.tech"
   JWT_AUDIENCE: "trangw5kf2ii6tcmcdzzy"
+  # Multi-audience JWT (REQ-003/REQ-008, comma-separated — NEVER JSON):
+  # - trangw5kf2ii6tcmcdzzy = Logto app-id of Bricks OAuth2 Proxy (the UI
+  #   cookie-session ID tokens injected by forwardAuth)
+  # - https://raganything.soludev.tech/mcp/ = registered API resource
+  #   (the MCP door; trailing slash mandatory — the MCP SDK appends it)
+  # - bli95stx6gvpbuga4fqx3 = Logto app-id of the "OpenCode" Native app
+  #   (REQ-009, redirect http://127.0.0.1:19876/callback)
+  JWT_AUDIENCES: "trangw5kf2ii6tcmcdzzy,https://raganything.soludev.tech/mcp/,bli95stx6gvpbuga4fqx3"
+  # === MCP OAuth2 discovery (REQ-002/REQ-014) ===
+  # Host allow-list for the MCP transport security (comma-separated) — see the
+  # PRODUCTION PREREQUISITE block in mcp-raganything src/main.py (review M-4).
+  MCP_ALLOWED_HOSTS: "raganything.soludev.tech,127.0.0.1:*,localhost:*,[::1]:*"
+  # Public base URL used to derive the advertised `resource` when the Host
+  # header is not trustworthily derivable.
+  MCP_PUBLIC_BASE_URL: "https://raganything.soludev.tech"
+  # The PUBLICLY reachable authorization server advertised by the discovery
+  # document (decoupled from LOGTO_URL, which stays the container-side JWKS base).
+  MCP_AUTHORIZATION_SERVER: "https://logto.soludev.tech/oidc"

@@ -5056,3 +5056,89 @@ stopeés avec `restart=no`) ; rollback = `flux` re-prune les manifests +
 `docker compose up -d` sur le même disque. NFS n'a **pas** migré : il reste
 dockerisé depuis le début. Valkey a depuis migré en k8s (25 nov 2026, ×4
 pods éphémères par environnement — voir section valkey).
+
+## MCP OAuth2 Dual Authentication (composables, Nov 2026)
+
+Feature `feat-mcp-oauth2-dual-auth` (slices backend composable-agents et
+mcp-raganything déjà mergées sur leur branche ; cette section documente la
+partie flux — spec REQ-007/008/010/014 + QA BUG-001 du bug-report
+`feat-mcp-oauth2-dual-auth-composable-agents`).
+
+### Contexte
+
+Les endpoints MCP (`/mcp` sur `composables-agent.soludev.tech`, les mounts
+`/{files,classical,web,memories}/mcp` sur `raganything.soludev.tech`)
+acceptent désormais DEUX modes d'authentification :
+
+1. **API key** (`X-API-Key`) — inchangé : la route bypass priorité 100 passe
+   devant le forwardAuth et le backend valide le hash de la clé.
+2. **OAuth2 Bearer JWT** — le backend valide lui-même le JWT via le JWKS
+   Logto (`/oidc/jwks`). Pour cela, Traefik doit laisser passer TOUT ce qui
+   porte `Authorization: Bearer ...` DIRECTEMENT au backend : oauth2-proxy
+   (forwardAuth) ne comprend que les sessions cookies navigateur et 401-erait
+   chaque appel Bearer (BUG-001 vérifié en QA).
+
+### Nouvelles routes (applicables aux deux IngressRoute)
+
+`prd/composables/composable-agents/ingressroute.yaml` et
+`prd/composables/raganything/ingressroute.yaml` portent maintenant 4 routes,
+par ordre de priorité :
+
+| Priorité | Match | Middlewares | Cible |
+|---|---|---|---|
+| 100 | `Host(...) && HeaderRegexp(\`X-API-Key\`, \`.\+\`)` | — (api-key bypass) | backend:8000 |
+| 95 | `Host(...) && PathPrefix(\`/.well-known\`)` | `cors-middleware` | backend:8000 |
+| 90 | `Host(...) && HeaderRegexp(\`Authorization\`, \`^Bearer \`)` | `cors-middleware` | backend:8000 |
+| 1 | `Host(...)` (catch-all) | `cors-middleware` + `traefik-forward-auth` | backend:8000 |
+
+- **95 `/.well-known`** : les documents de découverte OAuth2
+  (`/.well-known/oauth-protected-resource`, + les variantes par-mount sur
+  raganything) sont PUBLICS — aucun forwardAuth, CORS pour les préflights
+  OPTIONS des clients navigateur.
+- **90 `Authorization: Bearer`** : un appel MCP qui porte un Bearer JWT est
+  envoyé DIRECTEMENT au backend, qui le valide (JWKS Logto, audiences
+  `JWT_AUDIENCES`). **Ne jamais ajouter `traefik-forward-auth` sur cette
+  route** — le flux OAuth2 de découverte MCP redeviendrait impossible.
+- **`HeaderRegexp`, PAS `Header`** : le matcher `Header(key, value)` de
+  Traefik v3 est une comparaison EXACTE de la valeur ; seule `HeaderRegexp`
+  applique la regexp. Un copier-coller en `Header(...)` casse la route sans
+  aucune erreur (voir bug-report OBS-02).
+
+### Nouvelles clés de configmap (comma-separated — JAMAIS JSON)
+
+Dans `prd/composables/composable-agents/configmap.yaml` et
+`prd/composables/raganything/configmap.yaml` :
+
+| Clé | Valeur | Rôle |
+|---|---|---|
+| `JWT_AUDIENCES` | `trangw5kf2ii6tcmcdzzy,https://<host>/mcp/,bli95stx6gvpbuga4fqx3` | Liste d'audiences JWT acceptées (l'ancienne `JWT_AUDIENCE` reste valable, REQ-003 : unset = comportement identique à avant). Compose : l'app-id legacy (OAuth2 Proxy) + **la porte MCP** (API resource, **trailing slash obligatoire** — le SDK MCP l'append) + l'app-id de l'appli Native **OpenCode** |
+| `MCP_ALLOWED_HOSTS` | `<host public>,127.0.0.1:*,localhost:*,[::1]:*` | Allow-list Host de la protection anti DNS-rebinding du serveur MCP (REQ-013/014 — protection TOUJOURS active, foreign Host = 421) |
+| `MCP_PUBLIC_BASE_URL` | `https://<host public>` | Origine canonique annoncée par la 401/discovery quand le Host n'est pas dérivable de façon fiable |
+| `MCP_AUTHORIZATION_SERVER` | `https://logto.soludev.tech/oidc` | Issuer PUBLIC annoncé par le document `/.well-known` (découplé de `LOGTO_URL`, qui reste la base JWKS côté conteneur — QA BUG-003) |
+
+Les valeurs sont explicitement en style comma-separated (`a,b,c`) : le
+backend REFUSE le style JSON (`["a","b"]`) sur ces clés.
+
+### ✅ DONE — Logto côté prod (REQ-009)
+
+Les valeurs ci-dessus sont les **réelles** (plus de placeholder) ;
+
+- API resources enregistrées dans la console Logto PROD :
+  `https://composables-agent.soludev.tech/mcp/` et
+  `https://raganything.soludev.tech/mcp/` (**trailing slash** — le SDK MCP
+  l'append, un indicateur sans `/` final ne matcherait jamais),
+- application **"OpenCode"** de type **Native** (client public, PKCE S256,
+  pas de secret) avec redirect URI `http://127.0.0.1:19876/callback`,
+  app-id `bli95stx6gvpbuga4fqx3` — repris dans les DEUX configmaps
+  (clé `JWT_AUDIENCES`).
+
+Reste côté client :
+
+1. Laisser Flux reconcilier puis `kubectl rollout restart` des deux
+   deployments (après merge du PR flux).
+2. Config OpenCode côté client :
+   `{"type": "remote", "url": "https://<host>/mcp", "oauth": {"client_id": "bli95stx6gvpbuga4fqx3", "callback_port": 19876}}`
+   — ou `{"oauth": false, "headers": {"X-API-Key": "..."}}` pour le mode API key.
+
+(La stack QA utilise le seed idempotent `soludev-compose-apps/bricks/init-logto.sql`,
+application #4 `qa-opencode-native-app`, qui reflète la même spec.)
