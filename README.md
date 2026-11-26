@@ -5111,7 +5111,7 @@ Dans `prd/composables/composable-agents/configmap.yaml` et
 
 | Clé | Valeur | Rôle |
 |---|---|---|
-| `JWT_AUDIENCES` | `trangw5kf2ii6tcmcdzzy,https://<host>/mcp/,o2dldt3qfogy2okntx4yb` | Liste d'audiences JWT acceptées (l'ancienne `JWT_AUDIENCE` reste valable, REQ-003 : unset = comportement identique à avant). Compose : l'app-id legacy (OAuth2 Proxy) + **la porte MCP** (API resource, **trailing slash obligatoire** — le SDK MCP l'append) + l'app-id de l'appli Native **OpenCode** |
+| `JWT_AUDIENCES` | `trangw5kf2ii6tcmcdzzy,https://<host>/mcp,o2dldt3qfogy2okntx4yb` | Liste d'audiences JWT acceptées (l'ancienne `JWT_AUDIENCE` reste valable, REQ-003 : unset = comportement identique à avant). Compose : l'app-id legacy (OAuth2 Proxy) + **la porte MCP** (API resource, **trailing slash obligatoire** — le SDK MCP l'append) + l'app-id de l'appli Native **OpenCode** |
 | `MCP_ALLOWED_HOSTS` | `<host public>,127.0.0.1:*,localhost:*,[::1]:*` | Allow-list Host de la protection anti DNS-rebinding du serveur MCP (REQ-013/014 — protection TOUJOURS active, foreign Host = 421) |
 | `MCP_PUBLIC_BASE_URL` | `https://<host public>` | Origine canonique annoncée par la 401/discovery quand le Host n'est pas dérivable de façon fiable |
 | `MCP_AUTHORIZATION_SERVER` | `https://logto.soludev.tech/oidc` | Issuer PUBLIC annoncé par le document `/.well-known` (découplé de `LOGTO_URL`, qui reste la base JWKS côté conteneur — QA BUG-003) |
