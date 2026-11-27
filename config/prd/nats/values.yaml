@@ -1,6 +1,9 @@
 # Chart: nats
 # Repo: https://nats-io.github.io/k8s/helm/charts/
-# Install: helm upgrade --install nats nats/nats --namespace soludev -f config/prd/nats/values.yaml
+# Install: helm upgrade --install nats nats/nats --version 2.14.6 --namespace soludev -f config/prd/nats/values.yaml
+# (TOUJOURS pinner --version 2.14.6 : le repo nats publie les 2.15.x, qui ont
+# 11 breaking changes non planifiées — un upgrade sans --version a déployé la
+# 2.15.0 le 27 nov 2026, corrigé dans la foulée.)
 # Chart 2.14.6 (latest 2.14 line) + server image pinned to 2.14.9-alpine:
 # 2.14.9 is the security backport release (GHSA-8xmc-886f-g496 critical MQTT
 # OCSP, GHSA-724w-jvcm-4c58 / GHSA-65q4-982r-rm5c / GHSA-gc58-jp35-x246 /
@@ -24,15 +27,18 @@ config:
 # Node dédié Storage10 (tainté storage/role=data) — PV local
 # /srv/nfs/soludev/nats géré par Flux (prd/soludev/nats/persistent-volume.yaml).
 # Migration du local-path worker (nov 2026) : node pincé + disque déterministe.
+# NB: le chart merge au niveau PodTemplate (metadata+spec) -> nodeSelector et
+# tolerations vivent SOUS merge.spec (un merge à plat serait ignoré par l'API).
 podTemplate:
   merge:
-    nodeSelector:
-      storage/nodename: storage10
-    tolerations:
-      - key: storage/role
-        operator: Equal
-        value: data
-        effect: NoSchedule
+    spec:
+      nodeSelector:
+        storage/nodename: storage10
+      tolerations:
+        - key: storage/role
+          operator: Equal
+          value: data
+          effect: NoSchedule
 
 container:
   image:
