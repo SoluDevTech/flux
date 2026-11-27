@@ -1,0 +1,14 @@
+# PGVector PickPro PROD v2 — PVC bindee sur le PV local pg-pickpro
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pickpro-pgvector-pvc-v2
+  namespace: pickpro
+spec:
+  volumeName: local-pickpro-pgvector-v2
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-pickpro-pgvector-v2
+  resources:
+    requests:
+      storage: 20Gi
