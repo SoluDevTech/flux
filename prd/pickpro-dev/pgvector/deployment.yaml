@@ -49,6 +49,9 @@ spec:
           imagePullPolicy: Always
           args:
             - "postgres"
+            # pg_textsearch (BM25) requis par la base raganything (RAG composables)
+            - "-c"
+            - "shared_preload_libraries=pg_textsearch"
             - "-c"
             - "shared_buffers=512MB"
             - "-c"
