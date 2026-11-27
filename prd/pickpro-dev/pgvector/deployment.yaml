@@ -37,7 +37,10 @@ spec:
             claimName: pickpro-dev-pgvector-pvc
       containers:
         - name: pgvector
-          image: pgvector/pgvector:0.8.0-pg17
+          # Image RAG (postgres 17 + extensions age / pg_textsearch / vector) :
+          # instance mutualisee pickpro-dev + composables depuis nov 2026 —
+          # la base raganything (RAG) y a ete restauree, pickpro ne change pas.
+          image: kaiohz/pickpro:postgres-raganything-e6cb6a51abeeba1133a05af6f1a2616bfbf9aa0c
           args:
             - "postgres"
             - "-c"
