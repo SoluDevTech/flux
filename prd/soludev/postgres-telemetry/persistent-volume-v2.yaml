@@ -1,0 +1,27 @@
+# PostgreSQL Telemetry v2 (phoenix/sonarqube/openobserve) — storage30-c
+# Data: /srv/nfs/soludev/postgres (node vmi3794484, 100.64.0.11, Storage VPS 30)
+# Migration nov 2026 : l'observabilite quitte storage10 (2 vCPU/4 GB) pour
+# storage30-c. La v1 (local-soludev-telemetry-postgres, storage10) reste en
+# Retain pour rollback. Secret partage: soludev/postgres (openbao).
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-soludev-telemetry-postgres-v2
+spec:
+  capacity:
+    storage: 20Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-soludev-telemetry-postgres-v2
+  local:
+    path: /srv/nfs/soludev/postgres
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: storage/nodename
+              operator: In
+              values:
+                - storage30-c

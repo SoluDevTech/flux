@@ -1,0 +1,14 @@
+# PostgreSQL Telemetry v2 — PVC liee au PV local storage30-c
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: soludev-telemetry-pg-pvc-v2
+  namespace: soludev
+spec:
+  volumeName: local-soludev-telemetry-postgres-v2
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-soludev-telemetry-postgres-v2
+  resources:
+    requests:
+      storage: 20Gi

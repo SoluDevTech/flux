@@ -1,0 +1,14 @@
+# RustFS Soludev (observabilite) v2 — PVC liee au PV local storage30-c
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rustfs-soludev-v2
+  namespace: soludev
+spec:
+  volumeName: local-soludev-rustfs-v2
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-soludev-rustfs-v2
+  resources:
+    requests:
+      storage: 50Gi
