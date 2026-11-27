@@ -37,6 +37,16 @@ data:
   KREUZBERG_ENABLE_QUALITY_PROCESSING: "false"
   FASTMCP_STATELESS_HTTP: "true"
   GENERATED_MCP_BASE_URL: "https://raganything.soludev.tech"
+  # === Web search (WebSearchConfig) ===
+  # Ordered ddgs backend chain, comma-separated: the first backend returning
+  # entries wins — rides out DuckDuckGo's intermittent HTTP 202 anti-bot
+  # challenges observed from datacenter IPs.
+  WEB_SEARCH_BACKENDS: "google,duckduckgo,wikipedia"
+  # Per-explored-page Markdown cap (characters): protects agent context from
+  # multi-hundred-KB tool results. 0 = complete Markdown (legacy contract).
+  WEB_SEARCH_PAGE_MAX_CHARS: "30000"
+  # Outer search timeout; covers the WHOLE backend fallback chain.
+  WEB_SEARCH_TIMEOUT_SECONDS: "20"
   # === Dual auth (JWT via Logto OIDC + per-user API keys) ===
   LOGTO_URL: "https://logto.soludev.tech"
   JWT_AUDIENCE: "trangw5kf2ii6tcmcdzzy"
