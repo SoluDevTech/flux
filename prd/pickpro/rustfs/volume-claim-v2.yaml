@@ -1,0 +1,14 @@
+# RustFS PickPro PROD v2 — PVC liée au PV local storage30-b
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rustfs-pickpro-v2
+  namespace: pickpro
+spec:
+  volumeName: local-pickpro-rustfs-v2
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-pickpro-rustfs-v2
+  resources:
+    requests:
+      storage: 50Gi

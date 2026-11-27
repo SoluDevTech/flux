@@ -1,0 +1,26 @@
+# RustFS PickPro PROD v2 — stockage local sur storage30-b (Storage VPS 30)
+# Data: /srv/nfs/pickpro/rustfs (node vmi3794485, 100.64.0.10, 1 TB SSD)
+# Migration nov 2026 : separation DB (pg-pickpro) / S3 (storage30-b).
+# La v1 (local-pickpro-rustfs, storage30) reste en Retain pour rollback.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pickpro-rustfs-v2
+spec:
+  capacity:
+    storage: 50Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-pickpro-rustfs-v2
+  local:
+    path: /srv/nfs/pickpro/rustfs
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: storage/nodename
+              operator: In
+              values:
+                - storage30-b
