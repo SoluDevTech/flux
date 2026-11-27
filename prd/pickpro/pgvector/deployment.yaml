@@ -1,6 +1,8 @@
-# PGVector PickPro PROD — stockage local sur Storage30
-# Data: /srv/nfs/pickpro/pgvector
+# PGVector PickPro PROD — stockage local sur pg-pickpro (Cloud VPS Plus 6,
+# node dedie 6 vCPU / 12 GB / 300 GB NVMe, fio 75k IOPS 4K)
+# Data: /srv/nfs/pickpro/pgvector (PV v2 local-pickpro-pgvector-v2)
 # Secret: pickpro/pgvector (openbao)
+# Budget 80/20 : limits 9Gi/4800m sur 12 GB (20 % reserve au systeme).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,7 +24,7 @@ spec:
         app.kubernetes.io/part-of: soludev-workload
     spec:
       nodeSelector:
-        storage/nodename: storage30
+        storage/nodename: pg-pickpro
       tolerations:
         - key: storage/role
           operator: Equal
@@ -34,12 +36,18 @@ spec:
             name: pgvector-init
         - name: pgvector-data
           persistentVolumeClaim:
-            claimName: pickpro-pgvector-pvc
+            claimName: pickpro-pgvector-pvc-v2
       containers:
         - name: pgvector
           image: pgvector/pgvector:0.8.0-pg17
           args:
             - "postgres"
+            - "-c"
+            - "shared_buffers=2GB"
+            - "-c"
+            - "effective_cache_size=6GB"
+            - "-c"
+            - "maintenance_work_mem=1GB"
             - "-c"
             - "tcp_keepalives_idle=30"
             - "-c"
@@ -74,8 +82,8 @@ spec:
             failureThreshold: 3
           resources:
             requests:
-              memory: "1Gi"
+              memory: "2Gi"
               cpu: "1000m"
             limits:
-              memory: "3Gi"
-              cpu: "2000m"
+              memory: "9Gi"
+              cpu: "4800m"
