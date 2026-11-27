@@ -18,8 +18,21 @@ config:
     enabled: true
     fileStore:
       pvc:
-        size: 5Gi
-        storageClassName: local-path
+        size: 20Gi
+        storageClassName: local-soludev-nats
+
+# Node dédié Storage10 (tainté storage/role=data) — PV local
+# /srv/nfs/soludev/nats géré par Flux (prd/soludev/nats/persistent-volume.yaml).
+# Migration du local-path worker (nov 2026) : node pincé + disque déterministe.
+podTemplate:
+  merge:
+    nodeSelector:
+      storage/nodename: storage10
+    tolerations:
+      - key: storage/role
+        operator: Equal
+        value: data
+        effect: NoSchedule
 
 container:
   image:
@@ -32,12 +45,13 @@ container:
           key: PASSWORD
   merge:
     resources:
+      # Node storage10 dédié (2 vCPU / 4 GB, budget 80/20)
       requests:
         cpu: "100m"
-        memory: 128Mi
+        memory: 256Mi
       limits:
-        cpu: "500m"
-        memory: 512Mi
+        cpu: "1000m"
+        memory: 2Gi
 
 service:
   merge:

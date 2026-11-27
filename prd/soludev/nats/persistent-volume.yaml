@@ -1,0 +1,28 @@
+# NATS JetStream (soludev) — PV local sur Storage10
+# Data: /srv/nfs/soludev/nats (fileStore JetStream : streams RESUMES,
+# NOTIFICATIONS, MASS_IMPORT_COMPLETED + équivalents -DEV)
+# Node dédié storage10 (label storage/nodename=storage10, tainté).
+# PVC nats-js-nats-0 créée par le chart (helm nats, jetstream.fileStore.pvc),
+# storageClassName local-soludev-nats -> bind sur ce PV.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-soludev-nats
+spec:
+  capacity:
+    storage: 20Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-soludev-nats
+  local:
+    path: /srv/nfs/soludev/nats
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: storage/nodename
+              operator: In
+              values:
+                - storage10
