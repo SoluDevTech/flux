@@ -19,6 +19,9 @@ spec:
       - "Accept"
       - "Origin"
       - "X-API-Key"
+      # Space/scope selector header sent by composable-ui on every
+      # mcp-raganything request (feat: scope-rag-memories-user-agent).
+      - "X-Composable-Agent"
     accessControlAllowOriginList:
       - "https://composables.soludev.tech"
       - "http://localhost:8030"

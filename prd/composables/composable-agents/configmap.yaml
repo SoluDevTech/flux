@@ -25,6 +25,16 @@ data:
   # === MCP ===
   MCP_TOOL_TIMEOUT: "600"
   AGENT_STREAM_IDLE_TIMEOUT: "600"
+  # === Composable MCP control plane (feat-composable-mcp) ===
+  # Trusted mcp-raganything registry service base URL (REQ-017/REQ-037).
+  # Internal ClusterIP service; the originating user credential (JWT bearer or
+  # per-user API key) is forwarded as-is. Empty → every registry call fails
+  # with "MCP registry service is unavailable; please retry later."
+  MCP_REGISTRY_BASE_URL: "http://raganything.composables.svc:8000"
+  # Internal base URL of the built-in mcp-raganything MCP mounts
+  # (/files/mcp, /classical/mcp, /web/mcp, /memories/mcp) used server-side
+  # when assembling the built-in assistant's toolset (REQ-036).
+  BUILTIN_MCP_BASE_URL: "http://raganything.composables.svc:8000"
   # === Chat attachments limits (bytes unless stated otherwise) ===
   CHAT_ATTACHMENT_MAX_COUNT: "10"
   CHAT_ATTACHMENT_MAX_TOTAL_BYTES: "52428800"
