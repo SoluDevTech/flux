@@ -41,6 +41,9 @@ spec:
           # instance mutualisee pickpro-dev + composables depuis nov 2026 —
           # la base raganything (RAG) y a ete restauree, pickpro ne change pas.
           image: kaiohz/pickpro:postgres-raganything-e6cb6a51abeeba1133a05af6f1a2616bfbf9aa0c
+          # Docker Hub rate-limite les pulls anonymes ; l'image est en cache
+          # sur storage30 (postgres composables tourne dessus) -> Never.
+          imagePullPolicy: Never
           args:
             - "postgres"
             - "-c"
