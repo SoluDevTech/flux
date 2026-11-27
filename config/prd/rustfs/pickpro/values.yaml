@@ -1,9 +1,11 @@
 # RustFS PickPro PROD (pickpro) — helm manuel
-# Install : helm upgrade --install rustfs-pickpro rustfs/rustfs -n pickpro -f config/prd/rustfs/pickpro/values.yaml
-# Remplace minio-pickpro (Deployment héritage helm, manifests absents du repo).
-# Données migrées via mc mirror (buckets cvs / photos / transcripts).
+# Install : helm upgrade --install rustfs-pickpro rustfs/rustfs --version 1.0.6 -n pickpro -f config/prd/rustfs/pickpro/values.yaml
+# (pinner --version : le repo rustfs peut publier des versions majeures)
+# Migration nov 2026 vers storage30-b (Storage VPS 30 dedie, 1 TB) :
+# buckets cvs / photos / transcripts transferes via mc mirror, release name
+# inchange -> service rustfs-pickpro-svc:9000 + configmaps MINIO_HOST intacts.
 # PV/PVC + secret gérés par Flux dans prd/pickpro/rustfs/ :
-#   - PVC rustfs-pickpro (PV local /srv/nfs/pickpro/rustfs sur storage30)
+#   - PVC rustfs-pickpro-v2 (PV local /srv/nfs/pickpro/rustfs sur storage30-b)
 #   - secret rustfs-pickpro (ExternalSecret, OpenBao path pickpro/rustfs)
 # Chart officiel : https://charts.rustfs.com (chart rustfs, version 1.0.6)
 fullnameOverride: rustfs-pickpro
@@ -12,7 +14,7 @@ mode:
   standalone:
     enabled: true
     existingClaim:
-      dataClaim: rustfs-pickpro
+      dataClaim: rustfs-pickpro-v2
   distributed:
     enabled: false
 
@@ -62,7 +64,7 @@ ingress:
   enabled: false
 
 nodeSelector:
-  storage/nodename: storage30
+  storage/nodename: storage30-b
 tolerations:
   - key: storage/role
     operator: Equal
@@ -74,9 +76,10 @@ affinity:
     enabled: false
 
 resources:
+  # Node storage30-b dédié (6 vCPU / 18 GB, budget 80/20)
   requests:
-    memory: "768Mi"
+    memory: "1Gi"
     cpu: "250m"
   limits:
-    memory: "4Gi"
-    cpu: "1000m"
+    memory: "8Gi"
+    cpu: "4000m"
