@@ -1,8 +1,10 @@
 # RustFS Soludev (observabilité) — helm manuel
-# Install : helm upgrade --install rustfs-soludev rustfs/rustfs -n soludev -f config/prd/rustfs/soludev/values.yaml
-# Remplace minio-soludev (helm minio/minio 5.4.0). Données migrées via mc mirror (bucket observability).
+# Install : helm upgrade --install rustfs-soludev rustfs/rustfs --version 1.0.6 -n soludev -f config/prd/rustfs/soludev/values.yaml
+# (pinner --version : le repo rustfs peut publier des versions majeures)
+# Migration nov 2026 vers storage30-c (Storage VPS 30, partage le node avec
+# postgres-telemetry) : bucket observability transféré via mc mirror.
 # PV/PVC + secret gérés par Flux dans prd/soludev/rustfs/ :
-#   - PVC rustfs-soludev (PV local /srv/nfs/soludev/rustfs sur storage10)
+#   - PVC rustfs-soludev-v2 (PV local /srv/nfs/soludev/rustfs sur storage30-c)
 #   - secret rustfs-soludev (ExternalSecret, OpenBao path soludev/rustfs)
 # Chart officiel : https://charts.rustfs.com (chart rustfs, version 1.0.6)
 fullnameOverride: rustfs-soludev
@@ -11,7 +13,7 @@ mode:
   standalone:
     enabled: true
     existingClaim:
-      dataClaim: rustfs-soludev
+      dataClaim: rustfs-soludev-v2
   distributed:
     enabled: false
 
@@ -80,7 +82,7 @@ readinessProbe:
   failureThreshold: 5
 
 nodeSelector:
-  storage/nodename: storage10
+  storage/nodename: storage30-c
 tolerations:
   - key: storage/role
     operator: Equal
@@ -92,9 +94,11 @@ affinity:
     enabled: false
 
 resources:
+  # Node storage30-c (6 vCPU / 18 GB, partage avec postgres-telemetry —
+  # budget 80/20 : telemetry 8Gi + rustfs 6Gi ≈ 14Gi)
   requests:
     memory: "768Mi"
     cpu: "250m"
   limits:
-    memory: "2Gi"
-    cpu: "1000m"
+    memory: "6Gi"
+    cpu: "2000m"

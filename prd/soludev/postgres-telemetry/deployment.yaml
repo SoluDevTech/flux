@@ -1,5 +1,6 @@
-# PostgreSQL Telemetry (phoenix/sonarqube/openobserve) — stockage local sur Storage10
-# Data: /srv/nfs/soludev/postgres (PGDATA sur Storage10 — migré du docker 65fcd35)
+# PostgreSQL Telemetry (phoenix/sonarqube/openobserve) — stockage local sur storage30-c
+# Data: /srv/nfs/soludev/postgres (PV v2 local-soludev-telemetry-postgres-v2,
+# Storage VPS 30 dedie 6 vCPU / 18 GB, partage avec rustfs-soludev)
 # Secret partagé: soludev/postgres (openbao) — même secret que postgres principal
 apiVersion: apps/v1
 kind: Deployment
@@ -21,9 +22,9 @@ spec:
         app: postgres-telemetry
         app.kubernetes.io/part-of: soludev-workload
     spec:
-      # Pin aux données du disque Storage10 + tolérance du taint storage
+      # Pin aux données du disque storage30-c + tolérance du taint storage
       nodeSelector:
-        storage/nodename: storage10
+        storage/nodename: storage30-c
       tolerations:
         - key: storage/role
           operator: Equal
@@ -32,7 +33,7 @@ spec:
       volumes:
         - name: postgres-data
           persistentVolumeClaim:
-            claimName: soludev-telemetry-pg-pvc
+            claimName: soludev-telemetry-pg-pvc-v2
       securityContext:
         runAsUser: 70
         runAsGroup: 70
@@ -41,9 +42,9 @@ spec:
       containers:
         - name: postgres
           image: postgres:17-alpine
-          # Meme tuning que l'instance principale (max_connections pour le pool JDBC SonarQube,
-          # shared_buffers adapte a la limite memoire).
-          args: ["-c", "max_connections=100", "-c", "shared_buffers=512MB", "-c", "effective_cache_size=1536MB", "-c", "tcp_keepalives_idle=30", "-c", "tcp_keepalives_interval=10", "-c", "tcp_keepalives_count=6", "-c", "idle_in_transaction_session_timeout=60000", "-c", "wal_sync_method=fdatasync", "-c", "max_wal_size=2GB", "-c", "min_wal_size=512MB", "-c", "checkpoint_completion_target=0.9", "-c", "wal_buffers=16MB", "-c", "checkpoint_flush_after=0", "-c", "bgwriter_lru_maxpages=1000", "-c", "bgwriter_delay=200ms"]
+          # Tuning dimensionné pour la limite mémoire 8Gi (budget 80/20 du node
+          # 18 GB partagé avec rustfs-soludev).
+          args: ["-c", "max_connections=100", "-c", "shared_buffers=2GB", "-c", "effective_cache_size=6GB", "-c", "tcp_keepalives_idle=30", "-c", "tcp_keepalives_interval=10", "-c", "tcp_keepalives_count=6", "-c", "idle_in_transaction_session_timeout=60000", "-c", "wal_sync_method=fdatasync", "-c", "max_wal_size=2GB", "-c", "min_wal_size=512MB", "-c", "checkpoint_completion_target=0.9", "-c", "wal_buffers=16MB", "-c", "checkpoint_flush_after=0", "-c", "bgwriter_lru_maxpages=1000", "-c", "bgwriter_delay=200ms"]
           ports:
             - containerPort: 5432
               name: postgres
@@ -70,5 +71,5 @@ spec:
               memory: "1Gi"
               cpu: "500m"
             limits:
-              memory: "2Gi"
-              cpu: "2000m"
+              memory: "8Gi"
+              cpu: "3000m"
