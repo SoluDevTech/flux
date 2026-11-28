@@ -49,7 +49,7 @@ Dernière mise à jour : 28 novembre 2026
 | **vmi3794485** | **Storage VPS 30** — Agent k3s TAINTÉ (label `storage30-b`) | 77.216.136.160 | **100.64.0.10** | 6 / 18 GB / 1 TB SSD (fio 16k IOPS) | rustfs-pickpro prod (PV local 50Gi) |
 | **vmi3794484** | **Storage VPS 30** — Agent k3s TAINTÉ (label `storage30-c`) | 77.216.136.159 | **100.64.0.11** | 6 / 18 GB / 1 TB SSD (fio 19k IOPS) | postgres-telemetry + rustfs-soludev (PV local) |
 | **vmi3549084** | **Storage VPS 30** — Agent k3s TAINTÉ (label `storage30`) | 164.68.123.88 | **100.64.0.7** | 6 / 8 GB | postgres logto, pgvector mutualisé dev+composables, rustfs-pickpro-dev, rustfs-composables (PV local) + serveur NFS |
-| **vmi3322106** | **Storage VPS 10** — Agent k3s TAINTÉ (label `storage10`) | 37.60.225.137 | **100.64.0.5** | 2 / 4 GB | NATS (JetStream, PV local 20Gi) ; **réservé backup** (les PV v1 telemetry/rustfs-soludev y restent en Retain pour rollback) |
+| **vmi3322106** | **Storage VPS 10** — Agent k3s TAINTÉ (label `storage10`) | 37.60.225.137 | **100.64.0.5** | 2 / 4 GB | NATS (JetStream, PV local 20Gi) ; **réservé backup** |
 | *(hors cluster)* MacBook de Yohan | Client tailnet | — | **100.64.0.9** | — | kubectl, tests |
 
 > 27-28 nov 2026 : **séparation par profil d'I/O** — la DB pickpro prod a son
@@ -96,7 +96,7 @@ Dernière mise à jour : 28 novembre 2026
 > limits 9Gi/4800m (80 % du Plus 6 12 GB), tuning
 > `shared_buffers=2GB`, `effective_cache_size=6GB`, `maintenance_work_mem=1GB`.
 > Migré le 27 nov par dump/restore (128 Mo, 28 tables, counts identiques) ;
-> le PV v1 reste en Retain sur storage30 pour rollback.
+> **PV v1 + anciennes données disque supprimés le 28 nov** (validation user).
 
 ### storage30-b (100.64.0.10) — agent tainté, dédié S3 pickpro
 
@@ -106,9 +106,9 @@ Dernière mise à jour : 28 novembre 2026
 
 > limits 8Gi/4000m. Migré le 27 nov par `mc mirror` (20891 objets / 5.8 GiB,
 > buckets cvs 10056 + photos 10835 vérifiés SRC=DST) ; release name inchangé
-> → `rustfs-pickpro-svc:9000` et configmaps `MINIO_HOST` intacts. PV v1 en
-> Retain sur storage30. Scanner toujours `slow`, à repasser `standard` après
-> une semaine de métriques.
+> → `rustfs-pickpro-svc:9000` et configmaps `MINIO_HOST` intacts. **PV v1 +
+> anciennes données disque supprimés le 28 nov** (validation user). Scanner
+> toujours `slow`, à repasser `standard` après une semaine de métriques.
 
 ### storage30-c (100.64.0.11) — agent tainté, observabilité
 
@@ -122,12 +122,11 @@ Dernière mise à jour : 28 novembre 2026
 > chaud 15 Go + delta à l'arrêt — users OpenObserve/dashboards/alerts
 > intégralement préservés) ; **rustfs-soludev repart sur bucket NEUF**
 > (décision utilisateur : l'historique logs/metrics/traces — ~110 Go /
-> 10,2 M fichiers, trop lent à transférer depuis le VPS 10 — est sacrifié ;
-> l'ancien bucket reste sur le disque storage10 pour rollback éventuel).
-> Garde-fous rustfs conservés (scanner `slow`, `timeout_profile high_latency`,
-> probes tolérantes — héritage des stalls I/O storage10, cf. 81 restarts/22h
-> oct 2026) — à relâcher après une semaine sans stall. PVs v1 en Retain sur
-> storage10 pour rollback.
+> 10,2 M fichiers, trop lent à transférer depuis le VPS 10 — est sacrifié).
+> **PVs v1 + anciennes données disque supprimés le 28 nov** (validation
+> user). Garde-fous rustfs conservés (scanner `slow`, `timeout_profile
+> high_latency`, probes tolérantes — héritage des stalls I/O storage10,
+> cf. 81 restarts/22h oct 2026) — à relâcher après une semaine sans stall.
 
 ### storage30 (100.64.0.7) — agent tainté
 
@@ -140,8 +139,9 @@ Dernière mise à jour : 28 novembre 2026
 
 > 28 nov : **mutualisation postgres dev+composables** — l'instance pgvector
 > pickpro-dev absorbe la base `raganything` (l'ancienne instance postgres
-> composables est retirée ; PV `/srv/nfs/composables/postgres` conservé sur
-> disque pour rollback). Le rôle `raganything` est `BYPASSRLS` (il était
+> composables est retirée ; **l'ancien répertoire disque
+> `/srv/nfs/composables/postgres` a été supprimé le 28 nov**, validation
+> user). Le rôle `raganything` est `BYPASSRLS` (il était
 > bootstrap superuser dans l'ancienne instance, bypassant les policies RLS).
 > Les secrets OpenBao `composables/{raganything,composable-agents}` pointent
 > désormais sur `pgvector.pickpro-dev.svc.cluster.local:5432`.
@@ -160,9 +160,9 @@ Dernière mise à jour : 28 novembre 2026
 > `--version 2.14.6`** sur les upgrades helm nats (un upgrade non pinné a
 > déployé 2.15.0, 11 breaking changes). `podTemplate.merge.spec` pour
 > nodeSelector/tolerations (merge à plat = ignoré par l'apiserver).
-> Le node reste réservé au futur chantier backup ; les PV v1
-> telemetry/rustfs-soludev y sont conservés en Retain (rollback) jusqu'à
-> validation puis suppression disque.
+> Le node reste réservé au futur chantier backup. **PVs v1 supprimés le
+> 28 nov** (validation user) ; ancien PGDATA telemetry + ancien bucket
+> observability supprimés du disque.
 
 Server (hors k8s, docker Storage 30, mesh Tailscale only) :
 
@@ -277,5 +277,8 @@ Server (hors k8s, docker Storage 30, mesh Tailscale only) :
     rejoint l'instance pgvector pickpro-dev (image RAG, extensions
     age/pg_textsearch/vector, preload pg_textsearch, BYPASSRLS) ;
     instance postgres composables supprimée ; secrets OpenBao repointés.
-  - PVs v1 de toutes les migrations conservés en **Retain** (rollback
-    jusqu'à validation, puis nettoyage disque à faire).
+  - PVs v1 de toutes les migrations : **objets k8s prunés + données disque
+    supprimées le 28 nov** (validation user) — ancien PGDATA telemetry et
+    ancien bucket observability (~110 Go) sur storage10, anciens pgvector/
+    rustfs pickpro prod sur storage30, ancienne instance postgres
+    composables.

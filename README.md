@@ -5251,12 +5251,13 @@ ssh root@<NEW_IP> 'ufw allow 22/tcp; ufw allow in on tailscale0; echo y | ufw en
     `from="<src-ip>"`) plutôt que tailscale (tailscaled userspace coûte
     ~6× en débit sur un petit node).
 
-### Rollback (jusqu'à validation, puis nettoyage disque)
+### Rollback
 
-- PVs v1 en `Retain` sur leurs nodes d'origine : `local-pickpro-pgvector`,
-  `local-pickpro-rustfs` (storage30), PV v1 telemetry + rustfs soludev
-  (storage10), données composables postgres (`/srv/nfs/composables/postgres`).
+- **28 nov, validation user : les données v1 migrées ont été supprimées**
+  (objets k8s prunés via retrait des manifests v1 + rm des répertoires
+  disque) : pgvector + rustfs pickpro prod (storage30), PGDATA telemetry +
+  bucket observability (storage10, ~125 Go libérés), instance postgres
+  composables. Le retour arrière n'est plus possible sur ces jeux de
+  données — seule la base mutualisée dev/composables (pickpro-dev) n'a pas
+  bougé de répertoire.
 - NATS : PVC v1 supprimée (local-path Delete), données étaient transitoires.
-- Après validation utilisateur : supprimer PVs v1 + répertoires disque
-  correspondants (attention : `kubectl delete pv` Retain ne touche pas
-  au disque — rm manuel).
