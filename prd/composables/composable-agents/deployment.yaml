@@ -31,7 +31,7 @@ spec:
               app.kubernetes.io/part-of: soludev-workload
       containers:
         - name: composable-agents
-          image: kaiohz/pickpro:composable-agents-2a91ab84ceb6a434ca529ef7ed843dfb8e27f3ac
+          image: kaiohz/pickpro:composable-agents-9d251b50a06959df35ace8f0704c3006f02ae393
           ports:
             - containerPort: 8000
           env:
