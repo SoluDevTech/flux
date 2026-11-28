@@ -67,7 +67,7 @@ extraEnv:
 - name: ZO_S3_REQUEST_TIMEOUT
   value: "3600"
 - name: ZO_COMPACT_DATA_RETENTION_DAYS
-  value: "10"
+  value: "45"
 - name: ZO_COMPACT_ENABLED
   value: "true"
 - name: ZO_COMPACT_INTERVAL
