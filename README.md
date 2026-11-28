@@ -5142,3 +5142,121 @@ Reste côté client :
 
 (La stack QA utilise le seed idempotent `soludev-compose-apps/bricks/init-logto.sql`,
 application #4 `qa-opencode-native-app`, qui reflète la même spec.)
+
+## Séparation des données par profil d'I/O (27-28 nov 2026)
+
+### Contexte
+
+Découpage du stateful par fonction : DB pickpro prod (NVMe), S3 pickpro prod
+(1 TB), observabilité (dedicated Storage 30), NATS sur storage10, mutualisation
+postgres dev+composables. Règle de dimensionnement **80/20** (limits = 80 %
+RAM node, 20 % système). Détail complet : voir `ARCHITECTURE.md`.
+
+### Machines ajoutées (runbook de join)
+
+```bash
+# 1. tailscale (cert headscale d'abord — sinon x509 unknown authority)
+for C in headscale.crt headscale-new.crt; do
+  ssh root@164.68.123.88 "cat /usr/local/share/ca-certificates/$C" \
+    | ssh root@<NEW_IP> "cat > /usr/local/share/ca-certificates/$C"
+done
+ssh root@<NEW_IP> 'curl -fsSL https://tailscale.com/install.sh | sh; \
+  update-ca-certificates >/dev/null; systemctl restart tailscaled'
+KEY=$(ssh root@84.247.188.175 \
+  'headscale preauthkeys create --user 1 --expiration 2h --reusable 2>/dev/null | tail -1')
+ssh root@<NEW_IP> "tailscale up --login-server https://84.247.188.175:8080 \
+  --authkey $KEY --hostname <HOST>"
+# headscale v0.28 : --user prend l'ID numérique (prd = 1)
+
+# 2. k3s agent (version PINNÉE = version serveur, config.yaml + token à la main)
+ssh root@<NEW_IP> 'cat > /etc/rancher/k3s/config.yaml <<EOF
+server: https://100.64.0.1:6443
+token-file: /etc/rancher/k3s/token-file
+node-ip: <TAILSCALE_IP>
+flannel-iface: tailscale0
+node-label:
+  - "storage/role=data"
+  - "storage/nodename=<LABEL>"
+kubelet-arg:
+  - "image-gc-high-threshold=60"
+  - "image-gc-low-threshold=50"
+EOF'
+ssh root@84.247.188.175 'cat /var/lib/rancher/k3s/server/token' \
+  | ssh root@<NEW_IP> 'cat > /etc/rancher/k3s/token-file && chmod 600 /etc/rancher/k3s/token-file'
+ssh root@<NEW_IP> 'curl -sfL https://get.k3s.io | \
+  INSTALL_K3S_VERSION=v1.37.0+k3s1 INSTALL_K3S_EXEC=agent sh -'
+
+# 3. taint (jamais dans config.yaml — perdu au re-register) + ufw
+kubectl taint node <HOST> storage/role=data:NoSchedule --overwrite
+ssh root@<NEW_IP> 'ufw allow 22/tcp; ufw allow in on tailscale0; echo y | ufw enable'
+```
+
+### Pièges rencontrés et fixes (à retenir)
+
+1. **headscale CLI v0.28** : `--user` prend l'ID numérique (`prd` = `1`),
+   pas le nom ; l'output des commandes est pollué par un WRN de version sur
+   stdout → `tail -1` pour extraire la clé.
+2. **Certificat headscale auto-signé** : chaque nouveau node DOIT avoir
+   `headscale*.crt` dans `/usr/local/share/ca-certificates/` AVANT
+   `tailscale up` (sinon `x509: certificate signed by unknown authority`,
+   et l'erreur ne s'affiche que dans `journalctl -u tailscaled`).
+3. **Netmap tailscale périmé** : l'enregistrement de nouveaux peers n'est pas
+   poussé aux nodes déjà connectés (vmi3549081 ne voyait pas les 3 nouveaux —
+   symptôme : pods en CrashLoop avec timeout DB, `tailscale status` ne liste
+   pas les nouveaux). Fix : `systemctl restart tailscaled && sleep 8 &&
+   systemctl restart k3s-agent` (les deux, cf. piège flannel du 19 sept).
+4. **Repo Docker Hub `kaiohz/pickpro` privé** : tout pull anonyme échoue
+   (`insufficient_scope`) depuis n'importe quelle IP. Le secret
+   `pickpro-docker-secret` (dockerconfigjson, sync OpenBao) doit être en
+   `imagePullSecrets` de TOUT deployment d'une image `kaiohz/pickpro:*`.
+   Symptôme piège : image en cache visible via `crictl` mais
+   `ErrImageNeverPull` (le snapshot décompressé a été GC-é, seule la
+   re-pull avec le secret répare).
+5. **Chart nats** : `podTemplate.merge` fusionne au niveau PodTemplate
+   (metadata+spec) → nodeSelector/tolerations vivent SOUS
+   `podTemplate.merge.spec` (un merge à plat atterrit hors spec et est
+   silencieusement droppé). ET toujours `helm upgrade --version 2.14.6`
+   (un upgrade non pinné a déployé 2.15.0, 11 breaking changes).
+6. **PVC logs héritée des releases rustfs** : helm uninstall ne supprime pas
+   les PVC (`rustfs-pickpro-logs`, local-path, PV pincé sur l'ANCIEN node)
+   → le nouveau pod ne peut pas scheduler (`didn't match PersistentVolume's
+   node affinity`). Fix : `kubectl delete pvc <release>-logs` puis
+   re-`helm upgrade` (le chart recrée la PVC sur le nouveau node).
+7. **kubectl exec + gros flux** : les streams longs (>~40 Mo) cassent avec
+   `i/o timeout` sur l'API server → dumper DANS le PV (`pg_dump > $PGDATA/...`),
+   transférer node-à-node (SSH direct par clé éphémère), restaurer depuis
+   fichier (`psql -f`).
+8. **pg_dumpall récent + psql ancien** : les `\restrict`/`\unrestrict` du
+   dump bloquent des COPY silencieusement → dump custom (`pg_dump -Fc`) +
+   `pg_restore --no-owner` puis ALTER DATABASE OWNER + transfert de
+   propriété ciblé (REASSIGN OWNED échoue sur les objets système du
+   bootstrap superuser).
+9. **RLS et bootstrap superuser** : l'ancienne instance postgres composables
+   tournait avec `POSTGRES_USER=raganything` (superuser → bypass RLS). Dans
+   l'instance mutualisée le rôle est normal → `ALTER ROLE raganything BYPASSRLS`.
+10. **Flux reverts les scale manuels** : `kubectl scale --replicas=0` d'un
+    deployment Flux-managed est annulé au reconcile (2 min). Pour une
+    fenêtre : `flux suspend kustomization <name>` le temps de l'opération,
+    ou passer par helm-managed (STS openobserve : le scale tient).
+    Idem `kubectl rollout restart` : l'annotation est écrasée par le
+    manifest git → supprimer les pods directement.
+11. **Docker Hub rate-limit** : pulls anonymes par IP limités — les images
+    `quay.io/minio/mc` (tag pinné `RELEASE.2024-11-21T17-21-54Z`, en cache
+    sur storage30) plutôt que `minio/mc` (docker.io).
+12. **Transfert de millions de petits fichiers** (bucket OO) : rsync
+    (~0,8 Mo/s) et tar séquentiel (~1-6 Mo/s) plafonnés par le 2vCPU/4GB
+    de storage10 ; tuer les `du` zombies (ils mangent le node) ; tar
+    parallèle par sous-arborescence via `tar -T <chunk-file>` (les chunks
+    par `ls | split -n l/N`) ; SSH direct IPv4 public (clé éphémère
+    `from="<src-ip>"`) plutôt que tailscale (tailscaled userspace coûte
+    ~6× en débit sur un petit node).
+
+### Rollback (jusqu'à validation, puis nettoyage disque)
+
+- PVs v1 en `Retain` sur leurs nodes d'origine : `local-pickpro-pgvector`,
+  `local-pickpro-rustfs` (storage30), PV v1 telemetry + rustfs soludev
+  (storage10), données composables postgres (`/srv/nfs/composables/postgres`).
+- NATS : PVC v1 supprimée (local-path Delete), données étaient transitoires.
+- Après validation utilisateur : supprimer PVs v1 + répertoires disque
+  correspondants (attention : `kubectl delete pv` Retain ne touche pas
+  au disque — rm manuel).
