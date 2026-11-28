@@ -118,6 +118,11 @@ Dernière mise à jour : 28 novembre 2026
 | `rustfs-soludev` (helm chart `rustfs/rustfs` 1.0.6) | `rustfs/rustfs:1.0.6` | PV v2 `local-soludev-rustfs-v2` 50Gi, `/srv/nfs/soludev/rustfs` (bucket `observability`) | openobserve S3 (ZO_S3_PROVIDER=s3) |
 
 > Budget 80/20 partagé : telemetry 8Gi/2800m + rustfs-soludev 6Gi/2000m.
+> 28 nov (après-midi) : **rétention OO portée de 10 à 45 jours**
+> (`ZO_COMPACT_DATA_RETENTION_DAYS=45`) — débit mesuré ~5,7 Go/jour →
+> 45j ≈ 260-500 Go, confortable sur ~945 Go libres. Phoenix : aucune
+> modification nécessaire, il ne purge jamais (historique complet
+> conservé dans sa base postgres, 1,4 Go à ce jour).
 > 28 nov : **postgres-telemetry migré par copie physique** (rsync pass-1 à
 > chaud 15 Go + delta à l'arrêt — users OpenObserve/dashboards/alerts
 > intégralement préservés) ; **rustfs-soludev repart sur bucket NEUF**
