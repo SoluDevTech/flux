@@ -14,7 +14,11 @@ data:
           fallthrough in-addr.arpa ip6.arpa
         }
         prometheus :9153
-        forward . 1.1.1.1 8.8.8.8 9.9.9.9 {
+        # Quad9 (9.9.9.9) REMOVED: it NODATA-filters openrouter.ai (blocklist)
+        # and CoreDNS caches the empty A-answer (cache 30) — pods then get
+        # AAAA-only answers, and with no IPv6 route in the cluster that turns
+        # into ENETUNREACH(101) / openai "Connection error" during streaming.
+        forward . 1.1.1.1 8.8.8.8 {
           policy random
           max_concurrent 1000
         }
